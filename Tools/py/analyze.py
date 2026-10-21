@@ -54,7 +54,6 @@ SEARCH_POST_NS = 60 * MS
 ISOLATION_NS = 150 * MS  # A keystroke is isolated when no other key-down came this soon before.
 RESPONSE_NS = 40 * MS  # Span after key-down scored when ranking layouts by key response.
 MIN_GROUP = 5  # Keystrokes needed before a group's percentiles are reported.
-REST_STEP_NS = 20 * MS  # Grid of pseudo-keystrokes in rest logs, for the noise floor.
 POST_BUDGET_NS = 10 * MS  # Gate: POST must not exceed this (docs/SPEC.md, Milestone 0).
 GATE_ROWS = ("home", "space")
 ROW_ORDER = ("number", "top", "home", "bottom", "space", "left-edge", "right-edge")
@@ -764,7 +763,8 @@ def rest_peaks(signal: Signal, pre_ns: int, post_ns: int, baseline_ns: int) -> l
     first = int(signal.t_ns[0]) + pre_ns + baseline_ns
     last = int(signal.t_ns[-1]) - post_ns
     peaks = []
-    for t in range(first, last, REST_STEP_NS):
+    # One window apart, so the windows tile and no bump at rest falls between them.
+    for t in range(first, last, pre_ns + post_ns):
         result = window_peak(signal.t_ns, signal.xyz, t, pre_ns, post_ns, baseline_ns, need)
         if result is not None:
             peaks.append(result[0])

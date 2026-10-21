@@ -160,6 +160,9 @@ analyze: ## Clang Static Analyzer over the core and the tools
 	  $(CLANG) --analyze -Xclang -analyzer-werror $(CSTD) $(PLATFORM) $(INCLUDES) $(TOOL_INCLUDES) \
 	    $$f -o /dev/null || exit 1; \
 	done
+	@for f in Core/src/sensor/kf_sensor.c Core/src/sensor/kf_sensor_rt.c; do \
+	  $(CC) $(CFLAGS) -DKF_SENSOR_LAYOUT_MEASURED=1 -fsyntax-only $$f || exit 1; \
+	done
 	@echo "analyze: clean"
 
 lint: ## clang-tidy over the core, tests and tools

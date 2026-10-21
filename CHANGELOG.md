@@ -27,6 +27,11 @@ All notable changes are recorded here. The format follows
   handling; `KFPackManifest` (`pack.json` validation); `kf-cli` (typing, `--demo`, `--idle`);
   `engine-stress`, `mix-bench`, `audio-info`, `system_snapshot.py`; render benchmark in
   `latency-bench`.
+- Milestone 2, force detection: parameterized report decoder (int16, int32 or float32 triples,
+  scaled to g), the sensor thread (read-only device open, report callback, pending-key watchdog,
+  device removal), live calibration hand-over, measured peaks for the calibration UI, Shout
+  Mode's rolling force, noise-floor measurement, `kf-cli --calibrate`. Dormant until the report
+  layout is measured (ADR-0011): the probe reports no sensor and keys play at default velocity.
 
 ### Changed
 - `make analyze` covers the tools; `make ci` also runs `test-py` and builds the tools.

@@ -39,7 +39,27 @@
 #define KF_ACCEL_RING_SAMPLES     4096u       /**< ~4 s at 1 kHz; power of two. */
 #define KF_PENDING_QUEUE_CAPACITY 64u         /**< Keys awaiting sensor data. */
 #define KF_SENSOR_STALE_NS        20000000ULL /**< No sample for 20 ms = stale. */
-#define KF_PENDING_MAX_AGE_NS     40000000ULL /**< M2 watchdog: default after 40 ms. */
+#define KF_PEAK_QUEUE_CAPACITY    256u        /**< Measured peaks awaiting the calibration UI. */
+#define KF_ROLLING_KEYS           3u          /**< Shout Mode's rolling force: last 3 keys. */
+
+/* Sensor device (measured in M0 on Mac17,3; docs/SENSOR_NOTES.md, "Device"). The matching
+ * omits the product ID, which may differ between models. */
+#define KF_SENSOR_VENDOR_ID    0x05ACu
+#define KF_SENSOR_USAGE_PAGE   0xFF00u
+#define KF_SENSOR_USAGE        0x0003u
+#define KF_SENSOR_TRANSPORT    "SPU"
+#define KF_SENSOR_REPORT_BYTES 22u /**< From the report descriptor. */
+
+/* Report layout: TBD-M0. Not measured, because the sensor sends nothing while idle (ADR-0011).
+ * While KF_SENSOR_LAYOUT_MEASURED is 0 the values below are inert placeholders, the sensor is
+ * reported absent and Keyfeel runs in fallback mode. Fill them from `analyze.py inspect`. */
+#ifndef KF_SENSOR_LAYOUT_MEASURED /* `make analyze` also builds the sensor with it set. */
+#define KF_SENSOR_LAYOUT_MEASURED 0
+#endif
+#define KF_SENSOR_SAMPLE_TYPE   0u          /**< TBD-M0: kf_sample_type. */
+#define KF_SENSOR_SAMPLE_OFFSET 0u          /**< TBD-M0: byte offset of the x, y, z triple. */
+#define KF_SENSOR_SCALE_G       1.0f        /**< TBD-M0: g per raw unit. */
+#define KF_PENDING_MAX_AGE_NS   40000000ULL /**< M2 watchdog: default after 40 ms. */
 
 /* Velocity --------------------------------------------------------------- */
 #define KF_WINDOW_PRE_NS       5000000ULL  /**< TBD-M0: window start before key-down. */

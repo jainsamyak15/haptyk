@@ -147,6 +147,20 @@ the home row and the space bar.
    then `Tools/py/.venv/bin/python Tools/py/analyze.py report "logs/Mac17,3_macos-27.0"/*.csv`.
    The report prints these sections as Markdown, ready to paste here.
 
+## Enabling force detection once the layout is measured
+
+The force path (M2) is built and unit-tested against synthetic reports, and stays dormant while
+`KF_SENSOR_LAYOUT_MEASURED` is 0. With samples in hand:
+
+1. `analyze.py inspect` on a rest log and a tap log: take the top-ranked layout and its scale.
+2. In `Core/include/kf/kf_config.h`, set `KF_SENSOR_SAMPLE_TYPE`, `KF_SENSOR_SAMPLE_OFFSET`,
+   `KF_SENSOR_SCALE_G`, `KF_SENSOR_NOMINAL_HZ`, `KF_WINDOW_PRE_NS` and `KF_WINDOW_POST_NS` from
+   `analyze.py report`, then set `KF_SENSOR_LAYOUT_MEASURED` to 1.
+3. `analyze.py fixture` a rest log into `Tests/Fixtures/sensor/` and add a decode test against
+   it (spec: "fixtures recorded in Milestone 0").
+4. Fill `App/Resources/calibration-defaults.json` for the model from the report's peaks.
+5. `kf-cli --calibrate`, then type soft, normal and hard: the M2 acceptance check.
+
 ## Recommendation
 
 Not yet possible. The sensor exists and opens as a normal user, which is promising for the

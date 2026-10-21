@@ -62,6 +62,12 @@
     X(pack_decodes_files)                      \
     X(keytap_modifier_down_and_up)             \
     X(keytap_builtin_rule)                     \
-    X(keytap_handle_key_routes_and_reports)
+    X(keytap_handle_key_routes_and_reports)    \
+    X(sensor_decodes_each_layout)              \
+    X(sensor_falls_back_without_a_layout)      \
+    X(sensor_expired_keys_play_at_default)     \
+    X(sensor_reports_peaks_and_rolling_force)  \
+    X(sensor_takes_calibration_while_running)  \
+    X(sensor_measures_noise_floor)
 
 #endif /* KF_TEST_LIST_H */

@@ -86,7 +86,7 @@ Findings and the commands still to run are in [docs/SENSOR_NOTES.md](docs/SENSOR
 | --- | --- | --- |
 | M0 | Sensor discovery (go/no-go gate) | Tools done; blocked on ADR-0011 (starting the sensor) |
 | M1 | Core sound pipeline (command line) | Done: engine, packs, key tap, `kf-cli` |
-| M2 | Force detection (command line) | Foundations done: velocity, tiers, calibration, auto-adapt |
+| M2 | Force detection (command line) | Built and tested; dormant until the sensor layout is measured |
 | M3 | Menu bar app | Not started |
 | M4 | Sound packs | Not started |
 | M5 | Shipping pipeline | Not started |

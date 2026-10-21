@@ -234,6 +234,81 @@ static void run_demo(long count, dispatch_block_t done) {
     dispatch_resume(timer);
 }
 
+/* ------------------------------------------------------------------ calibration
+ *
+ * The wizard math of the spec (velocity.c): noise floor for 3 s at rest, then about 40 soft
+ * and 40 hard keystrokes; kf_calibration_compute() fits soft_g, slam_g and the row gains. */
+
+#define CALIBRATION_KEYS 40u
+#define NOISE_NS         3000000000ULL
+
+typedef enum { CAL_NOISE, CAL_SOFT, CAL_HARD, CAL_DONE } cal_phase;
+
+static kf_calibration_sample g_soft[CALIBRATION_KEYS];
+static kf_calibration_sample g_hard[CALIBRATION_KEYS];
+
+static void print_calibration(const kf_calibration *cal) {
+    printf("{\"noise_floor_g\": %.5f, \"soft_g\": %.5f, \"slam_g\": %.5f, \"row_gain\": [",
+           (double)cal->noise_floor_g, (double)cal->soft_g, (double)cal->slam_g);
+    for (int r = 0; r < KF_ROW_COUNT; ++r) {
+        printf("%s%.3f", r == 0 ? "" : ", ", (double)cal->row_gain[r]);
+    }
+    printf("], \"auto_adapt\": %s}\n", cal->auto_adapt ? "true" : "false");
+}
+
+static void run_calibration(dispatch_block_t done) {
+    __block cal_phase phase = CAL_NOISE;
+    __block uint32_t soft = 0u;
+    __block uint32_t hard = 0u;
+    puts("Calibration 1/3: hands off the Mac for 3 seconds...");
+    kf_sensor_begin_noise_measurement(NOISE_NS);
+    dispatch_source_t timer =
+        dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+    dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, 0), 100 * NSEC_PER_MSEC,
+                              10 * NSEC_PER_MSEC);
+    dispatch_source_set_event_handler(timer, ^{
+      kf_sensor_peak peak;
+      if (phase == CAL_NOISE) {
+          if (kf_sensor_noise_floor_g() >= 0.0f) {
+              printf("  noise floor %.4f g\nCalibration 2/3: type softly, about %u keys...\n",
+                     (double)kf_sensor_noise_floor_g(), CALIBRATION_KEYS);
+              while (kf_sensor_pop_peak(&peak)) {
+              }
+              phase = CAL_SOFT;
+          }
+          return;
+      }
+      while (phase != CAL_DONE && kf_sensor_pop_peak(&peak)) {
+          kf_calibration_sample *set = phase == CAL_SOFT ? g_soft : g_hard;
+          uint32_t *n = phase == CAL_SOFT ? &soft : &hard;
+          set[(*n)++] = (kf_calibration_sample){peak.raw_g, peak.row};
+          if (phase == CAL_SOFT && soft == CALIBRATION_KEYS) {
+              printf("Calibration 3/3: now type hard, about %u keys...\n", CALIBRATION_KEYS);
+              phase = CAL_HARD;
+          } else if (phase == CAL_HARD && hard == CALIBRATION_KEYS) {
+              phase = CAL_DONE;
+          }
+      }
+      if (phase != CAL_DONE) {
+          return;
+      }
+      dispatch_source_cancel(timer);
+      kf_calibration cal = kf_calibration_default();
+      const kf_status status = kf_calibration_compute(kf_sensor_noise_floor_g(), g_soft, soft,
+                                                      g_hard, hard, &cal);
+      if (status == KF_OK && kf_sensor_set_calibration(&cal) == KF_OK) {
+          puts("Calibration done; in use now. As stored by the app (calibration.v1):");
+          print_calibration(&cal);
+      } else {
+          printf("Calibration failed (%s): soft and hard taps did not separate. Try again with "
+                 "softer soft taps and harder hard ones.\n",
+                 kf_status_string(status));
+      }
+      done();
+    });
+    dispatch_resume(timer);
+}
+
 /* ------------------------------------------------------------------ main */
 
 static void print_counters(void) {
@@ -312,7 +387,18 @@ int main(int argc, const char **argv) {
         dispatch_block_t stop = ^{
             CFRunLoopStop(CFRunLoopGetMain());
         };
-        if (opt.demo > 0) {
+        if (opt.calibrate) {
+            const kf_status tap = kf_keytap_start(on_key, NULL, false);
+            const kf_status sensor = tap == KF_OK ? kf_sensor_start() : tap;
+            if (sensor != KF_OK) {
+                fprintf(stderr, "kf-cli: cannot calibrate: %s\n", kf_status_string(sensor));
+                kf_keytap_stop();
+                kf_engine_stop();
+                kf_engine_set_pack(NULL);
+                return tap != KF_OK ? EXIT_PERMISSION : EXIT_NO_SENSOR;
+            }
+            run_calibration(stop);
+        } else if (opt.demo > 0) {
             printf("kf-cli: demo, %ld keystrokes\n", opt.demo);
             /* With --seconds the run outlasts the demo, e.g. to measure the idle state. */
             run_demo(opt.demo, opt.seconds > 0.0 ? ^{
@@ -344,6 +430,7 @@ int main(int argc, const char **argv) {
 
         stop_idle_timer();
         kf_keytap_stop();
+        kf_sensor_stop();
         print_counters();
         kf_engine_stop();
         kf_engine_set_pack(NULL);

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: LicenseRef-Proprietary
 // Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
 
+#include <math.h>
+#include <string.h>
+
 #include <kf/kf_engine.h>
 #include <kf/kf_sensor.h>
 
@@ -112,4 +115,140 @@ void test_keytap_dispatch_routes_by_sensor_state(void) {
     KF_EXPECT(queued(KF_QUEUE_KEYTAP) == 7u);
     KF_EXPECT(kf_pending_queue_size_approx(pending) == 1u);
     kf_sensor_stop();
+}
+
+/* ------------------------------------------------------------------ M2 */
+
+static void put_i16(uint8_t *p, int16_t v) {
+    memcpy(p, &v, sizeof v);
+}
+
+void test_sensor_decodes_each_layout(void) {
+    uint8_t report[22];
+    memset(report, 0xee, sizeof report);
+    kf_accel_sample s;
+
+    const kf_sensor_layout i16 = {22u, 4u, KF_SAMPLE_INT16, 1.0f / 16384.0f};
+    put_i16(report + 4, 16384);
+    put_i16(report + 6, -8192);
+    put_i16(report + 8, 0);
+    KF_EXPECT(kf_sensor_decode_with(&i16, report, 22u, 77u, &s));
+    KF_EXPECT(s.t_ns == 77u);
+    KF_EXPECT_NEAR(s.x, 1.0, 1e-6);
+    KF_EXPECT_NEAR(s.y, -0.5, 1e-6);
+    KF_EXPECT_NEAR(s.z, 0.0, 1e-6);
+
+    const kf_sensor_layout i32 = {22u, 6u, KF_SAMPLE_INT32, 1.0f / 65536.0f};
+    const int32_t values[3] = {65536, -32768, 131072};
+    memcpy(report + 6, values, sizeof values); /* Unaligned offset on purpose. */
+    KF_EXPECT(kf_sensor_decode_with(&i32, report, 22u, 1u, &s));
+    KF_EXPECT_NEAR(s.x, 1.0, 1e-6);
+    KF_EXPECT_NEAR(s.y, -0.5, 1e-6);
+    KF_EXPECT_NEAR(s.z, 2.0, 1e-6);
+
+    const kf_sensor_layout f32 = {22u, 10u, KF_SAMPLE_FLOAT32, 1.0f};
+    const float floats[3] = {0.25f, 0.5f, -1.0f};
+    memcpy(report + 10, floats, sizeof floats);
+    KF_EXPECT(kf_sensor_decode_with(&f32, report, 22u, 1u, &s));
+    KF_EXPECT_NEAR(s.z, -1.0, 1e-6);
+    const float nan = NAN;
+    memcpy(report + 10, &nan, sizeof nan);
+    KF_EXPECT(!kf_sensor_decode_with(&f32, report, 22u, 1u, &s)); /* Non-finite: dropped. */
+
+    KF_EXPECT(!kf_sensor_decode_with(&i16, report, 21u, 1u, &s)); /* Wrong length. */
+    const kf_sensor_layout past_end = {22u, 12u, KF_SAMPLE_INT32, 1.0f};
+    KF_EXPECT(!kf_sensor_decode_with(&past_end, report, 22u, 1u, &s));
+    const kf_sensor_layout bad_type = {22u, 0u, 9u, 1.0f};
+    KF_EXPECT(!kf_sensor_decode_with(&bad_type, report, 22u, 1u, &s));
+    KF_EXPECT(!kf_sensor_decode_with(NULL, report, 22u, 1u, &s));
+#if !KF_SENSOR_LAYOUT_MEASURED
+    KF_EXPECT(!kf_sensor_decode_report(report, 22u, 1u, &s)); /* Never a guess. */
+#endif
+}
+
+void test_sensor_falls_back_without_a_layout(void) {
+    reset_all();
+#if !KF_SENSOR_LAYOUT_MEASURED
+    KF_EXPECT(!kf_sensor_probe());
+    KF_EXPECT(kf_sensor_start() == KF_ERR_NOT_FOUND);
+    KF_EXPECT(kf_sensor_state_now(0u) == KF_SENSOR_ABSENT);
+    const kf_key_event down = key_down(10u * MS, true);
+    kf_keytap_dispatch(&down); /* Plays at once on queue A. */
+    KF_EXPECT(queued(KF_QUEUE_KEYTAP) == 2u);
+    kf_sensor_stop();
+#endif
+    kf_sensor_reset();
+}
+
+void test_sensor_expired_keys_play_at_default(void) {
+    reset_all();
+    const kf_key_event down = key_down(500u * MS, true);
+    KF_EXPECT(kf_sensor_push_pending(&down));
+    kf_sensor_resolve_expired(539u * MS); /* 39 ms old: still waits for samples. */
+    KF_EXPECT(queued(KF_QUEUE_SENSOR) == 0u);
+    kf_sensor_resolve_expired(541u * MS); /* Over KF_PENDING_MAX_AGE_NS: plays now. */
+    KF_EXPECT(queued(KF_QUEUE_SENSOR) == 2u);
+    KF_EXPECT_NEAR(kf_sensor_last_velocity(), KF_DEFAULT_VELOCITY, 1e-6);
+}
+
+void test_sensor_reports_peaks_and_rolling_force(void) {
+    reset_all();
+    KF_EXPECT(kf_sensor_rolling_velocity() < 0.0f);
+    const float spikes[3] = {0.02f, 0.05f, 0.30f};
+    for (int k = 0; k < 3; ++k) {
+        const uint64_t t = 500u + 100u * (uint64_t)k;
+        const kf_key_event down = key_down(t * MS, true);
+        KF_EXPECT(kf_sensor_push_pending(&down));
+        feed(t - 70u, t + 10u, t + 2u, spikes[k]);
+    }
+    kf_sensor_peak peak;
+    float sum = 0.0f;
+    for (int k = 0; k < 3; ++k) {
+        KF_EXPECT(kf_sensor_pop_peak(&peak));
+        KF_EXPECT_NEAR(peak.raw_g, spikes[k], 1e-4);
+        KF_EXPECT(peak.row == KF_ROW_HOME && peak.t_ns == (500u + 100u * (uint64_t)k) * MS);
+        sum += peak.velocity;
+    }
+    KF_EXPECT(!kf_sensor_pop_peak(&peak));
+    KF_EXPECT_NEAR(kf_sensor_rolling_velocity(), sum / 3.0f, 1e-5);
+}
+
+void test_sensor_takes_calibration_while_running(void) {
+    reset_all();
+    kf_sensor_set_state(KF_SENSOR_LIVE);
+    kf_calibration hot = kf_calibration_default();
+    hot.soft_g = 0.001f;
+    hot.slam_g = 0.002f;
+    hot.auto_adapt = false;
+    KF_EXPECT(kf_sensor_set_calibration(&hot) == KF_OK); /* Queued, not applied yet. */
+    KF_EXPECT(kf_sensor_context()->calibration.slam_g != 0.002f);
+    kf_sensor_apply_pending_calibration(); /* As the sensor thread does per report. */
+    KF_EXPECT(kf_sensor_context()->calibration.slam_g == 0.002f);
+    for (int i = 0; i < 4; ++i) {
+        KF_EXPECT(kf_sensor_set_calibration(&hot) == KF_OK);
+    }
+    KF_EXPECT(kf_sensor_set_calibration(&hot) == KF_ERR_LIMIT); /* The thread fell behind. */
+    kf_sensor_apply_pending_calibration();
+    hot.slam_g = hot.soft_g; /* Invalid: slam must exceed soft. */
+    KF_EXPECT(kf_sensor_set_calibration(&hot) == KF_ERR_INVALID_ARGUMENT);
+    kf_sensor_set_state(KF_SENSOR_STOPPED);
+    kf_sensor_reset();
+    const kf_calibration def = kf_calibration_default();
+    KF_EXPECT(kf_sensor_set_calibration(&def) == KF_OK);
+}
+
+void test_sensor_measures_noise_floor(void) {
+    reset_all();
+    KF_EXPECT(kf_sensor_noise_floor_g() < 0.0f);
+    kf_sensor_context()->noise_until_ns = 0u;
+    /* Rest with one small bump, measured over 200 ms of samples. */
+    kf_sensor_begin_noise_measurement(0u);
+    atomic_store(&kf_sensor_context()->noise_until_ns, 300u * MS);
+    feed(1u, 299u, 150u, 0.004f);
+    KF_EXPECT(kf_sensor_noise_floor_g() < 0.0f); /* Still measuring. */
+    feed(300u, 300u, 0u, 0.0f);
+    KF_EXPECT_NEAR(kf_sensor_noise_floor_g(), 0.004, 2e-4);
+    kf_sensor_counters c;
+    kf_sensor_get_counters(&c);
+    KF_EXPECT_NEAR(c.sample_rate_hz, 1000.0, 1.0);
 }
