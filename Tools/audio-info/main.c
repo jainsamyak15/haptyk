@@ -85,8 +85,7 @@ static void print_scope(AudioObjectID device, AudioObjectPropertyScope scope, co
     for (size_t i = 0u; i < sizeof elements / sizeof elements[0]; ++i) {
         if (get(device, kAudioDevicePropertyVolumeScalar, scope, elements[i], &volume,
                 sizeof volume)) {
-            printf("%s\"volume_%u\": %.4f", any ? ", " : "", (unsigned)elements[i],
-                   (double)volume);
+            printf("%s\"volume_%u\": %.4f", any ? ", " : "", (unsigned)elements[i], (double)volume);
             any = true;
         }
     }
@@ -125,9 +124,8 @@ static void print_device(AudioObjectID device, bool first) {
     (void)get(device, kAudioDevicePropertyBufferFrameSizeRange, kAudioObjectPropertyScopeGlobal,
               kAudioObjectPropertyElementMain, &range, sizeof range);
     UInt32 running = 0u;
-    (void)get(device, kAudioDevicePropertyDeviceIsRunningSomewhere,
-              kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain, &running,
-              sizeof running);
+    (void)get(device, kAudioDevicePropertyDeviceIsRunningSomewhere, kAudioObjectPropertyScopeGlobal,
+              kAudioObjectPropertyElementMain, &running, sizeof running);
     printf(",\n      \"nominal_sample_rate\": %.1f,\n      \"buffer_frame_size\": %u", rate,
            (unsigned)frames);
     printf(",\n      \"buffer_frame_size_range\": [%.0f, %.0f]", range.mMinimum, range.mMaximum);
@@ -143,8 +141,8 @@ static void print_device(AudioObjectID device, bool first) {
 
 int main(int argc, char **argv) {
     if (argc > 1) {
-        fputs(k_usage, strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0 ? stdout
-                                                                                    : stderr);
+        fputs(k_usage,
+              strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0 ? stdout : stderr);
         return strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0 ? EXIT_SUCCESS : 2;
     }
     AudioObjectID devices[MAX_DEVICES];

@@ -7,8 +7,7 @@ Spec: docs/SPEC.md, "Milestone 0: sensor discovery (go/no-go gate)".
 
 **Status (2026-10-21): blocked.** The sensor is found and opens without root, but delivers no
 reports while it is idle. Everything that needs samples (layout, scale, rate, timing,
-separability, noise) waits on the decisions in
-[Open questions for the owner](#open-questions-for-the-owner).
+separability, noise) is unmeasured, and the app runs in fallback mode until it is (ADR-0011).
 
 ## Test machines
 
@@ -127,8 +126,8 @@ the home row and the space bar.
 
 ## Open questions for the owner
 
-1. **How may the sensor be started?** Something has to switch the stream on. Two experiments,
-   in order. Each needs your approval, and the second also needs a product decision:
+1. **Does the sensor ever deliver data to a plain read-only open?** Until it does, Keyfeel runs
+   in fallback mode (ADR-0011):
    - **A. Root, read-only.** This is the spec's planned root test, and it changes nothing. Run it
      yourself; `sudo` is blocked for Claude Code by `.claude/settings.json`:
 
@@ -138,14 +137,8 @@ the home row and the space bar.
          --out "logs/Mac17,3_macos-27.0/probe-root-accel.csv"
      ```
 
-   - **B. Switch reporting on through the driver.** Open-source projects that read this sensor
-     report (unverified here) that the stream starts only after properties such as
-     `ReportInterval` and sensor reporting and power states are written to the
-     `AppleSPUHIDDriver` service, and that this needs root. That changes a hardware driver's
-     state, like `hidutil property --set`, so the safety rules forbid it without your approval.
-     If you approve, `sensor-log` gets an opt-in flag that writes named properties, logs their
-     old values and restores them on exit. If it works, the app would have to do the same on
-     customers' Macs, possibly through a privileged helper: see ADR-0011 (Proposed).
+   - **B. Writing the driver's properties: not pursued** (ADR-0011). Neither the tools nor
+     the app change the sensor driver's state.
 2. **Input Monitoring for key markers.** Grant it to the app that runs the tools (Visual Studio
    Code or Terminal) in System Settings → Privacy & Security → Input Monitoring, then reopen it.
    Claude Code must never touch the permission database.

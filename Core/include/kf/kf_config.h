@@ -12,14 +12,27 @@
 #define KF_CONFIG_H
 
 /* Audio ------------------------------------------------------------------ */
-#define KF_SAMPLE_RATE_HZ          48000u       /**< Preferred output rate. */
-#define KF_IO_BUFFER_FRAMES        128u         /**< Requested buffer: 2.7 ms at 48 kHz. */
-#define KF_MAX_VOICES              24u          /**< Fixed voice pool. */
-#define KF_VOICE_STEAL_FADE_FRAMES 96u          /**< 2 ms fade when stealing a voice. */
-#define KF_VOICE_QUEUE_CAPACITY    256u         /**< Per-producer queue; power of two. */
-#define KF_MIN_VOICE_GAIN          0.05f        /**< Quieter tier voices are skipped. */
-#define KF_RELEASE_GAIN            0.6f         /**< Gain of key-up sounds. */
-#define KF_QUEUE_MAX_AGE_NS        150000000ULL /**< Drop requests older than 150 ms. */
+#define KF_SAMPLE_RATE_HZ         48000u        /**< Preferred output rate. */
+#define KF_IO_BUFFER_FRAMES       128u          /**< Requested buffer: 2.7 ms at 48 kHz. */
+#define KF_MAX_VOICES             24u           /**< Voices that sound at once. */
+#define KF_VOICE_STEAL_RESERVE    8u            /**< Extra slots where stolen voices fade out. */
+#define KF_VOICE_STEAL_FADE_NS    2000000ULL    /**< Fade of a stolen voice: 2 ms. */
+#define KF_PACK_SWAP_FADE_NS      5000000ULL    /**< Fade of the old pack's voices on a swap. */
+#define KF_VOLUME_SMOOTH_NS       10000000ULL   /**< Volume changes glide over about 10 ms. */
+#define KF_SOFT_CLIP_THRESHOLD    0.8f          /**< The master soft-clips above this level. */
+#define KF_VOICE_QUEUE_CAPACITY   256u          /**< Per-producer queue; power of two. */
+#define KF_RELEASE_QUEUE_CAPACITY 8u            /**< Retired packs awaiting free; power of two. */
+#define KF_MIN_VOICE_GAIN         0.05f         /**< Quieter tier voices are skipped. */
+#define KF_RELEASE_GAIN           0.6f          /**< Gain of key-up sounds. */
+#define KF_QUEUE_MAX_AGE_NS       150000000ULL  /**< Drop requests older than 150 ms. */
+#define KF_PACK_SWAP_POLL_NS      10000000ULL   /**< kf_engine_set_pack() polls every 10 ms... */
+#define KF_PACK_SWAP_TIMEOUT_NS   1000000000ULL /**< ...for at most 1 s. */
+#define KF_CALLBACK_HIST_BUCKETS  128u          /**< Callback-time histogram for diagnostics... */
+#define KF_CALLBACK_HIST_STEP_NS  4000u         /**< ...in 4 us steps (0..512 us). */
+#define KF_MAX_OUTPUT_CHANNELS    2u            /**< Stereo; extra device channels get silence. */
+
+/* Keys ------------------------------------------------------------------- */
+#define KF_BUILTIN_MATCH_NS 5000000ULL /**< Key event to HID keyboard report match: +-5 ms. */
 
 /* Sensor ----------------------------------------------------------------- */
 #define KF_SENSOR_NOMINAL_HZ      1000ULL     /**< TBD-M0: measured sample rate. */

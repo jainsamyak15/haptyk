@@ -35,5 +35,6 @@ Newest first. Record the machine, build and numbers for every milestone.
 
 | Date | Milestone | Machine | Hot path p50 / p99 / max | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-10-21 | M1 | MacBook Air M5 (Mac17,3), macOS 27.0, Apple clang 21, `-O3` | 0.5 / 0.96 / 29.6 µs, 0 drops | Render, 24 voices x 128 frames: p50 0.83 / p99 0.92 / max 11.3 µs (budget 267 µs). Mixer C 424 ns vs vDSP 932 ns (ADR-0013). `kf-cli` (debug): 128-frame buffer granted to this process only (other processes still see 512), callback p99 8 µs, start to first callback 30-34 ms, 0 overruns; idle with the engine stopped 0.0% CPU and no wakeups over 14 s (`top`), footprint 5.6 MB. `engine-stress` 2 min, 30 voices/s, 12 pack swaps: 0 overruns, p99 4 µs, max 10.5 µs, slowest swap 12.5 ms, footprint flat at 7.6 MB (-16 KB). Pack decode: Test Click (90 files) 515 KB in 21-25 ms. System snapshots identical before and after every audio run. |
 | 2026-10-21 | M0 | MacBook Air M5 (Mac17,3), macOS 27.0, Apple clang 21, `-O3` | 0.5 / 1.0 / 57.7 µs, 0 drops | Not the budget machine (M1 Air). Timer resolution 41.7 ns (24 MHz). Sensor presence check: p50 22 µs, p99 54 µs. |
 | 2026-10-21 | Scaffold | Linux x86-64 sandbox VM, clang 18, `-O3` | 0.5 / 0.8 / 59–94 µs, 0 drops | 1-core VM: max is scheduler jitter. Not a Mac; re-measure on the M1 Air in M1. |

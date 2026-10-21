@@ -6,7 +6,9 @@
  * and checks it against the budget in docs/PERFORMANCE.md. The audio thread's
  * drain is simulated untimed after each keystroke, as real typing is far slower
  * than the queue; concurrent behaviour is covered by the SPSC stress test under
- * ThreadSanitizer. Exit status 1 when p99 exceeds the budget or a request drops.
+ * ThreadSanitizer. A second pass times the render callback's work for one buffer with the
+ * whole voice pool sounding, the worst case. Exit status 1 when either p99 exceeds its budget
+ * or a request drops.
  *
  * Usage: latency-bench [--iterations N]
  */
@@ -22,6 +24,8 @@
 
 #define KF_BENCH_DEFAULT_ITERATIONS 100000u
 #define KF_BENCH_BUDGET_P99_NS      200000u /* docs/PERFORMANCE.md */
+#define KF_BENCH_RENDER_RUNS        20000u
+#define KF_BENCH_RATE               48000.0
 #define MS                          1000000ULL
 
 static kf_accel_ring g_ring;
@@ -53,6 +57,69 @@ static uint32_t parse_iterations(int argc, char **argv) {
         }
     }
     return iterations;
+}
+
+static uint64_t percentile(uint64_t *sorted, uint32_t count, uint32_t pct) {
+    return sorted[(uint32_t)(((uint64_t)count * pct) / 100u)];
+}
+
+/* Render budget: 10% of one buffer period (docs/PERFORMANCE.md). */
+static int bench_render(void) {
+    static int16_t take[48000]; /* 1 s, so no voice ends during the run. */
+    for (uint32_t i = 0u; i < 48000u; ++i) {
+        take[i] = (int16_t)((int32_t)((i * 37u) % 2000u) - 1000);
+    }
+    kf_pack_pcm sounds[KF_TIER_COUNT];
+    for (uint8_t t = 0u; t < KF_TIER_COUNT; ++t) {
+        sounds[t] = (kf_pack_pcm){KF_GROUP_ALPHA, 0u, t, false, take, 48000u};
+    }
+    kf_pack *pack = kf_pack_from_pcm(sounds, KF_TIER_COUNT, KF_BENCH_RATE, NULL, 0u);
+    if (pack == NULL) {
+        fprintf(stderr, "latency-bench: cannot build the bench pack\n");
+        return EXIT_FAILURE;
+    }
+    (void)kf_engine_init();
+    kf_engine_set_pack(pack);
+    kf_engine_render_reset(KF_BENCH_RATE);
+    static float left[KF_IO_BUFFER_FRAMES];
+    static float right[KF_IO_BUFFER_FRAMES];
+    float *const channels[2] = {left, right};
+    for (uint32_t v = 0u; v < KF_MAX_VOICES; ++v) {
+        const kf_key_event down = kf_keymap_make_event((uint16_t)v, true, 0u, true);
+        (void)kf_emit_keystroke(&down, 0.0f, KF_QUEUE_KEYTAP); /* One voice each. */
+    }
+    (void)kf_engine_render(channels, 2u, KF_IO_BUFFER_FRAMES, 0u);
+
+    uint64_t *elapsed = malloc(KF_BENCH_RENDER_RUNS * sizeof *elapsed);
+    if (elapsed == NULL) {
+        kf_engine_set_pack(NULL);
+        return EXIT_FAILURE;
+    }
+    for (uint32_t i = 0u; i < KF_BENCH_RENDER_RUNS; ++i) {
+        if (kf_engine_render_active_voices() < KF_MAX_VOICES) {
+            kf_engine_render_reset(KF_BENCH_RATE); /* Refill: keep the pool full. */
+            for (uint32_t v = 0u; v < KF_MAX_VOICES; ++v) {
+                const kf_key_event down = kf_keymap_make_event((uint16_t)v, true, 0u, true);
+                (void)kf_emit_keystroke(&down, 0.0f, KF_QUEUE_KEYTAP);
+            }
+        }
+        const uint64_t start = kf_time_now_ns();
+        (void)kf_engine_render(channels, 2u, KF_IO_BUFFER_FRAMES, 0u);
+        elapsed[i] = kf_time_now_ns() - start;
+    }
+    qsort(elapsed, KF_BENCH_RENDER_RUNS, sizeof *elapsed, compare_u64);
+    const uint64_t budget =
+        (uint64_t)((double)KF_IO_BUFFER_FRAMES / KF_BENCH_RATE * 1e9 * 0.10); /* 266 us */
+    const uint64_t p99 = percentile(elapsed, KF_BENCH_RENDER_RUNS, 99u);
+    printf("latency-bench: render %u frames with %u voices (%u buffers)\n", KF_IO_BUFFER_FRAMES,
+           KF_MAX_VOICES, KF_BENCH_RENDER_RUNS);
+    printf("  p50 %8llu ns\n  p99 %8llu ns   budget %llu ns\n  max %8llu ns\n",
+           (unsigned long long)percentile(elapsed, KF_BENCH_RENDER_RUNS, 50u),
+           (unsigned long long)p99, (unsigned long long)budget,
+           (unsigned long long)elapsed[KF_BENCH_RENDER_RUNS - 1u]);
+    free(elapsed);
+    kf_engine_set_pack(NULL);
+    return p99 <= budget ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int main(int argc, char **argv) {
@@ -99,7 +166,8 @@ int main(int argc, char **argv) {
            (unsigned long long)max);
     printf("  dropped requests: %llu\n", (unsigned long long)counters.requests_dropped);
 
-    if (p99 > KF_BENCH_BUDGET_P99_NS || counters.requests_dropped != 0u) {
+    const int render = bench_render();
+    if (p99 > KF_BENCH_BUDGET_P99_NS || counters.requests_dropped != 0u || render != EXIT_SUCCESS) {
         printf("FAIL: p99 over budget or requests dropped\n");
         return EXIT_FAILURE;
     }

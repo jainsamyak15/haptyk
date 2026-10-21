@@ -87,8 +87,8 @@ decision; supersede it with a new one.
 
 ## ADR-0010: sensor-log records raw source timestamps beside arrival times
 
-- **Status:** Proposed (refines the spec's `t_ns,report_hex` rows; implemented in M0 pending
-  approval)
+- **Status:** Accepted (approved with M1–M6 on 2026-10-21; refines the spec's
+  `t_ns,report_hex` rows)
 - **Context:** Milestone 0 must measure the units of HID report timestamps and of
   `CGEventGetTimestamp()`. Rows that already hold converted nanoseconds can't measure them:
   the conversion would assume the answer.
@@ -118,5 +118,46 @@ decision; supersede it with a new one.
      changes a shared hardware driver's state on customers' Macs.
   3. Neither works: no-go, and the product pivots to sounds without force detection
      (the spec's fallback).
-- **Decision:** Pending. Claude Code runs neither test without approval.
-- **Consequences:** Until decided, M0 can record only discovery and permission results.
+- **Decision:** Option 2 is not pursued: no tool or app code writes the sensor driver's
+  properties. The app reads the sensor only through a plain open of the HID device. Until that
+  delivers samples, Keyfeel runs in fallback mode: every key plays at the default velocity.
+  Option 1 (the read-only root test) remains the owner's call.
+- **Consequences:** M1–M6 are built and tested in fallback mode. The sensor path is
+  implemented against the documented interface and stays dormant (`KF_SENSOR_ABSENT`) while
+  the device sends nothing.
+
+## ADR-0012: Pack fallback rules are applied in the core
+
+- **Status:** Accepted (refines the spec: "KFPackLibrary ... applies the fallback rules")
+- **Context:** If the Objective-C layer resolved fallbacks by listing files again, every
+  fallback tier or group would be decoded a second time, using up to 6x the memory the pack
+  needs.
+- **Decision:** `KFPackManifest` validates `pack.json` and passes the files as listed.
+  `kf_pack_build()` applies the rules (nearest tier, softer on ties; missing group uses alpha;
+  missing release means none) by pointing slots at already-decoded audio.
+- **Consequences:** No duplicated audio; the rules are unit-tested in C on any host.
+
+## ADR-0013: The mixer is auto-vectorized C, not vDSP
+
+- **Status:** Accepted
+- **Context:** The spec says to benchmark auto-vectorized C loops against Accelerate (vDSP) and
+  keep the faster.
+- **Decision:** Keep the C loops. `make bench` (`mix-bench`, MacBook Air M5, -O3): 24 voices of
+  128 frames take 424 ns in C and 932 ns with `vDSP_vflt16` + two `vDSP_vsma`. The compiler
+  fuses conversion and both channels into one pass, while vDSP makes three passes and pays a
+  call per pass.
+- **Consequences:** No Accelerate dependency in the core. `mix-bench` stays in `make bench` so
+  a future SDK or chip that changes the answer shows up.
+
+## ADR-0014: Key events are stamped on arrival
+
+- **Status:** Accepted, until Milestone 0 measures `CGEventGetTimestamp()`
+- **Context:** The spec stamps keys with the event's own time, converted to nanoseconds, but its
+  units are one of the open Milestone 0 measurements.
+- **Decision:** The keytap stamps each event with `kf_time_now_ns()` when its callback runs. HID
+  keyboard reports, used to tell built-in from external keys, are stamped the same way on the
+  same thread, so the two stay comparable.
+- **Consequences:** Times are late by the tap's delivery delay (measured with `sensor-log`
+  once available). That only matters for force detection's window, which is inactive while the
+  sensor delivers no data (ADR-0011).
+

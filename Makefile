@@ -30,7 +30,7 @@ ifeq ($(UNAME_S),Darwin)
   ARCHIVE     = xcrun libtool -static -o $@ $^
   PLATFORM   := -arch arm64 -mmacosx-version-min=13.0
   FRAMEWORKS := -framework CoreFoundation -framework IOKit -framework ApplicationServices \
-                -framework AudioToolbox -framework CoreAudio
+                -framework AudioToolbox -framework CoreAudio -framework Foundation
   CLANG      := xcrun clang
   LINT_SYSROOT = -isysroot $(shell xcrun --show-sdk-path)
 else
@@ -76,6 +76,14 @@ CFLAGS  := $(CSTD) $(WARNINGS) $(PLATFORM) $(INCLUDES) $(CFLAGS_$(CONFIG)) -MMD 
 LDFLAGS := $(PLATFORM) $(LDFLAGS_$(CONFIG))
 LDLIBS  := -lm -lpthread
 
+# Objective-C (macOS only): ARC, nullability checked. App sources see only Core/include, so
+# the app cannot include Core/src (docs/ARCHITECTURE.md); dev tools add Core/src below.
+OBJC_WARNINGS := -Wall -Wextra -Werror -Wshadow -Wformat=2 -Wundef -Wstrict-prototypes \
+                 -Wmissing-prototypes -Wnullable-to-nonnull-conversion -Wunguarded-availability \
+                 -Wobjc-missing-super-calls -Wimplicit-retain-self
+OBJCFLAGS := -std=gnu11 -fobjc-arc $(OBJC_WARNINGS) $(PLATFORM) -ICore/include -IApp/Sources \
+             $(CFLAGS_$(CONFIG)) -MMD -MP
+
 # ---------------------------------------------------------------- sources
 CORE_SRCS := $(sort $(shell find Core/src -name '*.c'))
 CORE_OBJS := $(CORE_SRCS:%.c=$(OBJ)/%.o)
@@ -86,10 +94,13 @@ TEST_OBJS := $(TEST_SRCS:%.c=$(OBJ)/%.o)
 TEST_BIN  := $(BIN)/kf-core-tests
 
 PORTABLE_TOOLS := latency-bench
-MAC_TOOLS      := hid-dump sensor-log audio-info kf-cli engine-stress
+MAC_TOOLS      := hid-dump sensor-log audio-info kf-cli engine-stress mix-bench
 TOOLS          := $(PORTABLE_TOOLS) $(if $(filter Darwin,$(UNAME_S)),$(MAC_TOOLS))
 TOOL_BINS      := $(TOOLS:%=$(BIN)/%)
-TOOL_SRCS      := $(TOOLS:%=Tools/%/main.c)
+TOOL_SRCS      := $(wildcard $(TOOLS:%=Tools/%/main.c))
+
+# App classes the Objective-C dev tools link, so both validate packs identically.
+TOOL_APP_OBJS := $(OBJ)/App/Sources/Packs/KFPackManifest.o
 
 # Code shared by the macOS tools (IOKit helpers). kf_tool.h is header-only and portable.
 TOOL_COMMON_SRCS := $(if $(filter Darwin,$(UNAME_S)),$(sort $(wildcard Tools/common/*.c)))
@@ -132,9 +143,13 @@ test-all: test test-asan test-tsan ## Run tests plain and under every sanitizer
 test-py: ## Unit tests for the Python dev tools (needs `make bootstrap`)
 	@$(PYTHON) -m unittest discover --start-directory Tools/py --pattern 'test_*.py'
 
-bench: ## Run the latency benchmark on a release build
+bench: ## Hot-path latency and render time against the budgets (release build)
 	@$(MAKE) --no-print-directory CONFIG=release build/release/bin/latency-bench
 	@build/release/bin/latency-bench
+ifeq ($(UNAME_S),Darwin)
+	@$(MAKE) --no-print-directory CONFIG=release build/release/bin/mix-bench
+	@build/release/bin/mix-bench
+endif
 
 check-rt: ## Fail if a real-time unit (*_rt.c) imports a banned symbol
 	@$(MAKE) --no-print-directory CONFIG=release core
@@ -183,6 +198,11 @@ $(OBJ)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(OBJ)/Tools/%.o: OBJCFLAGS += -ICore/src $(TOOL_INCLUDES)
+$(OBJ)/%.o: %.m
+	@mkdir -p $(@D)
+	$(CC) $(OBJCFLAGS) -c $< -o $@
+
 $(CORE_LIB): $(CORE_OBJS)
 	@mkdir -p $(@D)
 	@rm -f $@
@@ -190,13 +210,16 @@ $(CORE_LIB): $(CORE_OBJS)
 
 $(TEST_BIN): $(TEST_OBJS) $(CORE_LIB)
 	@mkdir -p $(@D)
-	$(CC) $(LDFLAGS) $(TEST_OBJS) $(CORE_LIB) $(LDLIBS) -o $@
+	$(CC) $(LDFLAGS) $(TEST_OBJS) $(CORE_LIB) $(FRAMEWORKS) $(LDLIBS) -o $@
 
 $(MAC_TOOLS:%=$(BIN)/%): $(TOOL_COMMON_OBJS)
+$(BIN)/kf-cli: $(TOOL_APP_OBJS)
+$(BIN)/mix-bench: LDLIBS += -framework Accelerate
 
 $(BIN)/%: $(OBJ)/Tools/%/main.o $(CORE_LIB)
 	@mkdir -p $(@D)
-	$(CC) $(LDFLAGS) $(filter %.o,$^) $(CORE_LIB) $(FRAMEWORKS) $(LDLIBS) -o $@
+	$(CC) $(LDFLAGS) $(filter %.o,$^) $(CORE_LIB) $(FRAMEWORKS) $(LDLIBS) \
+	  $(if $(filter Darwin,$(UNAME_S)),-fobjc-link-runtime) -o $@
 
 -include $(CORE_OBJS:.o=.d) $(TEST_OBJS:.o=.d) $(TOOLS:%=$(OBJ)/Tools/%/main.d) \
-         $(TOOL_COMMON_OBJS:.o=.d)
+         $(TOOL_COMMON_OBJS:.o=.d) $(TOOL_APP_OBJS:.o=.d)

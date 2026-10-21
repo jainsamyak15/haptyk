@@ -19,6 +19,14 @@ All notable changes are recorded here. The format follows
   `Tools/common/`, with C and Python unit tests (`make test-py`).
 - First Milestone 0 findings in `docs/SENSOR_NOTES.md`: the `accel` device (Bosch BMI286 behind
   the SPU) opens without root or Input Monitoring but sends nothing while idle (ADR-0011).
+- Milestone 1, core sound pipeline: CoreAudio output engine (default output unit, per-process
+  128-frame buffer request, device and sample-rate change notices), lock-free voice pool with
+  oldest-voice stealing, constant-power pan with stereo width, smoothed volume, mute, soft
+  clipper, and lock-free pack hand-off; ExtAudioFile pack decoder with the spec's limits and
+  fallback rules; the event-tap key capture with modifier, auto-repeat and built-in keyboard
+  handling; `KFPackManifest` (`pack.json` validation); `kf-cli` (typing, `--demo`, `--idle`);
+  `engine-stress`, `mix-bench`, `audio-info`, `system_snapshot.py`; render benchmark in
+  `latency-bench`.
 
 ### Changed
 - `make analyze` covers the tools; `make ci` also runs `test-py` and builds the tools.
