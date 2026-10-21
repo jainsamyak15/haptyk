@@ -240,7 +240,7 @@ static void run_demo(long count, dispatch_block_t done) {
  * and 40 hard keystrokes; kf_calibration_compute() fits soft_g, slam_g and the row gains. */
 
 #define CALIBRATION_KEYS 40u
-#define NOISE_NS         3000000000ULL
+#define NOISE_NS 3000000000ULL
 
 typedef enum { CAL_NOISE, CAL_SOFT, CAL_HARD, CAL_DONE } cal_phase;
 
@@ -267,44 +267,44 @@ static void run_calibration(dispatch_block_t done) {
     dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, 0), 100 * NSEC_PER_MSEC,
                               10 * NSEC_PER_MSEC);
     dispatch_source_set_event_handler(timer, ^{
-      kf_sensor_peak peak;
-      if (phase == CAL_NOISE) {
-          if (kf_sensor_noise_floor_g() >= 0.0f) {
-              printf("  noise floor %.4f g\nCalibration 2/3: type softly, about %u keys...\n",
-                     (double)kf_sensor_noise_floor_g(), CALIBRATION_KEYS);
-              while (kf_sensor_pop_peak(&peak)) {
-              }
-              phase = CAL_SOFT;
-          }
-          return;
-      }
-      while (phase != CAL_DONE && kf_sensor_pop_peak(&peak)) {
-          kf_calibration_sample *set = phase == CAL_SOFT ? g_soft : g_hard;
-          uint32_t *n = phase == CAL_SOFT ? &soft : &hard;
-          set[(*n)++] = (kf_calibration_sample){peak.raw_g, peak.row};
-          if (phase == CAL_SOFT && soft == CALIBRATION_KEYS) {
-              printf("Calibration 3/3: now type hard, about %u keys...\n", CALIBRATION_KEYS);
-              phase = CAL_HARD;
-          } else if (phase == CAL_HARD && hard == CALIBRATION_KEYS) {
-              phase = CAL_DONE;
-          }
-      }
-      if (phase != CAL_DONE) {
-          return;
-      }
-      dispatch_source_cancel(timer);
-      kf_calibration cal = kf_calibration_default();
-      const kf_status status = kf_calibration_compute(kf_sensor_noise_floor_g(), g_soft, soft,
-                                                      g_hard, hard, &cal);
-      if (status == KF_OK && kf_sensor_set_calibration(&cal) == KF_OK) {
-          puts("Calibration done; in use now. As stored by the app (calibration.v1):");
-          print_calibration(&cal);
-      } else {
-          printf("Calibration failed (%s): soft and hard taps did not separate. Try again with "
-                 "softer soft taps and harder hard ones.\n",
-                 kf_status_string(status));
-      }
-      done();
+        kf_sensor_peak peak;
+        if (phase == CAL_NOISE) {
+            if (kf_sensor_noise_floor_g() >= 0.0f) {
+                printf("  noise floor %.4f g\nCalibration 2/3: type softly, about %u keys...\n",
+                       (double)kf_sensor_noise_floor_g(), CALIBRATION_KEYS);
+                while (kf_sensor_pop_peak(&peak)) {
+                }
+                phase = CAL_SOFT;
+            }
+            return;
+        }
+        while (phase != CAL_DONE && kf_sensor_pop_peak(&peak)) {
+            kf_calibration_sample *set = phase == CAL_SOFT ? g_soft : g_hard;
+            uint32_t *n = phase == CAL_SOFT ? &soft : &hard;
+            set[(*n)++] = (kf_calibration_sample){peak.raw_g, peak.row};
+            if (phase == CAL_SOFT && soft == CALIBRATION_KEYS) {
+                printf("Calibration 3/3: now type hard, about %u keys...\n", CALIBRATION_KEYS);
+                phase = CAL_HARD;
+            } else if (phase == CAL_HARD && hard == CALIBRATION_KEYS) {
+                phase = CAL_DONE;
+            }
+        }
+        if (phase != CAL_DONE) {
+            return;
+        }
+        dispatch_source_cancel(timer);
+        kf_calibration cal = kf_calibration_default();
+        const kf_status status =
+            kf_calibration_compute(kf_sensor_noise_floor_g(), g_soft, soft, g_hard, hard, &cal);
+        if (status == KF_OK && kf_sensor_set_calibration(&cal) == KF_OK) {
+            puts("Calibration done; in use now. As stored by the app (calibration.v1):");
+            print_calibration(&cal);
+        } else {
+            printf("Calibration failed (%s): soft and hard taps did not separate. Try again with "
+                   "softer soft taps and harder hard ones.\n",
+                   kf_status_string(status));
+        }
+        done();
     });
     dispatch_resume(timer);
 }
