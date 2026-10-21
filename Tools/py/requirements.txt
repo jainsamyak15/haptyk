@@ -1,0 +1,5 @@
+# Dev-only tools. Installed into Tools/py/.venv by `make bootstrap`; never shipped.
+numpy>=1.26,<3
+scipy>=1.11,<2
+soundfile>=0.12,<1
+matplotlib>=3.8,<4

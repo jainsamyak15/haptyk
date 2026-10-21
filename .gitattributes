@@ -1,0 +1,13 @@
+# Normalise line endings in text files.
+* text=auto eol=lf
+
+# Binary assets.
+*.wav  binary
+*.caf  binary
+*.aif  binary
+*.png  binary
+*.icns binary
+*.zip  binary
+
+# Proposed (ADR-0007): store bundled packs in Git LFS once the owner installs git-lfs.
+# *.caf filter=lfs diff=lfs merge=lfs -text

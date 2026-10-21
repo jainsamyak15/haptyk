@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: LicenseRef-Proprietary
+// Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
+//
+// The menu bar app. Bundle ID and versions: docs/SPEC.md, "Open decisions".
+
+PRODUCT_NAME = Keyfeel
+PRODUCT_BUNDLE_IDENTIFIER = com.example.keyfeel
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+INFOPLIST_FILE = App/Resources/Info.plist
+GENERATE_INFOPLIST_FILE = NO
+CODE_SIGN_ENTITLEMENTS = App/Resources/Keyfeel.entitlements
+ENABLE_APP_SANDBOX = NO
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks

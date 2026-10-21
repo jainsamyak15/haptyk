@@ -1,0 +1,25 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Left
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+IncludeBlocks: Preserve
+SortIncludes: CaseSensitive
+---
+Language: ObjC
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+ObjCBlockIndentWidth: 4
+ObjCSpaceAfterProperty: true
+ObjCSpaceBeforeProtocolList: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+IncludeBlocks: Preserve
+...

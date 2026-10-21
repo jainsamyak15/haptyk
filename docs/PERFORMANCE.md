@@ -1,0 +1,39 @@
+# Performance
+
+Budgets are acceptance criteria, measured on an M1 MacBook Air, the slowest supported Mac.
+A regression above 10% on any budget blocks a milestone until it is fixed or the owner
+approves it.
+
+## Budgets
+
+| Metric | Budget | Measured with |
+| --- | --- | --- |
+| Hot path: key event → voice queued (no sensor wait) | p99 < 200 µs | `make bench` |
+| Sensor wait after key-down (POST window) | ≤ 10 ms, TBD-M0 | Milestone 0 analysis |
+| Audio output buffer | 128 frames (2.7 ms at 48 kHz) | Engine config |
+| Audio callback CPU time | p99 < 10% of the buffer period | Engine counters, Instruments |
+| CPU while idle (no typing for 30 s) | 0.0% | Activity Monitor, `top` |
+| Wakeups while idle | < 1 per second | `sudo powermetrics --samplers tasks` (owner runs it) |
+| CPU while typing 600 keys/min | < 1% | Activity Monitor |
+| Decoded audio for the active pack | ≤ 8 MB | Pack loader |
+| Memory footprint | < 40 MB | Activity Monitor |
+| DMG size with all bundled packs | < 30 MB | `scripts/release.sh` |
+
+## How to measure
+
+- `make bench`: release build of `latency-bench`; fails when p99 exceeds the budget.
+- `make check-rt`: confirms no real-time file imports a banned symbol.
+- Instruments: Time Profiler for CPU, Allocations for zero allocations on the audio and sensor
+  threads after start-up, System Trace for wakeups.
+- `pmset -g assertions` (read-only): nothing from the app remains 30 s after typing stops.
+- Before each release: an 8-hour soak with `engine-stress` and real typing; memory stays flat
+  and `leaks` reports zero leaks.
+
+## Results log
+
+Newest first. Record the machine, build and numbers for every milestone.
+
+| Date | Milestone | Machine | Hot path p50 / p99 / max | Notes |
+| --- | --- | --- | --- | --- |
+| 2026-10-21 | M0 | MacBook Air M5 (Mac17,3), macOS 27.0, Apple clang 21, `-O3` | 0.5 / 1.0 / 57.7 µs, 0 drops | Not the budget machine (M1 Air). Timer resolution 41.7 ns (24 MHz). Sensor presence check: p50 22 µs, p99 54 µs. |
+| 2026-10-21 | Scaffold | Linux x86-64 sandbox VM, clang 18, `-O3` | 0.5 / 0.8 / 59–94 µs, 0 drops | 1-core VM: max is scheduler jitter. Not a Mac; re-measure on the M1 Air in M1. |

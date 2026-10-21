@@ -1,0 +1,58 @@
+# XcodeGen spec for the macOS app. Status: Proposed (docs/DECISIONS.md, ADR-0003).
+# Used from M3. Generate with `xcodegen generate` once the owner has installed XcodeGen.
+# The generated Keyfeel.xcodeproj is not committed. Until M3 the Makefile is the only build.
+name: Keyfeel
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+configs:
+  Debug: debug
+  Release: release
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    majorVersion: 2.6.0
+targets:
+  KFCore:
+    type: library.static
+    platform: macOS
+    sources:
+      - path: Core
+    configFiles:
+      Debug: Config/Core.xcconfig
+      Release: Config/Core.xcconfig
+  Keyfeel:
+    type: application
+    platform: macOS
+    sources:
+      - path: App/Sources
+      - path: App/Resources
+        excludes:
+          - Info.plist
+          - "*.entitlements"
+          - Packs
+          - Labs
+      - path: App/Resources/Packs
+        type: folder
+        buildPhase: resources
+      - path: App/Resources/Labs
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - target: KFCore
+      - package: Sparkle
+    configFiles:
+      Debug: Config/App.xcconfig
+      Release: Config/App.xcconfig
+  KeyfeelTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/App
+    dependencies:
+      - target: Keyfeel

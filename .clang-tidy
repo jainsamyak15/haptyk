@@ -1,0 +1,20 @@
+---
+# Static checks run by `make lint`. Warnings are errors; suppress only with a
+# NOLINT comment that names the check and says why.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  cert-*,
+  -cert-err33-c,
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  concurrency-*,
+  misc-*,
+  -misc-include-cleaner,
+  performance-*,
+  portability-*,
+  readability-braces-around-statements,
+  readability-misleading-indentation
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(Core|Tests|Tools)/'

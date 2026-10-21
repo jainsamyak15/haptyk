@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: LicenseRef-Proprietary
+// Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
+//
+// libkfcore: the C11 real-time core, as a static library.
+
+PRODUCT_NAME = kfcore
+SKIP_INSTALL = YES
+USER_HEADER_SEARCH_PATHS = $(inherited) $(SRCROOT)/Core/src
+WARNING_CFLAGS = $(inherited) -Wpedantic
+GCC_OPTIMIZATION_LEVEL[config=Release] = 3

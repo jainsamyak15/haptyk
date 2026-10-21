@@ -1,0 +1,5 @@
+{
+  "format": 1,
+  "description": "Per-model default calibration keyed by hw.model (for example Mac14,2). Filled from Milestone 0 and beta measurements.",
+  "models": {}
+}

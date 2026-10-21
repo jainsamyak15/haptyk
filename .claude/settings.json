@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ioreg:*)",
+      "Bash(hidutil list:*)",
+      "Bash(system_profiler:*)",
+      "Bash(sysctl -n:*)",
+      "Bash(pmset -g:*)"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(su:*)",
+      "Bash(defaults write:*)",
+      "Bash(defaults delete:*)",
+      "Bash(tccutil:*)",
+      "Bash(nvram:*)",
+      "Bash(csrutil:*)",
+      "Bash(spctl:*)",
+      "Bash(systemsetup:*)",
+      "Bash(networksetup:*)",
+      "Bash(scutil:*)",
+      "Bash(launchctl:*)",
+      "Bash(kmutil:*)",
+      "Bash(kextload:*)",
+      "Bash(systemextensionsctl:*)",
+      "Bash(hidutil property:*)",
+      "Bash(diskutil:*)",
+      "Bash(brew install:*)",
+      "Bash(brew upgrade:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(npm install -g:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf ~:*)"
+    ]
+  }
+}

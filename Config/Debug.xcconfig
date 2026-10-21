@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: LicenseRef-Proprietary
+// Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
+
+#include "Base.xcconfig"
+
+GCC_OPTIMIZATION_LEVEL = 0
+ONLY_ACTIVE_ARCH = YES
+DEBUG_INFORMATION_FORMAT = dwarf
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) KF_DEBUG=1
+ENABLE_TESTABILITY = YES

@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: LicenseRef-Proprietary
+// Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
+//
+// Optimization rules: docs/SPEC.md, "Optimization rules". Core.xcconfig raises the core to -O3.
+
+#include "Base.xcconfig"
+
+GCC_OPTIMIZATION_LEVEL = s
+LLVM_LTO = YES_THIN
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) NDEBUG=1
+ENABLE_NS_ASSERTIONS = NO
+DEPLOYMENT_POSTPROCESSING = YES
+STRIP_INSTALLED_PRODUCT = YES
+VALIDATE_PRODUCT = YES

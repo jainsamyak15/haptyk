@@ -1,0 +1,45 @@
+# Build output
+/build/
+DerivedData/
+*.o
+*.d
+*.a
+*.dSYM/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Generated Xcode project (see project.yml, ADR-0003)
+/*.xcodeproj/
+/*.xcworkspace/
+
+# Python
+Tools/py/.venv/
+__pycache__/
+*.pyc
+
+# Raw sound sources: large and licensed per file. Keep SOURCES.md and the license text only.
+Packs/sources/**/*.wav
+Packs/sources/**/*.aif
+Packs/sources/**/*.aiff
+Packs/sources/**/*.flac
+Packs/sources/**/*.mp3
+Packs/sources/**/*.zip
+
+# Sensor logs from Milestone 0 (can be large). Small, curated fixtures go in Tests/Fixtures/.
+/logs/
+
+# Secrets — never commit these
+*.p12
+*.cer
+*.mobileprovision
+.env
+.env.*
+sparkle_private_key*
+
+# Local scratch
+/.tmp/
+.DS_Store

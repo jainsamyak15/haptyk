@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: LicenseRef-Proprietary
+// Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
+//
+// Project-level settings shared by every target and configuration.
+// Target files (Core.xcconfig, App.xcconfig) layer on top and use $(inherited).
+
+SDKROOT = macosx
+MACOSX_DEPLOYMENT_TARGET = 13.0
+ARCHS = arm64
+EXCLUDED_ARCHS = x86_64
+
+GCC_C_LANGUAGE_STANDARD = c11
+CLANG_ENABLE_OBJC_ARC = YES
+CLANG_ENABLE_MODULES = YES
+HEADER_SEARCH_PATHS = $(inherited) $(SRCROOT)/Core/include
+
+GCC_TREAT_WARNINGS_AS_ERRORS = YES
+WARNING_CFLAGS = $(inherited) -Wall -Wextra -Wshadow -Wdouble-promotion -Wstrict-prototypes -Wmissing-prototypes -Wformat=2 -Wundef -Wvla -Wcast-qual -Wpointer-arith
+CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES
+CLANG_WARN_STRICT_PROTOTYPES = YES
+CLANG_ANALYZER_NONNULL = YES
+ENABLE_STRICT_OBJC_MSGSEND = YES
+
+ENABLE_HARDENED_RUNTIME = YES
+DEAD_CODE_STRIPPING = YES
