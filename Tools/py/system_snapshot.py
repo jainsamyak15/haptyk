@@ -22,6 +22,7 @@ import difflib
 import json
 import os
 import plistlib
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -76,9 +77,14 @@ def run(cmd: list[str]) -> tuple[int, str]:
 
 
 def plain(value: Any) -> Any:
-    """IORegistry plist values as JSON: bytes become hex, keys sorted, volatile keys dropped."""
+    """IORegistry plist values as JSON: bytes become hex, keys sorted, volatile keys dropped.
+    Keys starting with "_" are drivers' own statistics, which tick on their own."""
     if isinstance(value, dict):
-        return {k: plain(v) for k, v in sorted(value.items()) if k not in VOLATILE_KEYS}
+        return {
+            k: plain(v)
+            for k, v in sorted(value.items())
+            if k not in VOLATILE_KEYS and not k.startswith("_")
+        }
     if isinstance(value, list):
         return [plain(v) for v in value]
     if isinstance(value, bytes):
@@ -155,10 +161,30 @@ def capture_power() -> tuple[str, str, list[str]]:
         for line in assertions.splitlines()
         if any(name in line for name in ("Keyfeel", "keyfeel", "kf-cli", "sensor-log"))
     ]
-    stable_settings = "\n".join(
-        line for line in settings.splitlines() if not line.lower().startswith("currently in use")
-    )
+    stable_settings = normalize_power(settings)
     return settings + "\n--- assertions ---\n" + assertions, stable_settings, ours
+
+
+def normalize_power(text: str) -> str:
+    """pmset -g without what other apps hold: "(sleep prevented by ...)" lists their
+    assertions, and Keyfeel's own are checked separately."""
+    return "\n".join(
+        re.sub(r"\s*\((?:sleep|display sleep) prevented by [^)]*\)", "", line)
+        for line in text.splitlines()
+        if not line.lower().startswith("currently in use")
+    )
+
+
+def stable_lines(path: Path) -> list[str]:
+    """A stable file re-normalized with today's rules, so older snapshots stay comparable."""
+    if not path.exists():
+        return []
+    text = path.read_text()
+    if path.suffix == ".json":
+        text = json.dumps(plain(json.loads(text)), indent=2, sort_keys=True)
+    elif path.name == "power-settings.txt":
+        text = normalize_power(text)
+    return text.splitlines()
 
 
 def write(path: Path, content: Any) -> None:
@@ -202,8 +228,8 @@ def diff(a: Path, b: Path) -> int:
     changed = 0
     names = sorted({p.name for p in (a / "stable").iterdir()} | {p.name for p in (b / "stable").iterdir()})
     for name in names:
-        left = (a / "stable" / name).read_text().splitlines() if (a / "stable" / name).exists() else []
-        right = (b / "stable" / name).read_text().splitlines() if (b / "stable" / name).exists() else []
+        left = stable_lines(a / "stable" / name)
+        right = stable_lines(b / "stable" / name)
         delta = list(difflib.unified_diff(left, right, f"A/{name}", f"B/{name}", lineterm="", n=2))
         if delta:
             changed += 1
