@@ -60,12 +60,20 @@ All notable changes are recorded here. The format follows
   Mode counters in Export Diagnostics; accessibility labels and values on the remaining
   controls; `Tools/py/make_labs_sounds.py`; Shout Mode's decision in `make bench`.
 
+- Eleven bundled sound packs from licensed Freesound recordings (ten CC0, one CC BY 4.0
+  credited in About), named after what was recorded: Alps SKCM Orange, Buckling Spring, Cherry
+  MX Black, Blue, Brown and Red, Gateron Baby Kangaroo, Gateron Blue, Holy Panda, IBM Model F and
+  Topre (HHKB) (ADR-0019). `Tools/py/extract_keystrokes.py` cuts clean presses and releases out
+  of typing recordings; `Tools/py/build_packs.py` (`make packs`) rebuilds every pack from
+  `Packs/packs.json` with its `SOURCES.md` and licence text.
+
 ### Fixed
 - The diagnostics object no longer ends its MetricKit subscription from `dealloc`, where
   MetricKit's asynchronous removal could touch the freed object (an intermittent crash at the
   end of `make test-app`).
 
 ### Changed
+- Bundled packs are listed by name, which is the spec's order and also covers renamed packs.
 - `make analyze` covers the tools; `make ci` also runs `test-py` and builds the tools.
 - `make format` and `make lint` find clang-format and clang-tidy in the Xcode toolchain or
   Homebrew LLVM when they are not on `PATH`.

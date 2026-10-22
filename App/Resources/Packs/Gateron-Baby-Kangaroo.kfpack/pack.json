@@ -1,0 +1,62 @@
+{
+  "format": 1,
+  "id": "com.keyfeel.gateron-baby-kangaroo",
+  "name": "Gateron Baby Kangaroo",
+  "switch_type": "tactile",
+  "author": "redpanda69 (Freesound)",
+  "license": "CC0 1.0 Universal",
+  "version": "1.0.0",
+  "source_url": "https://freesound.org/people/redpanda69/sounds/686168/",
+  "attribution": "",
+  "derived": [],
+  "groups": {
+    "alpha": {
+      "down": {
+        "soft": [
+          "samples/alpha_down_soft_1.caf",
+          "samples/alpha_down_soft_2.caf",
+          "samples/alpha_down_soft_3.caf",
+          "samples/alpha_down_soft_4.caf",
+          "samples/alpha_down_soft_5.caf",
+          "samples/alpha_down_soft_6.caf"
+        ],
+        "medium": [
+          "samples/alpha_down_medium_1.caf",
+          "samples/alpha_down_medium_2.caf",
+          "samples/alpha_down_medium_3.caf",
+          "samples/alpha_down_medium_4.caf",
+          "samples/alpha_down_medium_5.caf",
+          "samples/alpha_down_medium_6.caf"
+        ],
+        "hard": [
+          "samples/alpha_down_hard_1.caf",
+          "samples/alpha_down_hard_2.caf",
+          "samples/alpha_down_hard_3.caf",
+          "samples/alpha_down_hard_4.caf",
+          "samples/alpha_down_hard_5.caf",
+          "samples/alpha_down_hard_6.caf"
+        ],
+        "slam": [
+          "samples/alpha_down_slam_1.caf",
+          "samples/alpha_down_slam_2.caf",
+          "samples/alpha_down_slam_3.caf",
+          "samples/alpha_down_slam_4.caf",
+          "samples/alpha_down_slam_5.caf",
+          "samples/alpha_down_slam_6.caf"
+        ]
+      },
+      "up": [
+        "samples/alpha_up_1.caf",
+        "samples/alpha_up_2.caf",
+        "samples/alpha_up_3.caf",
+        "samples/alpha_up_4.caf",
+        "samples/alpha_up_5.caf",
+        "samples/alpha_up_6.caf",
+        "samples/alpha_up_7.caf",
+        "samples/alpha_up_8.caf",
+        "samples/alpha_up_9.caf",
+        "samples/alpha_up_10.caf"
+      ]
+    }
+  }
+}

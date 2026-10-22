@@ -1,0 +1,259 @@
+{
+  "format": 1,
+  "comment": "Bundled packs and their licensed sources. Tools/py/build_packs.py writes each Packs/sources/<id>/SOURCES.md from this and builds App/Resources/Packs/. Sources were checked on 2026-10-23 against each sound's page.",
+  "packs": [
+    {
+      "id": "alps-skcm-orange",
+      "name": "Alps SKCM Orange",
+      "switch_type": "tactile",
+      "recording": "Apple M0118 keyboard (1987) with Alps SKCM Orange switches, Behringer C2 microphone",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 680714,
+        "url": "https://freesound.org/people/robni7/sounds/680714/",
+        "title": "Typing on Apple Standard Keyboard (ALPS SKCM Orange)",
+        "author": "robni7",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/680/680714_3242494-hq.ogg",
+        "original": "M4a (.m4a), 96 kHz, Stereo, 0:14.112",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 75,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "buckling-spring",
+      "name": "Buckling Spring",
+      "switch_type": "buckling",
+      "recording": "Unicomp buckling spring keyboard, BOYA BY-M1 microphone",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 489423,
+        "url": "https://freesound.org/people/SamsterBirdies/sounds/489423/",
+        "title": "Typing on a keyboard",
+        "author": "SamsterBirdies",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/489/489423_5487341-hq.ogg",
+        "original": "Flac (.flac), 44.1 kHz, 24 bit, Stereo, 2:16.463",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 45,
+        "max_hold_ms": 200,
+        "quiet_ms": 80
+      }
+    },
+    {
+      "id": "cherry-mx-black",
+      "name": "Cherry MX Black",
+      "switch_type": "linear",
+      "recording": "Leopold FC980M PD keyboard with Cherry MX Black switches",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 628325,
+        "url": "https://freesound.org/people/ujonathan/sounds/628325/",
+        "title": "leopold fc980m pd cherry mx black.flac",
+        "author": "ujonathan",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/628/628325_13894315-hq.ogg",
+        "original": "Flac (.flac), 44.1 kHz, 16 bit, Stereo, 0:35.354",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 45,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "cherry-mx-blue",
+      "name": "Cherry MX Blue",
+      "switch_type": "clicky",
+      "recording": "Keyboard with Cherry MX Blue switches, BOYA BY-M1 microphone",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 489424,
+        "url": "https://freesound.org/people/SamsterBirdies/sounds/489424/",
+        "title": "Typing on a keyboard",
+        "author": "SamsterBirdies",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/489/489424_5487341-hq.ogg",
+        "original": "Flac (.flac), 44.1 kHz, 24 bit, Stereo, 1:34.992",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 60,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "cherry-mx-brown",
+      "name": "Cherry MX Brown",
+      "switch_type": "tactile",
+      "recording": "Keyboard with Cherry MX Brown switches",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 400167,
+        "url": "https://freesound.org/people/majod/sounds/400167/",
+        "title": "Mechanical Keyboard Cherry MX Brown",
+        "author": "majod",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/400/400167_7690632-hq.ogg",
+        "original": "Flac (.flac), 48 kHz, 16 bit, Stereo, 1:03.761",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 45,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "cherry-mx-red",
+      "name": "Cherry MX Red",
+      "switch_type": "linear",
+      "recording": "Corsair K95 keyboard with Cherry MX Red switches, 24-bit 96 kHz raw recording",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 499773,
+        "url": "https://freesound.org/people/handygaber/sounds/499773/",
+        "title": "Keyboard clicking typing Cherry Red Mechanical",
+        "author": "handygaber",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/499/499773_3236898-hq.ogg",
+        "original": "Wave (.wav), 96 kHz, 24 bit, Mono, 1:50.905",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 45,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "gateron-baby-kangaroo",
+      "name": "Gateron Baby Kangaroo",
+      "switch_type": "tactile",
+      "recording": "Nuphy 95 keyboard with Gateron Baby Kangaroo switches",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 686168,
+        "url": "https://freesound.org/people/redpanda69/sounds/686168/",
+        "title": "Typing on Gateron Baby Kangaroo switches",
+        "author": "redpanda69",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/686/686168_11130549-hq.ogg",
+        "original": "Mp3 (.mp3), 44.1 kHz, Stereo, 0:20.311",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 60,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "gateron-blue",
+      "name": "Gateron Blue",
+      "switch_type": "clicky",
+      "recording": "Anne Pro 2 keyboard with Gateron Blue switches and PBT keycaps",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 755222,
+        "url": "https://freesound.org/people/forfii/sounds/755222/",
+        "title": "Keyboard slow typing with Gateron Blue switches + low echo",
+        "author": "forfii",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/755/755222_16348965-hq.ogg",
+        "original": "Wave (.wav), 192 kHz, 24 bit, Mono, 0:37.090",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 60,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "holy-panda",
+      "name": "Holy Panda",
+      "switch_type": "tactile",
+      "recording": "Custom keyboard with Drop Holy Panda switches, iPhone 13 Pro Voice Memos",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 680830,
+        "url": "https://freesound.org/people/leakwok/sounds/680830/",
+        "title": "typing on my keyboard.m4a",
+        "author": "leakwok",
+        "licence": "CC BY 4.0",
+        "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+        "preview": "https://cdn.freesound.org/previews/680/680830_14834395-hq.ogg",
+        "original": "M4a (.m4a), 48 kHz, Mono, 1:33.525",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 45,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "ibm-model-f",
+      "name": "IBM Model F",
+      "switch_type": "buckling",
+      "recording": "1981 IBM Model F buckling spring keyboard",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 551404,
+        "url": "https://freesound.org/people/nakkivene66/sounds/551404/",
+        "title": "buckling spring keyboard typing",
+        "author": "nakkivene66",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/551/551404_6985703-hq.ogg",
+        "original": "Wave (.wav), 48 kHz, 24 bit, Stereo, 0:30.800",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 75,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    },
+    {
+      "id": "topre-hhkb",
+      "name": "Topre (HHKB)",
+      "switch_type": "topre",
+      "recording": "Happy Hacking Keyboard (HHKB) with Topre switches, per the recording's title",
+      "source": {
+        "site": "Freesound",
+        "sound_id": 546165,
+        "url": "https://freesound.org/people/grcekh/sounds/546165/",
+        "title": "Keyboard Typing 8 (HHKB, Topre)",
+        "author": "grcekh",
+        "licence": "CC0 1.0 Universal",
+        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "preview": "https://cdn.freesound.org/previews/546/546165_12206738-hq.ogg",
+        "original": "Mp3 (.mp3), 44.1 kHz, Stereo, 2:29.502",
+        "downloaded": "2026-10-23"
+      },
+      "extract": {
+        "merge_ms": 60,
+        "max_hold_ms": 200,
+        "quiet_ms": 60
+      }
+    }
+  ]
+}

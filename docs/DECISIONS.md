@@ -225,3 +225,27 @@ decision; supersede it with a new one.
     that would steal keystrokes mid-sentence, and no notification permission prompt.
 - **Consequences:** On every Mac without measured force (today, all of them: ADR-0011) Shout Mode
   never filters a keystroke. The decision costs about 40 ns per key-down (`make bench`).
+
+## ADR-0019: Bundled packs from licensed Freesound typing recordings
+
+- **Status:** Accepted (the owner's approval of each pack's sound is still required, spec M4)
+- **Context:** The spec's 16 packs need recordings licensed for commercial use in an app, and
+  says to rename or drop any that can't be sourced legally. Commissioned four-force sessions
+  are not available. Freesound holds CC0 and CC BY recordings of real keyboards, but as
+  continuous typing. The apps and community packs that use the spec's switch names carry no
+  recording credits or licence.
+- **Decision:** Ship the eleven packs that licensed recordings support (ten CC0 1.0, one CC BY
+  4.0 credited in About), each named after what was recorded. Cut keystrokes out of typing with
+  `extract_keystrokes.py`: a press and its release, isolated by quiet; their press/release
+  spectra separate in a leave-one-out test (about 0.6 to 0.9; 0.5 would mean two presses) and
+  hold times run 90 to 110 ms. Tiers come from loudness quartiles of the typist's natural
+  variation, or `--derive-tiers` when a recording has fewer than 16 clean keystrokes.
+  `Packs/packs.json` plus `build_packs.py` make every pack reproducible, and an original file
+  replaces the public preview when the owner downloads it. The packs (5.3 MB of CAF/ALAC) are
+  committed as ordinary binary files: ADR-0007 (Git LFS) is still only proposed.
+- **Consequences:** v1 ships with real recordings and a complete paper trail, but only alpha
+  sounds (other keys fall back to them), tiers that are not force-controlled, and lossy-preview
+  sources until the originals are downloaded. Alpaca, Biscuit, EG Crystal Purple, Gateron Black
+  Ink, Gateron Red Ink V2, Kailh Box Navy, NK Cream and Turquoise Tealios wait for commissioned
+  recordings (Packs/README.md). Pack names are switch makers' trademarks used descriptively:
+  confirm with a lawyer before launch (Appendix B).

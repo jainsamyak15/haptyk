@@ -53,6 +53,13 @@ changes on every build, so grant it again after rebuilding (System Settings > Pr
 - [ ] 1,000 keys a minute bursts and a held key: no dropped or late sounds; repeats only with
       "Play sounds for repeating keys".
 
+## Packs (M4)
+
+- [ ] Each of the 11 bundled packs, previewed in Settings > Packs and typed with for a minute:
+      approve it, or note what to fix (a take that sounds like a different key, a noise, a
+      release that sounds like a press). Owner's sign-off per pack (spec M4).
+- [ ] About lists the Holy Panda attribution (CC BY 4.0).
+
 ## Labs (M6)
 
 Shout Mode and Big Enter react only to measured force: until the sensor layout is measured

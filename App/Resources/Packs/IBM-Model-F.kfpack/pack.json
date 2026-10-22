@@ -1,0 +1,66 @@
+{
+  "format": 1,
+  "id": "com.keyfeel.ibm-model-f",
+  "name": "IBM Model F",
+  "switch_type": "buckling",
+  "author": "nakkivene66 (Freesound)",
+  "license": "CC0 1.0 Universal",
+  "version": "1.0.0",
+  "source_url": "https://freesound.org/people/nakkivene66/sounds/551404/",
+  "attribution": "",
+  "derived": [
+    "alpha/hard",
+    "alpha/slam",
+    "alpha/soft"
+  ],
+  "groups": {
+    "alpha": {
+      "down": {
+        "soft": [
+          "samples/alpha_down_soft_1.caf",
+          "samples/alpha_down_soft_2.caf",
+          "samples/alpha_down_soft_3.caf",
+          "samples/alpha_down_soft_4.caf",
+          "samples/alpha_down_soft_5.caf",
+          "samples/alpha_down_soft_6.caf",
+          "samples/alpha_down_soft_7.caf"
+        ],
+        "medium": [
+          "samples/alpha_down_medium_1.caf",
+          "samples/alpha_down_medium_2.caf",
+          "samples/alpha_down_medium_3.caf",
+          "samples/alpha_down_medium_4.caf",
+          "samples/alpha_down_medium_5.caf",
+          "samples/alpha_down_medium_6.caf",
+          "samples/alpha_down_medium_7.caf"
+        ],
+        "hard": [
+          "samples/alpha_down_hard_1.caf",
+          "samples/alpha_down_hard_2.caf",
+          "samples/alpha_down_hard_3.caf",
+          "samples/alpha_down_hard_4.caf",
+          "samples/alpha_down_hard_5.caf",
+          "samples/alpha_down_hard_6.caf",
+          "samples/alpha_down_hard_7.caf"
+        ],
+        "slam": [
+          "samples/alpha_down_slam_1.caf",
+          "samples/alpha_down_slam_2.caf",
+          "samples/alpha_down_slam_3.caf",
+          "samples/alpha_down_slam_4.caf",
+          "samples/alpha_down_slam_5.caf",
+          "samples/alpha_down_slam_6.caf",
+          "samples/alpha_down_slam_7.caf"
+        ]
+      },
+      "up": [
+        "samples/alpha_up_1.caf",
+        "samples/alpha_up_2.caf",
+        "samples/alpha_up_3.caf",
+        "samples/alpha_up_4.caf",
+        "samples/alpha_up_5.caf",
+        "samples/alpha_up_6.caf"
+      ]
+    }
+  }
+}
