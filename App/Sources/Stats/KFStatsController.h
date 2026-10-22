@@ -41,6 +41,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)flush;
 /// Days with stats, newest first, at most `count`.
 - (NSArray<KFDayStats *> *)recentDays:(NSUInteger)count;
+/// The force histogram summed over the last `days` days (today included).
+- (NSArray<NSNumber *> *)histogramForLastDays:(NSUInteger)days;
 /// Deletes files older than the retention period.
 - (void)prune;
 /// "Reset Stats": deletes every stats file and starts today again from zero.

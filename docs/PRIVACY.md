@@ -33,6 +33,11 @@ about them.
 - `kf_key_event` has no key-code field (`Core/include/kf/kf_types.h`).
 - The event tap respects Secure Input; the app never works around it.
 - Key data is logged only in debug builds with `KF_DEBUG_KEYS` enabled.
+- The upload payload is built by one function, `+[KFTelemetry payloadForDay:...]`, whose fields
+  a unit test pins to exactly the list above.
+- Uploads use an ephemeral session (no cookies or cache on disk), only complete past days, and
+  only with the opt-in. With a placeholder backend URL in `Info.plist`, nothing is ever sent.
+- The badge card is drawn on the Mac; it leaves only if the user shares it.
 
 ## Development tools
 

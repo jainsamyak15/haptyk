@@ -28,6 +28,8 @@
   <true/>
   <key>KFFeedbackURL</key>
   <string>mailto:feedback@example.com?subject=Keyfeel%20feedback</string>
+  <key>KFStatsBaseURL</key>
+  <string>https://example.com/keyfeel/api/</string>
   <key>KFPrivacyPolicyURL</key>
   <string>https://example.com/keyfeel/privacy</string>
   <key>NSHumanReadableCopyright</key>

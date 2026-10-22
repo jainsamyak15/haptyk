@@ -192,6 +192,19 @@ static void VisitMinute(uint32_t count, void *ctx) {
     return days;
 }
 
+- (NSArray<NSNumber *> *)histogramForLastDays:(NSUInteger)days {
+    NSMutableArray<NSNumber *> *sum = [NSMutableArray arrayWithCapacity:KF_STATS_FORCE_BUCKETS];
+    for (NSUInteger i = 0; i < KF_STATS_FORCE_BUCKETS; ++i) {
+        [sum addObject:@0];
+    }
+    for (KFDayStats *day in [self recentDays:days]) {
+        for (NSUInteger i = 0; i < KF_STATS_FORCE_BUCKETS; ++i) {
+            sum[i] = @(sum[i].unsignedIntegerValue + day.forceHistogram[i].unsignedIntegerValue);
+        }
+    }
+    return sum;
+}
+
 - (void)prune {
     NSDate *cutoff =
         [NSCalendar.currentCalendar dateByAddingUnit:NSCalendarUnitDay

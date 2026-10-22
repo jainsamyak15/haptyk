@@ -44,6 +44,13 @@ All notable changes are recorded here. The format follows
   per-tier normalization, `--derive-tiers`, CAF/ALAC through afconvert, `pack.json`, refuses
   sources without commercial-use rights) and `kf-cli --validate`. The 16 bundled packs need
   licensed recordings from the owner (Appendix B).
+- Milestone 5, shipping pipeline: percentile and badges (Feather, Steady, Hammer, Thunder) from
+  the 7-day median force and a cached daily table, with a 1200 x 630 shareable card; opt-in
+  daily telemetry (complete past days, batched, retried next launch) scheduled by
+  NSBackgroundActivityScheduler; MetricKit crash and hang reports kept 30 days; Export
+  Diagnostics; Sparkle 2 loaded at run time when embedded and configured; `scripts/release.sh`
+  (sign inside-out, notarize, staple, DMG, appcast, 30 MB limit) and `scripts/fetch-sparkle.sh`
+  (pinned SHA-256). Off until the owner configures the backend, feed and keys.
 
 ### Changed
 - `make analyze` covers the tools; `make ci` also runs `test-py` and builds the tools.

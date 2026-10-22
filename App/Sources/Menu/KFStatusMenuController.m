@@ -11,6 +11,7 @@
 #import "Power/KFPowerController.h"
 #import "Preferences/KFPreferences.h"
 #import "Stats/KFStatsController.h"
+#import "Telemetry/KFTelemetry.h"
 
 static const NSTimeInterval kLiveRefresh = 0.5;
 
@@ -59,6 +60,7 @@ static const NSTimeInterval kLiveRefresh = 0.5;
     NSMenuItem *_lastForceItem;
     NSMenuItem *_keysItem;
     NSMenuItem *_tapsItem;
+    NSMenuItem *_badgeItem;
     NSMenuItem *_bigEnterItem;
     NSMenuItem *_shoutItem;
     NSMenuItem *_meterItem;
@@ -155,6 +157,8 @@ static NSMenuItem *Info(NSString *title) {
     [_menu addItem:_lastForceItem];
     [_menu addItem:_keysItem];
     [_menu addItem:_tapsItem];
+    _badgeItem = Info(@"");
+    [_menu addItem:_badgeItem];
 
     [_menu addItem:NSMenuItem.separatorItem];
     NSMenuItem *labs = [[NSMenuItem alloc] initWithTitle:@"Labs" action:nil keyEquivalent:@""];
@@ -256,6 +260,9 @@ static NSMenuItem *Info(NSString *title) {
                                                      numberStyle:NSNumberFormatterDecimalStyle]];
     _tapsItem.title = [NSString
         stringWithFormat:@"Taps per minute: %lu", (unsigned long)_context.stats.tapsPerMinute];
+    NSString *badge = _context.badgeLine;
+    _badgeItem.hidden = badge == nil;
+    _badgeItem.title = badge ?: @"";
 }
 
 - (void)refreshAll {

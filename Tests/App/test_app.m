@@ -3,6 +3,8 @@
 
 #import "KFAppTest.h"
 
+#include <math.h>
+
 #include <kf/kf_config.h>
 #include <kf/kf_pack.h>
 #include <kf/kf_types.h>
@@ -337,4 +339,98 @@ void TestStatsBucketsFlushAndReset(void) {
     KFExpect(again.today.keys == 0);
     KFExpect(
         [NSFileManager.defaultManager contentsOfDirectoryAtPath:folder.path error:NULL].count == 0);
+}
+
+#pragma mark - M5: badges, telemetry, diagnostics
+
+#import "Application/KFAppContext.h"
+#import "Stats/KFBadge.h"
+#import "Telemetry/KFDiagnostics.h"
+#import "Telemetry/KFTelemetry.h"
+
+static NSArray<NSNumber *> *Histogram(NSUInteger bucket, NSUInteger count) {
+    NSMutableArray<NSNumber *> *h = [NSMutableArray array];
+    for (NSUInteger i = 0; i < KF_STATS_FORCE_BUCKETS; ++i) {
+        [h addObject:@(i == bucket ? count : 0)];
+    }
+    return h;
+}
+
+void TestBadgeMath(void) {
+    /* All keystrokes in one bucket: the median sits inside that bucket's edges. */
+    const double lo = log((double)KF_STATS_FORCE_MIN_G);
+    const double step = (log((double)KF_STATS_FORCE_MAX_G) - lo) / KF_STATS_FORCE_BUCKETS;
+    const double median = [KFBadge medianForceOfHistogram:Histogram(3, 100)];
+    KFExpect(median > exp(lo + 3 * step) && median < exp(lo + 4 * step));
+    KFExpect(isnan([KFBadge medianForceOfHistogram:Histogram(0, 0)]));
+    NSArray<NSNumber *> *tooShort = @[ @1, @2 ];
+    const double shortMedian = [KFBadge medianForceOfHistogram:tooShort];
+    KFExpect(isnan(shortMedian));
+
+    NSMutableArray<NSNumber *> *table = [NSMutableArray array];
+    for (int p = 0; p <= 100; ++p) {
+        [table addObject:@(0.01 * (p + 1))]; /* Force rises linearly with the percentile. */
+    }
+    KFExpect(fabs([KFBadge percentileOfForce:0.51 table:table] - 50.0) < 1e-9);
+    KFExpect(fabs([KFBadge percentileOfForce:0.515 table:table] - 50.5) < 1e-9);
+    KFExpect([KFBadge percentileOfForce:0.001 table:table] == 0.0);
+    KFExpect([KFBadge percentileOfForce:9.0 table:table] == 100.0);
+    NSArray<NSNumber *> *descending = @[ @2, @1 ];
+    const double unordered = [KFBadge percentileOfForce:0.5 table:descending];
+    KFExpect(isnan(unordered)); /* Not ascending. */
+    KFExpect(isnan([KFBadge percentileOfForce:NAN table:table]));
+
+    KFExpect([KFBadge badgeForPercentile:0] == KFBadgeFeather);
+    KFExpect([KFBadge badgeForPercentile:24.9] == KFBadgeFeather);
+    KFExpect([KFBadge badgeForPercentile:25] == KFBadgeSteady);
+    KFExpect([KFBadge badgeForPercentile:59.9] == KFBadgeSteady);
+    KFExpect([KFBadge badgeForPercentile:60] == KFBadgeHammer);
+    KFExpect([KFBadge badgeForPercentile:89.9] == KFBadgeHammer);
+    KFExpect([KFBadge badgeForPercentile:90] == KFBadgeThunder);
+    KFExpect([[KFBadge nameOfBadge:KFBadgeThunder] isEqualToString:@"Thunder"]);
+    KFExpect(KFBadge.requiredKeystrokes == 500);
+
+    NSData *png = [KFBadge cardWithBadge:KFBadgeHammer percentile:72 packName:@"Test"];
+    NSBitmapImageRep *rep = png != nil ? [NSBitmapImageRep imageRepWithData:png] : nil;
+    KFExpect(rep != nil && rep.pixelsWide == 1200 && rep.pixelsHigh == 630);
+}
+
+void TestTelemetryPayloadAndSafety(void) {
+    KFExpect(KFTelemetry.baseURL == nil); /* No backend configured: nothing ever goes out. */
+    KFDayStats *day = [KFDayStats new];
+    day.day = @"2026-10-21";
+    day.keys = 4812;
+    day.forceHistogram = Histogram(4, 10);
+    NSDictionary *payload = [KFTelemetry payloadForDay:day installId:@"ID" forceMode:@"fallback"];
+    NSSet *keys = [NSSet setWithArray:payload.allKeys];
+    NSSet *allowed = [NSSet setWithArray:@[
+        @"install_id", @"app_version", @"mac_model", @"macos", @"day", @"keys", @"force_hist",
+        @"force_mode"
+    ]];
+    KFExpect([keys isEqualToSet:allowed]); /* Exactly the spec's fields: counts only. */
+    KFExpect([payload[@"keys"] integerValue] == 4812 &&
+             [payload[@"day"] isEqualToString:@"2026-10-21"]);
+    KFExpect([NSJSONSerialization isValidJSONObject:payload]);
+}
+
+void TestDiagnosticsReports(void) {
+    NSURL *folder = KFTestTemporaryFolder();
+    KFDiagnostics *diagnostics = [[KFDiagnostics alloc] initWithDirectory:folder];
+    KFExpect(diagnostics.reportCount == 0);
+    [diagnostics saveReport:[@"{\"crash\":1}" dataUsingEncoding:NSUTF8StringEncoding]];
+    [diagnostics saveReport:[@"{\"hang\":2}" dataUsingEncoding:NSUTF8StringEncoding]];
+    KFExpect(diagnostics.reportCount == 2);
+    KFExpect(diagnostics.unsentReports.count == 2);
+    [diagnostics markAllSent];
+    KFExpect(diagnostics.unsentReports.count == 0 && diagnostics.reportCount == 2);
+
+    NSString *suite = [@"com.keyfeel.tests." stringByAppendingString:NSUUID.UUID.UUIDString];
+    NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:suite];
+    KFAppContext *context = [KFAppContext new];
+    context.preferences = [[KFPreferences alloc] initWithDefaults:defaults];
+    NSString *report = [diagnostics reportForContext:context];
+    KFExpect([report containsString:@"Keyfeel diagnostics"]);
+    KFExpect([report containsString:@"Crash and hang reports kept: 2"]);
+    KFExpect([report containsString:@"No key data"]);
+    [defaults removePersistentDomainForName:suite];
 }

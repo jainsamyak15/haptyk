@@ -16,6 +16,9 @@
 #import "Settings/KFSettingsWindowController.h"
 #import "Stats/KFStatsController.h"
 #import "Support/KFLog.h"
+#import "Support/KFUpdater.h"
+#import "Telemetry/KFDiagnostics.h"
+#import "Telemetry/KFTelemetry.h"
 
 @implementation KFAppDelegate {
     KFAppContext *_context;
@@ -46,11 +49,20 @@
     _context.stats =
         [[KFStatsController alloc] initWithDirectory:KFApplicationSupportSubdirectory(@"stats")];
     [_context.stats prune];
+    _context.diagnostics =
+        [[KFDiagnostics alloc] initWithDirectory:KFApplicationSupportSubdirectory(@"diagnostics")];
+    [_context.diagnostics start];
+    _context.telemetry = [[KFTelemetry alloc] initWithPreferences:_context.preferences
+                                                            stats:_context.stats
+                                                      diagnostics:_context.diagnostics];
+    _context.updater = [KFUpdater new];
     _context.power = [[KFPowerController alloc] initWithPreferences:_context.preferences
                                                             library:_context.library
                                                               stats:_context.stats];
     _menu = [[KFStatusMenuController alloc] initWithContext:_context];
     [_context.power start];
+    [_context.telemetry start];
+    [_context.updater start];
 #if defined(KF_DEBUG) && KF_DEBUG
     /* Debug builds only: `-KFSkipOnboarding YES` on the command line, for measuring the idle app
      * with no window open. Launch arguments are never saved. */
@@ -77,6 +89,7 @@
 
 - (void)applicationWillTerminate:(NSNotification *)notification {
     (void)notification;
+    [_context.telemetry stop];
     [_context.power shutdown];
 }
 
@@ -132,9 +145,13 @@
 }
 
 - (void)checkForUpdates {
+    if (_context.updater.available) {
+        [_context.updater checkForUpdates];
+        return;
+    }
     NSAlert *alert = [NSAlert new];
     alert.messageText = @"Updates";
-    alert.informativeText = @"Automatic updates are part of the signed release build.";
+    alert.informativeText = _context.updater.unavailableReason ?: @"Updates are not available.";
     [NSApp activateIgnoringOtherApps:YES];
     [alert runModal];
 }
@@ -165,6 +182,7 @@
 /// "Remove All Keyfeel Data" (spec: Safety rules, Clean removal): the app's own folders and
 /// preferences, and the login item. Nothing else on the Mac is touched.
 - (void)removeAllDataAndQuit {
+    [_context.telemetry stop];
     [_context.power shutdown];
     (void)[SMAppService.mainAppService unregisterAndReturnError:NULL];
     NSFileManager *files = NSFileManager.defaultManager;

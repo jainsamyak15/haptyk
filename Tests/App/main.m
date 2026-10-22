@@ -41,6 +41,9 @@ int main(void) {
             {"pack_library_order_and_default", TestPackLibraryOrderAndDefault},
             {"preferences_defaults_and_clamping", TestPreferencesDefaultsAndClamping},
             {"stats_buckets_flush_and_reset", TestStatsBucketsFlushAndReset},
+            {"badge_math", TestBadgeMath},
+            {"telemetry_payload_and_safety", TestTelemetryPayloadAndSafety},
+            {"diagnostics_reports", TestDiagnosticsReports},
         };
         int failed = 0;
         const size_t count = sizeof tests / sizeof tests[0];

@@ -24,3 +24,6 @@ void TestPackManifestRejectsBadInput(void);
 void TestPackLibraryOrderAndDefault(void);
 void TestPreferencesDefaultsAndClamping(void);
 void TestStatsBucketsFlushAndReset(void);
+void TestBadgeMath(void);
+void TestTelemetryPayloadAndSafety(void);
+void TestDiagnosticsReports(void);

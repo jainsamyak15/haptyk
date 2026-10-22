@@ -7,6 +7,9 @@
 @class KFPackLibrary;
 @class KFPowerController;
 @class KFStatsController;
+@class KFTelemetry;
+@class KFDiagnostics;
+@class KFUpdater;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -28,6 +31,14 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) KFPackLibrary *library;
 @property (nonatomic, strong) KFPowerController *power;
 @property (nonatomic, strong) KFStatsController *stats;
+@property (nonatomic, strong) KFTelemetry *telemetry;
+@property (nonatomic, strong) KFDiagnostics *diagnostics;
+@property (nonatomic, strong) KFUpdater *updater;
+/// The menu's percentile line: "Harder than N% of users · Badge", "Keep typing to earn your
+/// badge", or nil to hide it (no force data or no table).
+- (nullable NSString *)badgeLine;
+/// Percentile and badge when earned, else NO.
+- (BOOL)currentPercentile:(double *)percentile badge:(NSInteger *)badge;
 @property (nonatomic, weak) id<KFAppActions> actions;
 @end
 

@@ -10,8 +10,14 @@
 #import "Packs/KFPackLibrary.h"
 #import "Power/KFPowerController.h"
 #import "Preferences/KFPreferences.h"
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+
+#import "Stats/KFBadge.h"
 #import "Stats/KFStatsController.h"
+#import "Support/KFLog.h"
 #import "Support/KFUI.h"
+#import "Support/KFUpdater.h"
+#import "Telemetry/KFDiagnostics.h"
 
 static const CGFloat kPaneWidth = 560.0;
 
@@ -147,6 +153,8 @@ static const CGFloat kPaneWidth = 560.0;
 @implementation KFStatsPane {
     NSTextField *_today;
     KFHistogramView *_histogram;
+    NSTextField *_badge;
+    NSButton *_share;
     NSButton *_optIn;
 }
 
@@ -158,12 +166,15 @@ static const CGFloat kPaneWidth = 560.0;
     [_histogram.widthAnchor constraintEqualToConstant:500].active = YES;
     _optIn = KFCheckbox(@"Share anonymous daily counts to improve Keyfeel", self,
                         @selector(toggleOptIn:));
+    _badge = KFLabel(@"");
+    _share = KFPushButton(@"Share Badge…", self, @selector(shareBadge:));
     self.view = KFPane(
         @[
             KFHeading(@"Today"),
             _today,
             KFHeading(@"Force, last 7 days"),
             _histogram,
+            KFHStack(@[ _badge, _share ], 12.0),
             KFHeading(@"Privacy"),
             _optIn,
             KFSecondaryLabel(@"Only counts are shared: keystrokes per day and how hard they were, "
@@ -184,20 +195,44 @@ static const CGFloat kPaneWidth = 560.0;
                                                      numberStyle:NSNumberFormatterDecimalStyle],
                                    (unsigned long)today.activeMinutes,
                                    (unsigned long)today.peakKeysPerMinute];
-    NSMutableArray<NSNumber *> *sum = [NSMutableArray array];
-    for (NSUInteger i = 0; i < KF_STATS_FORCE_BUCKETS; ++i) {
-        [sum addObject:@0];
-    }
-    for (KFDayStats *day in [stats recentDays:7]) {
-        for (NSUInteger i = 0; i < KF_STATS_FORCE_BUCKETS; ++i) {
-            sum[i] = @(sum[i].unsignedIntegerValue + day.forceHistogram[i].unsignedIntegerValue);
-        }
-    }
-    _histogram.counts = sum;
+    _histogram.counts = [stats histogramForLastDays:7];
     _histogram.accessibilityLabel = @"Force histogram for the last 7 days";
     _histogram.accessibilityRole = NSAccessibilityImageRole;
     [_histogram setNeedsDisplay:YES];
     _optIn.state = self.context.preferences.telemetryOptIn;
+    double percentile = 0.0;
+    NSInteger badge = 0;
+    const BOOL earned = [self.context currentPercentile:&percentile badge:&badge];
+    _badge.stringValue =
+        earned ? [NSString stringWithFormat:@"%@: harder than %.0f%% of users",
+                                            [KFBadge nameOfBadge:(KFBadgeKind)badge], percentile]
+               : (self.context.badgeLine
+                      ?: @"Badges need force detection and the "
+                         @"shared percentile table.");
+    _share.enabled = earned;
+}
+
+/// Draws the card locally and opens the share sheet: nothing leaves the Mac unless shared.
+- (void)shareBadge:(NSButton *)sender {
+    double percentile = 0.0;
+    NSInteger badge = 0;
+    if (![self.context currentPercentile:&percentile badge:&badge]) {
+        return;
+    }
+    NSString *pack =
+        [self.context.library resolvePack:self.context.preferences.packId].name ?: @"Keyfeel";
+    NSData *png = [KFBadge cardWithBadge:(KFBadgeKind)badge percentile:percentile packName:pack];
+    NSString *path = [KFCachesPath() stringByAppendingPathComponent:@"Keyfeel Badge.png"];
+    [NSFileManager.defaultManager createDirectoryAtPath:KFCachesPath()
+                            withIntermediateDirectories:YES
+                                             attributes:nil
+                                                  error:NULL];
+    if (png == nil || ![png writeToFile:path atomically:YES]) {
+        return;
+    }
+    NSSharingServicePicker *picker =
+        [[NSSharingServicePicker alloc] initWithItems:@[ [NSURL fileURLWithPath:path] ]];
+    [picker showRelativeToRect:sender.bounds ofView:sender preferredEdge:NSRectEdgeMinY];
 }
 
 - (void)toggleOptIn:(NSButton *)sender {
@@ -238,15 +273,25 @@ static const CGFloat kPaneWidth = 560.0;
                                    info[@"CFBundleVersion"] ?: @"?"];
     _attributions = KFSecondaryLabel(@"");
     NSButton *privacy = KFPushButton(@"Privacy Policy", self, @selector(openPrivacy:));
+    NSButton *export = KFPushButton(@"Export Diagnostics…", self, @selector(exportDiagnostics:));
     NSButton *remove = KFPushButton(@"Remove All Keyfeel Data…", self, @selector(removeAll:));
+    NSString *sparkle = self.context.updater.available
+                            ? @"Updates by Sparkle (MIT licence, sparkle-project.org)."
+                            : @"Updates by Sparkle (MIT licence) in signed release builds.";
     self.view = KFPane(
         @[
             KFHeading(@"Keyfeel"),
             KFLabel(version),
             KFSecondaryLabel(info[@"NSHumanReadableCopyright"] ?: @""),
             privacy,
+            KFHeading(@"Acknowledgements"),
+            KFSecondaryLabel(sparkle),
             KFHeading(@"Sound attributions"),
             _attributions,
+            KFHeading(@"Diagnostics"),
+            KFSecondaryLabel(@"A text file with versions, audio and sensor state and counters, for "
+                             @"bug reports. It never holds key data."),
+            export,
             KFHeading(@"Your data"),
             KFSecondaryLabel(
                 @"Removes settings, stats, imported packs and the login item, then quits. "
@@ -269,6 +314,20 @@ static const CGFloat kPaneWidth = 560.0;
     if (url != nil) {
         [NSWorkspace.sharedWorkspace openURL:url];
     }
+}
+
+- (void)exportDiagnostics:(id)sender {
+    (void)sender;
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.nameFieldStringValue = @"Keyfeel Diagnostics.txt";
+    panel.allowedContentTypes = @[ UTTypePlainText ];
+    NSString *report = [self.context.diagnostics reportForContext:self.context];
+    [panel beginWithCompletionHandler:^(NSModalResponse result) {
+        NSURL *url = panel.URL;
+        if (result == NSModalResponseOK && url != nil) {
+            [report writeToURL:url atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        }
+    }];
 }
 
 - (void)removeAll:(id)sender {
