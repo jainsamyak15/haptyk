@@ -19,7 +19,7 @@ extern NSNotificationName const KFPackLibraryDidChangeNotification;
                            userURL:(NSURL *)userURL NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
-/// Bundled packs in the spec's order, then user packs by name. Invalid packs are skipped and
+/// Bundled packs by name (the spec's order), then user packs by name. Invalid packs are skipped and
 /// logged, never shown.
 @property (nonatomic, readonly, copy) NSArray<KFPackManifest *> *packs;
 @property (nonatomic, readonly) NSURL *userURL;

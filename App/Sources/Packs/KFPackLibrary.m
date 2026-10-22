@@ -11,16 +11,6 @@
 
 NSNotificationName const KFPackLibraryDidChangeNotification = @"KFPackLibraryDidChange";
 
-/// Bundled packs in the spec's order ("Bundled packs"); names here match pack.json names.
-static NSArray<NSString *> *SpecOrder(void) {
-    return @[
-        @"Alpaca", @"Biscuit", @"Blue Alps", @"Buckling Spring", @"Cherry MX Black PBT",
-        @"Cherry MX Blue PBT", @"Cherry MX Brown PBT", @"Cherry MX Red PBT", @"EG Crystal Purple",
-        @"Gateron Black Ink", @"Gateron Red Ink V2", @"Holy Panda", @"Kailh Box Navy", @"NK Cream",
-        @"Topre PBT", @"Turquoise Tealios"
-    ];
-}
-
 static const unsigned long long kMaxZipBytes = 30ull * 1024 * 1024;
 static const unsigned long long kMaxTreeBytes = 20ull * 1024 * 1024;
 static const NSUInteger kMaxTreeEntries = 600;
@@ -90,14 +80,10 @@ static NSError *ImportError(NSString *message) {
 }
 
 - (void)reload {
-    NSArray<NSString *> *order = SpecOrder();
+    /* By name: the spec's list is alphabetical, and renamed packs (named after what was really
+     * recorded, Packs/packs.json) keep the same rule. */
     NSArray<KFPackManifest *> *bundled = [[self scan:_bundledURL]
         sortedArrayUsingComparator:^NSComparisonResult(KFPackManifest *a, KFPackManifest *b) {
-            const NSUInteger ia = [order indexOfObject:a.name];
-            const NSUInteger ib = [order indexOfObject:b.name];
-            if (ia != ib) {
-                return ia < ib ? NSOrderedAscending : NSOrderedDescending;
-            }
             return [a.name localizedStandardCompare:b.name];
         }];
     NSArray<KFPackManifest *> *user = [[self scan:_userURL]

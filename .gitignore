@@ -28,6 +28,9 @@ Packs/sources/**/*.aiff
 Packs/sources/**/*.flac
 Packs/sources/**/*.mp3
 Packs/sources/**/*.zip
+Packs/sources/**/*.ogg
+Packs/sources/**/*.m4a
+Packs/sources/**/extract-report.json
 
 # Sensor logs from Milestone 0 (can be large). Small, curated fixtures go in Tests/Fixtures/.
 /logs/

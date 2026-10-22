@@ -128,7 +128,7 @@ FORMAT_SRCS = $(shell find Core Tests Tools App -type f \( -name '*.c' -o -name 
 
 # ---------------------------------------------------------------- targets
 .PHONY: help all core tools app run-app test test-app test-asan test-tsan test-all test-py bench \
-        check-rt analyze lint format format-check test-pack bootstrap hooks clean ci
+        check-rt analyze lint format format-check test-pack packs bootstrap hooks clean ci
 
 help: ## List targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
@@ -219,6 +219,9 @@ format-check: ## Fail if any source is not clang-formatted
 	@fmt='$(CLANG_FORMAT)'; [[ -n "$$fmt" ]] || { echo "clang-format not found"; exit 1; }; \
 	  "$$fmt" --dry-run --Werror $(FORMAT_SRCS)
 	@echo "format: clean"
+
+packs: ## Rebuild the bundled packs from Packs/packs.json (fetches missing previews)
+	@$(PYTHON) Tools/py/build_packs.py --download
 
 test-pack: ## Generate the synthetic Test Click pack into build/packs
 	@$(PYTHON) Tools/py/make_test_pack.py --out build/packs
