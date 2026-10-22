@@ -32,6 +32,14 @@ All notable changes are recorded here. The format follows
   device removal), live calibration hand-over, measured peaks for the calibration UI, Shout
   Mode's rolling force, noise-floor measurement, `kf-cli --calibrate`. Dormant until the report
   layout is measured (ADR-0011): the probe reports no sensor and keys play at default velocity.
+- Milestone 3, the menu bar app (`make app`): status item with on, off and needs-attention
+  icons; menu with the on/off switch, volume, packs, force status, live stats while open, Labs,
+  calibration, settings, updates, feedback; power state machine (idle costs nothing: audio and
+  the sensor run only while typing); sleep, lock and session handling; output device and rate
+  changes; mic-in-use mute (per process on macOS 14+); settings window with General, Sound,
+  Packs, Labs, Stats and About; onboarding with Input Monitoring and the stats opt-in;
+  calibration wizard; launch at login through SMAppService (off by default); local daily stats;
+  "Remove All Keyfeel Data"; app-layer tests (`make test-app`).
 
 ### Changed
 - `make analyze` covers the tools; `make ci` also runs `test-py` and builds the tools.

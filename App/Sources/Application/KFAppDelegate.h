@@ -3,10 +3,12 @@
 
 #import <AppKit/AppKit.h>
 
+#import "Application/KFAppContext.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
-/// Owns the app's controllers and wires them to the core. Module map: App/README.md.
-@interface KFAppDelegate : NSObject <NSApplicationDelegate>
+/// Launch: owns the controllers and opens windows on demand. Module map: App/README.md.
+@interface KFAppDelegate : NSObject <NSApplicationDelegate, KFAppActions>
 @end
 
 NS_ASSUME_NONNULL_END

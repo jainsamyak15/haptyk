@@ -49,8 +49,15 @@ void kf_keytap_stop(void);
 /** Any thread. */
 bool kf_keytap_is_running(void);
 
-/** "Sound on key repeat": play auto-repeat events too. Any thread. */
+/** "Sound on key repeat": play auto-repeat events too (default off). Any thread. */
 void kf_keytap_set_repeat_sounds(bool enabled);
+
+/** "Sound on key release": play release sounds (default on). Any thread. */
+void kf_keytap_set_release_sounds(bool enabled);
+
+/** "Mute when typing on an external keyboard": keys not from the built-in keyboard stay
+ * silent (default off). The callback still sees them. Any thread. */
+void kf_keytap_set_mute_external(bool muted);
 
 /** External keyboards connected now (0 until the tap runs). Any thread. */
 uint32_t kf_keytap_external_keyboards(void);

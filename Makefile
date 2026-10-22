@@ -98,9 +98,26 @@ MAC_TOOLS      := hid-dump sensor-log audio-info kf-cli engine-stress mix-bench
 TOOLS          := $(PORTABLE_TOOLS) $(if $(filter Darwin,$(UNAME_S)),$(MAC_TOOLS))
 TOOL_BINS      := $(TOOLS:%=$(BIN)/%)
 TOOL_SRCS      := $(wildcard $(TOOLS:%=Tools/%/main.c))
+TOOL_OBJS      := $(TOOLS:%=$(OBJ)/Tools/%/main.o)
 
 # App classes the Objective-C dev tools link, so both validate packs identically.
 TOOL_APP_OBJS := $(OBJ)/App/Sources/Packs/KFPackManifest.o
+
+# The menu bar app (macOS): Objective-C plus the app's own C, linked against libkfcore.
+APP_NAME       := Keyfeel
+APP_BUNDLE     := $(BUILD)/$(APP_NAME).app
+APP_EXE        := $(APP_BUNDLE)/Contents/MacOS/$(APP_NAME)
+APP_PLIST      := $(APP_BUNDLE)/Contents/Info.plist
+APP_SRCS       := $(if $(filter Darwin,$(UNAME_S)),$(sort $(shell find App/Sources -name '*.m' -o -name '*.c')))
+APP_OBJS       := $(patsubst %,$(OBJ)/%.o,$(basename $(APP_SRCS)))
+APP_LIB_OBJS   := $(filter-out $(OBJ)/App/Sources/Application/main.o,$(APP_OBJS))
+APP_FRAMEWORKS := $(FRAMEWORKS) -framework AppKit -framework ServiceManagement \
+                  -framework UniformTypeIdentifiers
+xcconfig        = $(shell sed -n 's/^$(1) = //p' Config/App.xcconfig)
+
+APP_TEST_SRCS := $(if $(filter Darwin,$(UNAME_S)),$(sort $(wildcard Tests/App/*.m)))
+APP_TEST_OBJS := $(APP_TEST_SRCS:%.m=$(OBJ)/%.o)
+APP_TEST_BIN  := $(BIN)/kf-app-tests
 
 # Code shared by the macOS tools (IOKit helpers). kf_tool.h is header-only and portable.
 TOOL_COMMON_SRCS := $(if $(filter Darwin,$(UNAME_S)),$(sort $(wildcard Tools/common/*.c)))
@@ -110,11 +127,8 @@ FORMAT_SRCS = $(shell find Core Tests Tools App -type f \( -name '*.c' -o -name 
                 -not -path '*/.venv/*' | sort)
 
 # ---------------------------------------------------------------- targets
-.PHONY: help all core tools test test-asan test-tsan test-all test-py bench check-rt analyze \
-        lint format format-check test-pack bootstrap clean ci
-
-# Keep tool objects between builds instead of deleting them as pattern intermediates.
-.SECONDARY:
+.PHONY: help all core tools app run-app test test-app test-asan test-tsan test-all test-py bench \
+        check-rt analyze lint format format-check test-pack bootstrap hooks clean ci
 
 help: ## List targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
@@ -131,6 +145,27 @@ endif
 
 test: $(TEST_BIN) ## Run core unit tests
 	@$(TEST_BIN)
+
+test-app: $(APP_TEST_BIN) ## Unit tests for the app layer (Objective-C)
+	@$(APP_TEST_BIN)
+
+app: $(APP_EXE) $(APP_PLIST) ## Build build/<config>/Keyfeel.app, ad-hoc signed
+	@rm -rf $(APP_BUNDLE)/Contents/Resources
+	@mkdir -p $(APP_BUNDLE)/Contents/Resources/Packs $(APP_BUNDLE)/Contents/Resources/Labs
+	@cp App/Resources/calibration-defaults.json $(APP_BUNDLE)/Contents/Resources/
+	@find App/Resources/Packs -maxdepth 1 -name '*.kfpack' -exec cp -R {} $(APP_BUNDLE)/Contents/Resources/Packs/ \;
+	@find App/Resources/Labs -maxdepth 1 -type f ! -name '.*' -exec cp {} $(APP_BUNDLE)/Contents/Resources/Labs/ \;
+ifneq ($(CONFIG),release)
+	@[ -d build/packs/Test-Click.kfpack ] || $(PYTHON) Tools/py/make_test_pack.py --out build/packs
+	@cp -R build/packs/Test-Click.kfpack $(APP_BUNDLE)/Contents/Resources/Packs/
+endif
+	@codesign --force --sign - --options runtime --entitlements App/Resources/Keyfeel.entitlements \
+	  $(APP_BUNDLE) 2>&1 | grep -v 'replacing existing signature' || true
+	@codesign --verify --strict $(APP_BUNDLE)
+	@echo "app: $(APP_BUNDLE) ($$(du -sh $(APP_BUNDLE) | cut -f1))"
+
+run-app: app ## Build and open the app
+	@open $(APP_BUNDLE)
 
 test-asan: ## Run core tests under AddressSanitizer + UndefinedBehaviorSanitizer
 	@$(MAKE) --no-print-directory CONFIG=asan test
@@ -155,10 +190,14 @@ check-rt: ## Fail if a real-time unit (*_rt.c) imports a banned symbol
 	@$(MAKE) --no-print-directory CONFIG=release core
 	@scripts/check-rt-symbols.sh build/release/obj "$(NM)"
 
-analyze: ## Clang Static Analyzer over the core and the tools
+analyze: ## Clang Static Analyzer over the core, the tools and the app
 	@for f in $(CORE_SRCS) $(TOOL_SRCS) $(TOOL_COMMON_SRCS); do \
 	  $(CLANG) --analyze -Xclang -analyzer-werror $(CSTD) $(PLATFORM) $(INCLUDES) $(TOOL_INCLUDES) \
 	    $$f -o /dev/null || exit 1; \
+	done
+	@for f in $(filter %.m,$(APP_SRCS)); do \
+	  $(CLANG) --analyze -Xclang -analyzer-werror -std=gnu11 -fobjc-arc $(PLATFORM) -ICore/include \
+	    -IApp/Sources $$f -o /dev/null || exit 1; \
 	done
 	@for f in Core/src/sensor/kf_sensor.c Core/src/sensor/kf_sensor_rt.c; do \
 	  $(CC) $(CFLAGS) -DKF_SENSOR_LAYOUT_MEASURED=1 -fsyntax-only $$f || exit 1; \
@@ -184,10 +223,14 @@ format-check: ## Fail if any source is not clang-formatted
 test-pack: ## Generate the synthetic Test Click pack into build/packs
 	@$(PYTHON) Tools/py/make_test_pack.py --out build/packs
 
+hooks: ## Install the git pre-commit hook (format, core tests, real-time symbols)
+	@ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
+	@echo "hooks: pre-commit installed"
+
 bootstrap: ## Check the toolchain and create the repo-local Python venv
 	@scripts/bootstrap.sh
 
-ci: format-check lint analyze test test-asan test-tsan test-py check-rt tools ## Everything CI runs
+ci: format-check lint analyze test test-asan test-tsan test-py test-app check-rt tools app ## Everything CI runs
 
 clean: ## Remove build output
 	@rm -rf build
@@ -202,6 +245,9 @@ $(OBJ)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ)/Tools/%.o: OBJCFLAGS += -ICore/src $(TOOL_INCLUDES)
+$(OBJ)/Tests/App/%.o: OBJCFLAGS += -ICore/src -Wno-nullable-to-nonnull-conversion # Tests assert on nils.
+$(OBJ)/App/%.o: OBJCFLAGS += $(if $(filter release,$(CONFIG)),-Os) # Spec: -Os for UI code.
+$(OBJ)/App/%.o: CFLAGS += -IApp/Sources
 $(OBJ)/%.o: %.m
 	@mkdir -p $(@D)
 	$(CC) $(OBJCFLAGS) -c $< -o $@
@@ -215,6 +261,8 @@ $(TEST_BIN): $(TEST_OBJS) $(CORE_LIB)
 	@mkdir -p $(@D)
 	$(CC) $(LDFLAGS) $(TEST_OBJS) $(CORE_LIB) $(FRAMEWORKS) $(LDLIBS) -o $@
 
+# Named as targets so make keeps them (not intermediates) and still rebuilds them normally.
+$(TOOL_OBJS):
 $(MAC_TOOLS:%=$(BIN)/%): $(TOOL_COMMON_OBJS)
 $(BIN)/kf-cli: $(TOOL_APP_OBJS)
 $(BIN)/mix-bench: LDLIBS += -framework Accelerate
@@ -224,5 +272,24 @@ $(BIN)/%: $(OBJ)/Tools/%/main.o $(CORE_LIB)
 	$(CC) $(LDFLAGS) $(filter %.o,$^) $(CORE_LIB) $(FRAMEWORKS) $(LDLIBS) \
 	  $(if $(filter Darwin,$(UNAME_S)),-fobjc-link-runtime) -o $@
 
+$(APP_EXE): $(APP_OBJS) $(CORE_LIB)
+	@mkdir -p $(@D)
+	$(CC) $(LDFLAGS) $(APP_OBJS) $(CORE_LIB) $(APP_FRAMEWORKS) $(LDLIBS) -fobjc-link-runtime -o $@
+
+$(APP_PLIST): App/Resources/Info.plist Config/App.xcconfig Config/Base.xcconfig
+	@mkdir -p $(@D)
+	@sed -e 's/\$$(EXECUTABLE_NAME)/$(APP_NAME)/g' \
+	     -e 's/\$$(PRODUCT_NAME)/$(call xcconfig,PRODUCT_NAME)/g' \
+	     -e 's/\$$(PRODUCT_BUNDLE_IDENTIFIER)/$(call xcconfig,PRODUCT_BUNDLE_IDENTIFIER)/g' \
+	     -e 's/\$$(MARKETING_VERSION)/$(call xcconfig,MARKETING_VERSION)/g' \
+	     -e 's/\$$(CURRENT_PROJECT_VERSION)/$(call xcconfig,CURRENT_PROJECT_VERSION)/g' \
+	     -e 's/\$$(MACOSX_DEPLOYMENT_TARGET)/13.0/g' $< > $@
+	@plutil -lint -s $@
+
+$(APP_TEST_BIN): $(APP_TEST_OBJS) $(APP_LIB_OBJS) $(CORE_LIB)
+	@mkdir -p $(@D)
+	$(CC) $(LDFLAGS) $(APP_TEST_OBJS) $(APP_LIB_OBJS) $(CORE_LIB) $(APP_FRAMEWORKS) $(LDLIBS) \
+	  -fobjc-link-runtime -o $@
+
 -include $(CORE_OBJS:.o=.d) $(TEST_OBJS:.o=.d) $(TOOLS:%=$(OBJ)/Tools/%/main.d) \
-         $(TOOL_COMMON_OBJS:.o=.d) $(TOOL_APP_OBJS:.o=.d)
+         $(TOOL_COMMON_OBJS:.o=.d) $(TOOL_APP_OBJS:.o=.d) $(APP_OBJS:.o=.d) $(APP_TEST_OBJS:.o=.d)

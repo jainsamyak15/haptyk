@@ -25,6 +25,14 @@ void kf_keytap_set_repeat_sounds(bool enabled) {
     atomic_store_explicit(&g_ctx.repeat_sounds, enabled, memory_order_relaxed);
 }
 
+void kf_keytap_set_release_sounds(bool enabled) {
+    atomic_store_explicit(&g_ctx.mute_release, !enabled, memory_order_relaxed);
+}
+
+void kf_keytap_set_mute_external(bool muted) {
+    atomic_store_explicit(&g_ctx.mute_external, muted, memory_order_relaxed);
+}
+
 uint32_t kf_keytap_external_keyboards(void) {
     return atomic_load_explicit(&g_ctx.external_keyboards, memory_order_relaxed);
 }

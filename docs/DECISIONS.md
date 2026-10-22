@@ -23,7 +23,7 @@ decision; supersede it with a new one.
 
 ## ADR-0003: Make for the core, Xcode project generated for the app
 
-- **Status:** Proposed
+- **Status:** Superseded by ADR-0015
 - **Context:** M0–M2 are command-line tools; the app starts at M3. A hand-edited `.pbxproj` is
   hard to review and merges badly.
 - **Decision:** The `Makefile` builds the core, tools and core tests from M0. From M3 the app's
@@ -160,4 +160,26 @@ decision; supersede it with a new one.
 - **Consequences:** Times are late by the tap's delivery delay (measured with `sensor-log`
   once available). That only matters for force detection's window, which is inactive while the
   sensor delivers no data (ADR-0011).
+
+## ADR-0015: The app is built by the Makefile, not Xcode
+
+- **Status:** Accepted (supersedes ADR-0003; the owner approved M1–M6 on this Mac)
+- **Context:** The build Mac has the Command Line Tools but no Xcode, so there is no
+  `xcodebuild`, XcodeGen or XCTest. The spec asks for one Xcode project.
+- **Decision:** `make app` compiles the Objective-C (ARC, `-Os` in release) and the app's C,
+  links `libkfcore.a`, generates `Info.plist` from `Config/App.xcconfig`, copies resources and
+  signs: ad hoc for local builds, Developer ID in `scripts/release.sh`. App-layer tests use the
+  same dependency-free harness approach as ADR-0004 (`Tests/App`, `make test-app`).
+  `project.yml` stays for an owner who installs Xcode later.
+- **Consequences:** One build, scriptable and reviewable, with no project file to merge. Ad-hoc
+  signatures change on every build, so Input Monitoring must be granted again after rebuilding
+  a debug app.
+
+## ADR-0016: A third voice queue for the main thread
+
+- **Status:** Accepted
+- **Context:** Previews (Packs pane, onboarding) play sounds from the main thread. Pushing them on
+  the keytap's or the sensor's queue would give that SPSC queue two producers.
+- **Decision:** `KF_QUEUE_MAIN`, produced only by the main thread; the engine drains all queues.
+- **Consequences:** Every queue keeps exactly one producer, as the real-time rules require.
 

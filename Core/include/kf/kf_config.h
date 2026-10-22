@@ -82,4 +82,11 @@
 /* Power ------------------------------------------------------------------ */
 #define KF_IDLE_TIMEOUT_S 30u
 
+/* Stats (app) -------------------------------------------------------------- */
+#define KF_STATS_FORCE_BUCKETS  10u    /**< Force histogram: log-spaced, the same for everyone. */
+#define KF_STATS_FORCE_MIN_G    0.005f /**< TBD-M0: lower edge of the first bucket. */
+#define KF_STATS_FORCE_MAX_G    1.0f   /**< TBD-M0: upper edge of the last bucket. */
+#define KF_STATS_FLUSH_S        300u   /**< Written at most every 5 minutes, and on idle/quit. */
+#define KF_STATS_RETENTION_DAYS 90u
+
 #endif /* KF_CONFIG_H */

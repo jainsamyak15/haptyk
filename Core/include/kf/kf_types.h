@@ -91,6 +91,7 @@ typedef struct kf_voice_req {
 typedef enum kf_queue {
     KF_QUEUE_KEYTAP = 0, /**< Queue A: keys without sensor data and all key-ups. */
     KF_QUEUE_SENSOR,     /**< Queue B: keys resolved by the sensor thread. */
+    KF_QUEUE_MAIN,       /**< The main thread's: previews and test sounds from the UI. */
     KF_QUEUE_COUNT
 } kf_queue;
 

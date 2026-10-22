@@ -47,6 +47,8 @@ typedef struct kf_keytap_ctx {
     uint32_t device_count;
     bool values_open; /* Keyboards opened for report times: only while an external one exists. */
     atomic_bool repeat_sounds;
+    atomic_bool mute_release; /* Inverted, so the zeroed default plays release sounds. */
+    atomic_bool mute_external;
     _Atomic(uint32_t) external_keyboards;
     _Atomic(uint64_t) events;
     _Atomic(uint64_t) tap_timeouts;

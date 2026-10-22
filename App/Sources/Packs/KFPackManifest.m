@@ -20,6 +20,13 @@ static NSString *const kGroupNames[KF_GROUP_COUNT] = {@"alpha",     @"space",   
                                                       @"backspace", @"modifier", @"tab"};
 static NSString *const kTierNames[KF_TIER_COUNT] = {@"soft", @"medium", @"hard", @"slam"};
 
+/// NSError convention: callers may pass NULL for the error.
+static void SetError(NSError **error, NSError *value) {
+    if (error != NULL) {
+        *error = value;
+    }
+}
+
 static NSError *PackError(KFPackError code, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 static NSError *PackError(KFPackError code, NSString *format, ...) {
     va_list args;
@@ -88,7 +95,7 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
     manifest.packURL = packURL.URLByStandardizingPath;
     if (![manifest readWithError:&failure]) {
         if (error != NULL) {
-            *error = failure;
+            SetError(error, failure);
         }
         return nil;
     }
@@ -99,22 +106,23 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
     NSString *root = self.packURL.path;
     struct stat st;
     if (lstat(root.fileSystemRepresentation, &st) != 0 || !S_ISDIR(st.st_mode)) {
-        *error =
-            PackError(KFPackErrorUnreadable, @"%@ is not a pack folder", root.lastPathComponent);
+        SetError(error, PackError(KFPackErrorUnreadable, @"%@ is not a pack folder",
+                                  root.lastPathComponent));
         return NO;
     }
     NSString *manifestPath = [root stringByAppendingPathComponent:@"pack.json"];
     if (lstat(manifestPath.fileSystemRepresentation, &st) != 0 || !S_ISREG(st.st_mode) ||
         (unsigned long long)st.st_size > kMaxManifestBytes) {
-        *error = PackError(KFPackErrorUnreadable,
-                           @"pack.json is missing, not a regular file, or larger than 256 KB");
+        SetError(error,
+                 PackError(KFPackErrorUnreadable,
+                           @"pack.json is missing, not a regular file, or larger than 256 KB"));
         return NO;
     }
     NSData *data = [NSData dataWithContentsOfFile:manifestPath options:0 error:NULL];
     id json =
         data != nil ? [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL] : nil;
     if (![json isKindOfClass:NSDictionary.class]) {
-        *error = PackError(KFPackErrorMalformed, @"pack.json is not a JSON object");
+        SetError(error, PackError(KFPackErrorMalformed, @"pack.json is not a JSON object"));
         return NO;
     }
     return [self readFields:json error:error] && [self readGroups:json error:error];
@@ -131,10 +139,10 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
     }
     if (![value isKindOfClass:NSString.class] || [value length] == 0 ||
         [value length] > maxLength) {
-        *error = PackError(KFPackErrorMalformed,
-                           @"pack.json: \"%@\" must be a string of 1 to %lu "
-                           @"characters",
-                           key, (unsigned long)maxLength);
+        SetError(error, PackError(KFPackErrorMalformed,
+                                  @"pack.json: \"%@\" must be a string of 1 to %lu "
+                                  @"characters",
+                                  key, (unsigned long)maxLength));
         return nil;
     }
     return value;
@@ -143,7 +151,7 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
 - (BOOL)readFields:(NSDictionary *)json error:(NSError **)error {
     id format = json[@"format"];
     if (![format isKindOfClass:NSNumber.class] || [format integerValue] != 1) {
-        *error = PackError(KFPackErrorMalformed, @"pack.json: \"format\" must be 1");
+        SetError(error, PackError(KFPackErrorMalformed, @"pack.json: \"format\" must be 1"));
         return NO;
     }
     self.identifier = [self string:json key:@"id" maxLength:100 required:YES error:error];
@@ -155,8 +163,9 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
                             @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-"];
     if ([self.identifier rangeOfCharacterFromSet:allowed.invertedSet].location != NSNotFound ||
         ![self.identifier containsString:@"."]) {
-        *error = PackError(KFPackErrorMalformed,
-                           @"pack.json: \"id\" must be reverse-DNS, like com.example.my-pack");
+        SetError(error,
+                 PackError(KFPackErrorMalformed,
+                           @"pack.json: \"id\" must be reverse-DNS, like com.example.my-pack"));
         return NO;
     }
     NSString *name = [self string:json key:@"name" maxLength:64 required:YES error:error];
@@ -172,8 +181,9 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
         return NO;
     }
     if (![KFPackManifest.switchTypes containsObject:type]) {
-        *error = PackError(KFPackErrorMalformed, @"pack.json: \"switch_type\" must be one of %@",
-                           [KFPackManifest.switchTypes componentsJoinedByString:@", "]);
+        SetError(error,
+                 PackError(KFPackErrorMalformed, @"pack.json: \"switch_type\" must be one of %@",
+                           [KFPackManifest.switchTypes componentsJoinedByString:@", "]));
         return NO;
     }
     NSError *optional = nil;
@@ -183,11 +193,12 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
                            required:NO
                               error:&optional];
     if (optional != nil) {
-        *error = optional;
+        SetError(error, optional);
         return NO;
     }
     if (source != nil && ![source hasPrefix:@"https://"] && ![source hasPrefix:@"http://"]) {
-        *error = PackError(KFPackErrorMalformed, @"pack.json: \"source_url\" must be a web URL");
+        SetError(error,
+                 PackError(KFPackErrorMalformed, @"pack.json: \"source_url\" must be a web URL"));
         return NO;
     }
     NSString *attribution = [self string:json
@@ -199,7 +210,7 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
         optional = nil; /* An empty attribution means none is required. */
     }
     if (optional != nil) {
-        *error = optional;
+        SetError(error, optional);
         return NO;
     }
     self.name = name;
@@ -220,7 +231,7 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
     }
     NSMutableSet<NSNumber *> *slots = [NSMutableSet set];
     if (![derived isKindOfClass:NSArray.class]) {
-        *error = PackError(KFPackErrorMalformed, @"pack.json: \"derived\" must be a list");
+        SetError(error, PackError(KFPackErrorMalformed, @"pack.json: \"derived\" must be a list"));
         return nil;
     }
     for (id item in derived) {
@@ -230,8 +241,8 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
             parts.count == 2 ? IndexOf(kGroupNames, KF_GROUP_COUNT, parts[0]) : -1;
         const NSInteger tier = parts.count == 2 ? IndexOf(kTierNames, KF_TIER_COUNT, parts[1]) : -1;
         if (group < 0 || tier < 0) {
-            *error = PackError(KFPackErrorMalformed,
-                               @"pack.json: \"derived\" entries look like \"alpha/slam\"");
+            SetError(error, PackError(KFPackErrorMalformed,
+                                      @"pack.json: \"derived\" entries look like \"alpha/slam\""));
             return nil;
         }
         [slots addObject:@(group * KF_TIER_COUNT + tier)];
@@ -246,7 +257,8 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
     }
     NSDictionary *groups = json[@"groups"];
     if (![groups isKindOfClass:NSDictionary.class]) {
-        *error = PackError(KFPackErrorMalformed, @"pack.json: \"groups\" must be an object");
+        SetError(error,
+                 PackError(KFPackErrorMalformed, @"pack.json: \"groups\" must be an object"));
         return NO;
     }
     NSMutableArray<KFPackFileEntry *> *files = [NSMutableArray array];
@@ -254,32 +266,34 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
         const NSInteger group = IndexOf(kGroupNames, KF_GROUP_COUNT, groupName);
         NSDictionary *body = groups[groupName];
         if (group < 0 || ![body isKindOfClass:NSDictionary.class]) {
-            *error = PackError(KFPackErrorMalformed,
-                               @"pack.json: unknown group \"%@\" (use alpha, space, enter, "
-                               @"backspace, modifier or tab)",
-                               groupName);
+            SetError(error, PackError(KFPackErrorMalformed,
+                                      @"pack.json: unknown group \"%@\" (use alpha, space, enter, "
+                                      @"backspace, modifier or tab)",
+                                      groupName));
             return NO;
         }
         for (NSString *key in body) {
             if (![key isEqualToString:@"down"] && ![key isEqualToString:@"up"]) {
-                *error = PackError(KFPackErrorMalformed,
-                                   @"pack.json: groups.%@ has unknown key \"%@\"", groupName, key);
+                SetError(error,
+                         PackError(KFPackErrorMalformed,
+                                   @"pack.json: groups.%@ has unknown key \"%@\"", groupName, key));
                 return NO;
             }
         }
         id down = body[@"down"];
         if (down != nil && ![down isKindOfClass:NSDictionary.class]) {
-            *error = PackError(KFPackErrorMalformed, @"pack.json: groups.%@.down must be an object",
-                               groupName);
+            SetError(error, PackError(KFPackErrorMalformed,
+                                      @"pack.json: groups.%@.down must be an object", groupName));
             return NO;
         }
         for (NSString *tierName in [[down allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
             const NSInteger tier = IndexOf(kTierNames, KF_TIER_COUNT, tierName);
             if (tier < 0) {
-                *error = PackError(KFPackErrorMalformed,
+                SetError(error,
+                         PackError(KFPackErrorMalformed,
                                    @"pack.json: groups.%@.down has unknown tier \"%@\" (use soft, "
                                    @"medium, hard or slam)",
-                                   groupName, tierName);
+                                   groupName, tierName));
                 return NO;
             }
             NSString *field = [NSString stringWithFormat:@"groups.%@.down.%@", groupName, tierName];
@@ -313,8 +327,8 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
         alphaDown = alphaDown || (entry.group == KF_GROUP_ALPHA && !entry.isUp);
     }
     if (!alphaDown) {
-        *error = PackError(KFPackErrorMalformed,
-                           @"pack.json: groups.alpha.down needs at least one sound");
+        SetError(error, PackError(KFPackErrorMalformed,
+                                  @"pack.json: groups.alpha.down needs at least one sound"));
         return NO;
     }
     self.files = files;
@@ -330,8 +344,8 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
             into:(NSMutableArray<KFPackFileEntry *> *)files
            error:(NSError **)error {
     if (![list isKindOfClass:NSArray.class] || [list count] == 0) {
-        *error = PackError(KFPackErrorMalformed, @"pack.json: %@ must be a non-empty list of paths",
-                           field);
+        SetError(error, PackError(KFPackErrorMalformed,
+                                  @"pack.json: %@ must be a non-empty list of paths", field));
         return NO;
     }
     NSUInteger index = 0;
@@ -342,8 +356,8 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
             return NO;
         }
         if (files.count >= KF_PACK_MAX_FILES) {
-            *error = PackError(KFPackErrorLimit, @"pack.json lists more than %u files",
-                               (unsigned)KF_PACK_MAX_FILES);
+            SetError(error, PackError(KFPackErrorLimit, @"pack.json lists more than %u files",
+                                      (unsigned)KF_PACK_MAX_FILES));
             return NO;
         }
         KFPackFileEntry *entry = [KFPackFileEntry new];
@@ -362,20 +376,21 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
 - (nullable NSString *)resolve:(id)relative field:(NSString *)field error:(NSError **)error {
     if (![relative isKindOfClass:NSString.class] || [relative length] == 0 ||
         [relative length] > kMaxPathLength) {
-        *error = PackError(KFPackErrorMalformed, @"pack.json: %@ must be a relative path", field);
+        SetError(error,
+                 PackError(KFPackErrorMalformed, @"pack.json: %@ must be a relative path", field));
         return nil;
     }
     NSString *text = relative;
     if ([text hasPrefix:@"/"] || [text containsString:@"\\"] ||
         [text rangeOfCharacterFromSet:NSCharacterSet.controlCharacterSet].location != NSNotFound) {
-        *error =
-            PackError(KFPackErrorUnsafePath, @"pack.json: %@ must be a plain relative path", field);
+        SetError(error, PackError(KFPackErrorUnsafePath,
+                                  @"pack.json: %@ must be a plain relative path", field));
         return nil;
     }
     NSString *extension = text.pathExtension.lowercaseString;
     if (![extension isEqualToString:@"wav"] && ![extension isEqualToString:@"caf"]) {
-        *error =
-            PackError(KFPackErrorMalformed, @"pack.json: %@ must be a .wav or .caf file", field);
+        SetError(error, PackError(KFPackErrorMalformed,
+                                  @"pack.json: %@ must be a .wav or .caf file", field));
         return nil;
     }
     NSArray<NSString *> *parts = [text componentsSeparatedByString:@"/"];
@@ -383,28 +398,32 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
     for (NSUInteger i = 0; i < parts.count; ++i) {
         NSString *part = parts[i];
         if (part.length == 0 || [part isEqualToString:@"."] || [part isEqualToString:@".."]) {
-            *error =
-                PackError(KFPackErrorUnsafePath, @"pack.json: %@ leaves the pack folder", field);
+            SetError(error, PackError(KFPackErrorUnsafePath,
+                                      @"pack.json: %@ leaves the pack folder", field));
             return nil;
         }
         path = [path stringByAppendingPathComponent:part];
         struct stat st;
         if (lstat(path.fileSystemRepresentation, &st) != 0) {
-            *error = PackError(KFPackErrorMissingFile, @"%@ (%@) does not exist", text, field);
+            SetError(error,
+                     PackError(KFPackErrorMissingFile, @"%@ (%@) does not exist", text, field));
             return nil;
         }
         const BOOL last = i + 1 == parts.count;
         if (S_ISLNK(st.st_mode)) {
-            *error = PackError(KFPackErrorUnsafePath, @"%@ (%@) is a symbolic link", text, field);
+            SetError(error,
+                     PackError(KFPackErrorUnsafePath, @"%@ (%@) is a symbolic link", text, field));
             return nil;
         }
         if (last && (!S_ISREG(st.st_mode) || (unsigned long long)st.st_size > kMaxAudioFileBytes)) {
-            *error = PackError(KFPackErrorLimit, @"%@ (%@) is not a regular file of at most 2 MB",
-                               text, field);
+            SetError(error,
+                     PackError(KFPackErrorLimit, @"%@ (%@) is not a regular file of at most 2 MB",
+                               text, field));
             return nil;
         }
         if (!last && !S_ISDIR(st.st_mode)) {
-            *error = PackError(KFPackErrorMissingFile, @"%@ (%@) does not exist", text, field);
+            SetError(error,
+                     PackError(KFPackErrorMissingFile, @"%@ (%@) does not exist", text, field));
             return nil;
         }
     }
@@ -418,7 +437,7 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
     kf_pack_file *files = calloc(entries.count, sizeof *files);
     if (files == NULL) {
         if (error != NULL) {
-            *error = PackError(KFPackErrorLimit, @"out of memory");
+            SetError(error, PackError(KFPackErrorLimit, @"out of memory"));
         }
         return NULL;
     }
@@ -434,7 +453,7 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
     }
     free(files);
     if (pack == NULL && error != NULL) {
-        *error = PackError(KFPackErrorDecode, @"%@: %s", self.name, message);
+        SetError(error, PackError(KFPackErrorDecode, @"%@: %s", self.name, message));
     }
     return pack;
 }

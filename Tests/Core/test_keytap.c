@@ -103,5 +103,23 @@ void test_keytap_handle_key_routes_and_reports(void) {
     kf_keytap_counters after;
     kf_keytap_get_counters(&after);
     KF_EXPECT(after.events == before.events + 3u);
+
+    /* Settings: no release sounds; external keyboards muted. The callback still sees both. */
+    const uint32_t queued_before =
+        kf_voice_queue_size_approx(kf_engine_voice_queue(KF_QUEUE_KEYTAP));
+    kf_keytap_set_release_sounds(false);
+    kf_keytap_handle_key(ctx, KF_VK_A, false, 45u * MS);
+    KF_EXPECT(g_seen == 4);
+    kf_keytap_set_mute_external(true);
+    atomic_store(&ctx->external_keyboards, 1u);
+    kf_keytap_handle_key(ctx, KF_VK_A, true, 46u * MS);
+    KF_EXPECT(g_seen == 5 && !g_last.builtin);
+    KF_EXPECT(kf_voice_queue_size_approx(kf_engine_voice_queue(KF_QUEUE_KEYTAP)) == queued_before);
+    atomic_store(&ctx->external_keyboards, 0u);
+    kf_keytap_handle_key(ctx, KF_VK_A, true, 47u * MS); /* Built-in: still plays. */
+    KF_EXPECT(kf_voice_queue_size_approx(kf_engine_voice_queue(KF_QUEUE_KEYTAP)) ==
+              queued_before + 2u);
+    kf_keytap_set_release_sounds(true);
+    kf_keytap_set_mute_external(false);
     ctx->callback = NULL;
 }

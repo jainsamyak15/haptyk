@@ -3,15 +3,14 @@
 
 #import <AppKit/AppKit.h>
 
-#import "KFAppDelegate.h"
+#import "Application/KFAppDelegate.h"
 
 int main(int argc, const char *argv[]) {
     (void)argc;
     (void)argv;
     @autoreleasepool {
         NSApplication *application = NSApplication.sharedApplication;
-        KFAppDelegate *delegate =
-            [[KFAppDelegate alloc] init]; // Strong ref for the app's lifetime.
+        KFAppDelegate *delegate = [KFAppDelegate new]; /* Strong ref for the app's lifetime. */
         application.delegate = delegate;
         [application run];
     }

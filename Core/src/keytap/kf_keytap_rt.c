@@ -95,7 +95,12 @@ KF_RT_SAFE void kf_keytap_handle_key(kf_keytap_ctx *ctx, uint16_t keycode, bool 
     atomic_store_explicit(&ctx->events,
                           atomic_load_explicit(&ctx->events, memory_order_relaxed) + 1u,
                           memory_order_relaxed);
-    kf_keytap_dispatch(&event);
+    const bool silent =
+        (!is_down && atomic_load_explicit(&ctx->mute_release, memory_order_relaxed)) ||
+        (!builtin && atomic_load_explicit(&ctx->mute_external, memory_order_relaxed));
+    if (!silent) {
+        kf_keytap_dispatch(&event);
+    }
     if (ctx->callback != NULL) {
         ctx->callback(&event, ctx->callback_ctx);
     }
