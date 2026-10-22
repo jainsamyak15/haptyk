@@ -40,6 +40,10 @@ All notable changes are recorded here. The format follows
   Packs, Labs, Stats and About; onboarding with Input Monitoring and the stats opt-in;
   calibration wizard; launch at login through SMAppService (off by default); local daily stats;
   "Remove All Keyfeel Data"; app-layer tests (`make test-app`).
+- Milestone 4, sound packs: `build_pack.py` (split takes on silence, trim, fades, resample,
+  per-tier normalization, `--derive-tiers`, CAF/ALAC through afconvert, `pack.json`, refuses
+  sources without commercial-use rights) and `kf-cli --validate`. The 16 bundled packs need
+  licensed recordings from the owner (Appendix B).
 
 ### Changed
 - `make analyze` covers the tools; `make ci` also runs `test-py` and builds the tools.

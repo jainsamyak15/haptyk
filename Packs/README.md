@@ -51,6 +51,28 @@ App/Resources/Packs/<Name>.kfpack/   bundled into the app (Git LFS, ADR-0007)
 
 `make test-pack` builds the synthetic "Test Click" pack into `build/packs/` for debug builds.
 
+### Building one pack
+
+1. Put the recordings in `Packs/sources/<pack-id>/`, named by group, tier and direction:
+   `alpha/soft/*.wav`, `alpha/up/*.wav`, `space_down_hard.wav` and so on. A file may hold
+   several takes with silence between them.
+2. Copy `SOURCES.template.md` to `Packs/sources/<pack-id>/SOURCES.md` and fill in every row;
+   "Commercial use in an app allowed" must say Yes.
+3. Build and check:
+
+   ```sh
+   Tools/py/.venv/bin/python Tools/py/build_pack.py --src Packs/sources/<pack-id> \
+       --id com.keyfeel.<pack-id> --name "<Name>" --switch-type linear [--derive-tiers]
+   build/debug/bin/kf-cli --validate "App/Resources/Packs/<Name>.kfpack"
+   build/debug/bin/kf-cli --pack "App/Resources/Packs/<Name>.kfpack"   # listen while typing
+   ```
+
+4. Commit the pack folder (CAF files through Git LFS, ADR-0007) with its `SOURCES.md`.
+
+Start with one pack of each switch type (linear, tactile, clicky, topre, buckling), as the spec
+asks, and get the owner's approval of the sound before the rest. Release builds bundle only
+what is in `App/Resources/Packs/`; until then a release app has no sounds.
+
 ## Recording spec for commissions
 
 Per key group (alpha, space, enter, backspace, modifier, tab): 6–10 takes at each force (soft,

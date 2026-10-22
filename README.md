@@ -91,7 +91,7 @@ Findings and the commands still to run are in [docs/SENSOR_NOTES.md](docs/SENSOR
 | M1 | Core sound pipeline (command line) | Done: engine, packs, key tap, `kf-cli` |
 | M2 | Force detection (command line) | Built and tested; dormant until the sensor layout is measured |
 | M3 | Menu bar app | Done: `make run-app`; manual rows in docs/TEST_MATRIX.md |
-| M4 | Sound packs | Not started |
+| M4 | Sound packs | Pipeline done; the 16 packs need licensed recordings (Packs/README.md) |
 | M5 | Shipping pipeline | Not started |
 | M6 | Labs and polish | Not started |
 

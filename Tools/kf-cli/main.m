@@ -44,7 +44,8 @@ static const char kUsage[] =
     "  --repeat      play auto-repeat too\n"
     "  --demo N      play N scripted keystrokes, 10 a second, instead of the key tap\n"
     "  --idle S      stop audio after S seconds without keys; the next key restarts it\n"
-    "  --calibrate   calibration flow (needs the motion sensor)\n";
+    "  --calibrate   calibration flow (needs the motion sensor)\n"
+    "  --validate DIR  check a .kfpack exactly as the app would, decode it, play nothing\n";
 
 typedef struct options {
     const char *pack;
@@ -55,6 +56,7 @@ typedef struct options {
     long demo;
     double idle;
     bool calibrate;
+    const char *validate;
 } options;
 
 static bool parse_number(const char *text, double lo, double hi, double *out) {
@@ -80,6 +82,9 @@ static int parse(int argc, const char **argv, options *opt) {
             opt->repeat = true;
         } else if (strcmp(flag, "--calibrate") == 0) {
             opt->calibrate = true;
+        } else if (strcmp(flag, "--validate") == 0 && value != NULL) {
+            opt->validate = value;
+            i++;
         } else if (strcmp(flag, "--pack") == 0 && value != NULL) {
             opt->pack = value;
             i++;
@@ -309,6 +314,34 @@ static void run_calibration(dispatch_block_t done) {
     dispatch_resume(timer);
 }
 
+/* ------------------------------------------------------------------ validate */
+
+/* The app's checks (KFPackManifest), then a full decode at 48 kHz: what import does. */
+static int validate_pack(const char *path) {
+    NSError *error = nil;
+    NSString *folder = @(path);
+    if (folder == nil) {
+        return EXIT_USAGE;
+    }
+    KFPackManifest *pack = [KFPackManifest manifestWithPackAtURL:[NSURL fileURLWithPath:folder]
+                                                           error:&error];
+    if (pack == nil) {
+        fprintf(stderr, "kf-cli: %s: %s\n", path, error.localizedDescription.UTF8String);
+        return EXIT_FAILURE;
+    }
+    kf_pack *decoded = [pack loadPackAtSampleRate:48000.0 error:&error];
+    if (decoded == NULL) {
+        fprintf(stderr, "kf-cli: %s\n", error.localizedDescription.UTF8String);
+        return EXIT_FAILURE;
+    }
+    printf("kf-cli: valid: %s %s (%s, %s), %lu files, %.0f KB decoded%s\n", pack.name.UTF8String,
+           pack.version.UTF8String, pack.switchType.UTF8String, pack.license.UTF8String,
+           (unsigned long)pack.fileCount, (double)kf_pack_decoded_bytes(decoded) / 1024.0,
+           pack.hasDerivedTiers ? ", some tiers derived" : "");
+    kf_pack_free(decoded);
+    return EXIT_SUCCESS;
+}
+
 /* ------------------------------------------------------------------ main */
 
 static void print_counters(void) {
@@ -339,6 +372,9 @@ int main(int argc, const char **argv) {
             return parsed;
         }
         kf_time_init();
+        if (opt.validate != NULL) {
+            return validate_pack(opt.validate);
+        }
         (void)kf_engine_init();
         if (opt.calibrate) {
             /* Calibration measures real taps with the motion sensor (spec: velocity.c). */
