@@ -67,6 +67,51 @@ void test_emit_drops_when_queue_full(void) {
     KF_EXPECT(counters.requests_dropped == 1u);
 }
 
+static uint32_t count_boom(kf_queue which, uint32_t *voices) {
+    kf_voice_req req = {.t_ns = 0u};
+    uint32_t booms = 0u;
+    *voices = 0u;
+    while (kf_voice_queue_pop(kf_engine_voice_queue(which), &req)) {
+        (*voices)++;
+        if (req.group == KF_SOUND_BOOM) {
+            booms++;
+            KF_EXPECT(!req.is_up && req.tier == KF_TIER_SOFT);
+            KF_EXPECT_NEAR(req.gain, KF_BIG_ENTER_GAIN, 1e-6);
+            KF_EXPECT_NEAR(req.pan, 0.5, 1e-6); /* At the key's position. */
+        }
+    }
+    return booms;
+}
+
+void test_emit_big_enter_adds_boom(void) {
+    KF_EXPECT(kf_engine_init() == KF_OK);
+    kf_key_event enter = key(true, 1000u);
+    enter.group = KF_GROUP_ENTER;
+    uint32_t voices = 0u;
+    KF_EXPECT(kf_emit_keystroke(&enter, 1.0f, KF_QUEUE_SENSOR));
+    KF_EXPECT(count_boom(KF_QUEUE_SENSOR, &voices) == 0u && voices == 1u); /* Off by default. */
+
+    kf_engine_set_big_enter(true);
+    KF_EXPECT(kf_emit_keystroke(&enter, 1.0f, KF_QUEUE_SENSOR));
+    KF_EXPECT(count_boom(KF_QUEUE_SENSOR, &voices) == 1u && voices == 2u);
+    KF_EXPECT(kf_emit_keystroke(&enter, KF_BIG_ENTER_VELOCITY, KF_QUEUE_SENSOR));
+    KF_EXPECT(count_boom(KF_QUEUE_SENSOR, &voices) == 1u); /* At the threshold. */
+    KF_EXPECT(kf_emit_keystroke(&enter, KF_BIG_ENTER_VELOCITY - 0.01f, KF_QUEUE_SENSOR));
+    KF_EXPECT(count_boom(KF_QUEUE_SENSOR, &voices) == 0u);
+    /* Unmeasured keys play at the default velocity, far below the threshold. */
+    KF_EXPECT(kf_emit_keystroke(&enter, -1.0f, KF_QUEUE_KEYTAP));
+    KF_EXPECT(count_boom(KF_QUEUE_KEYTAP, &voices) == 0u);
+    /* Only Enter, and only its key-down. */
+    const kf_key_event space = key(true, 1000u);
+    KF_EXPECT(kf_emit_keystroke(&space, 1.0f, KF_QUEUE_SENSOR));
+    KF_EXPECT(count_boom(KF_QUEUE_SENSOR, &voices) == 0u);
+    enter.is_down = false;
+    KF_EXPECT(kf_emit_keystroke(&enter, 1.0f, KF_QUEUE_KEYTAP));
+    KF_EXPECT(count_boom(KF_QUEUE_KEYTAP, &voices) == 0u && voices == 1u);
+    kf_engine_set_big_enter(false);
+    KF_EXPECT(kf_engine_init() == KF_OK);
+}
+
 void test_render_drains_queues_and_is_silent(void) {
     KF_EXPECT(kf_engine_init() == KF_OK);
     const kf_key_event down = key(true, 100u * MS);
@@ -167,6 +212,44 @@ void test_mixer_plays_with_constant_power_pan(void) {
     KF_EXPECT(!render_stereo(l, r, 20u * MS));
     KF_EXPECT_NEAR(l[10], r[10], 1e-6);
     kf_engine_set_stereo_width(1.0f);
+    kf_engine_set_pack(NULL);
+}
+
+void test_mixer_plays_the_boom(void) {
+    for (uint32_t i = 0u; i < 4800u; ++i) {
+        g_dc[i] = 8192; /* Keys: 0.25 full scale. */
+    }
+    static int16_t boom[4800];
+    for (uint32_t i = 0u; i < 4800u; ++i) {
+        boom[i] = 4096; /* Boom: 0.125. */
+    }
+    const kf_pack_pcm sounds[] = {
+        {KF_GROUP_ALPHA, 0u, KF_TIER_SLAM, false, g_dc, 4800u},
+        {KF_SOUND_BOOM, 0u, 0u, false, boom, 4800u},
+    };
+    fresh_engine(kf_pack_from_pcm(sounds, 2u, 48000.0, NULL, 0u));
+    kf_engine_set_big_enter(true);
+    kf_engine_set_volume(0.5f); /* Keeps the sum under the clipper's knee. */
+    kf_engine_render_reset(48000.0);
+    static float l[RENDER_FRAMES];
+    static float r[RENDER_FRAMES];
+    kf_key_event enter = key_at(0, 10u * MS);
+    enter.group = KF_GROUP_ENTER; /* No Enter sounds: alpha's, then the boom on top. */
+    KF_EXPECT(kf_emit_keystroke(&enter, 1.0f, KF_QUEUE_SENSOR));
+    KF_EXPECT(!render_stereo(l, r, 10u * MS));
+    KF_EXPECT(kf_engine_render_active_voices() == 2u);
+    const double centre = 0.70710678 * 0.5;
+    KF_EXPECT_NEAR(l[64], (0.25 * 1.0 + 0.125 * (double)KF_BIG_ENTER_GAIN) * centre, 1e-4);
+    KF_EXPECT_NEAR(r[64], l[64], 1e-6);
+
+    /* The same Enter with Big Enter off: the key alone. */
+    kf_engine_set_big_enter(false);
+    kf_engine_render_reset(48000.0);
+    KF_EXPECT(kf_emit_keystroke(&enter, 1.0f, KF_QUEUE_SENSOR));
+    KF_EXPECT(!render_stereo(l, r, 10u * MS));
+    KF_EXPECT(kf_engine_render_active_voices() == 1u);
+    KF_EXPECT_NEAR(l[64], 0.25 * centre, 1e-4);
+    kf_engine_set_volume(1.0f);
     kf_engine_set_pack(NULL);
 }
 

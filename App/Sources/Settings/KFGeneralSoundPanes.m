@@ -92,6 +92,7 @@ static const CGFloat kPaneWidth = 560.0;
     }
     _idle.target = self;
     _idle.action = @selector(changeSetting:);
+    _idle.accessibilityLabel = @"Sleep after no typing"; /* Its row labels the stack. */
     NSTextField *idleNote = KFSecondaryLabel(
         @"Audio and the motion sensor sleep when you stop typing, so Keyfeel uses no power while "
         @"idle. The first key after a pause plays a moment late.");
@@ -182,6 +183,7 @@ static const CGFloat kPaneWidth = 560.0;
     _pack = [NSPopUpButton new];
     _pack.target = self;
     _pack.action = @selector(changeSetting:);
+    _pack.accessibilityLabel = @"Sound pack";
     _sensitivity = KFSlider(-1.0, 1.0, 0.0, self, @selector(changeSetting:), @"Sensitivity");
     _adapt = KFCheckbox(@"Adapt to my typing over time", self, @selector(changeSetting:));
     _calibrate = KFPushButton(@"Run Calibration…", self, @selector(calibrate:));

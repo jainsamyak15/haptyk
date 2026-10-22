@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <kf/kf_config.h>
 #include <kf/kf_keytap.h>
 #include <kf/kf_types.h>
 
@@ -27,6 +28,10 @@ enum {
     KF_FLAG_RIGHT_OPTION = 0x00000040,
     KF_FLAG_RIGHT_CONTROL = 0x00002000,
     KF_FLAG_CAPS_LOCK = 0x00010000,
+    KF_FLAG_SHIFT = 0x00020000,   /* Device-independent: what Shout Mode adds... */
+    KF_FLAG_CONTROL = 0x00040000, /* ...and the three it never adds Shift under. */
+    KF_FLAG_OPTION = 0x00080000,
+    KF_FLAG_COMMAND = 0x00100000,
     KF_FLAG_FUNCTION = 0x00800000,
 };
 
@@ -46,6 +51,11 @@ typedef struct kf_keytap_ctx {
     bool device_builtin[KF_KEYTAP_MAX_KEYBOARDS];
     uint32_t device_count;
     bool values_open; /* Keyboards opened for report times: only while an external one exists. */
+    bool active_mode; /* Set before the thread starts. */
+    uint64_t timeouts_ns[KF_SHOUT_MAX_TIMEOUTS]; /* Recent tap timeouts, oldest overwritten. */
+    uint32_t timeouts_next;
+    atomic_bool shout;
+    atomic_bool shout_tripped;
     atomic_bool repeat_sounds;
     atomic_bool mute_release; /* Inverted, so the zeroed default plays release sounds. */
     atomic_bool mute_external;
@@ -53,6 +63,7 @@ typedef struct kf_keytap_ctx {
     _Atomic(uint64_t) events;
     _Atomic(uint64_t) tap_timeouts;
     _Atomic(uint64_t) autorepeat_dropped;
+    _Atomic(uint64_t) shout_keys;
 } kf_keytap_ctx;
 
 kf_keytap_ctx *kf_keytap_context(void);
@@ -78,5 +89,26 @@ bool kf_keytap_is_builtin(uint64_t t_ns, uint64_t last_builtin_ns, uint64_t last
 
 /** Classifies, routes and reports one key event at `t_ns`. Keytap thread; RT-safe. */
 void kf_keytap_handle_key(kf_keytap_ctx *ctx, uint16_t keycode, bool is_down, uint64_t t_ns);
+
+/**
+ * Shout Mode's rule for one key-down: `flags` plus Shift when the key is a letter a-z, the
+ * rolling force is at least KF_SHOUT_FORCE and no Command, Control or Option is held;
+ * otherwise `flags` unchanged. RT-safe.
+ */
+uint64_t kf_keytap_shout_flags(uint16_t keycode, uint64_t flags, float rolling_force);
+
+/**
+ * Shout Mode, at a key-down from the active tap: the flags the event should carry. Only for a
+ * built-in key while the sensor is live, since the rolling force describes only those keys.
+ * Keytap thread; RT-safe.
+ */
+uint64_t kf_keytap_shout(kf_keytap_ctx *ctx, uint16_t keycode, uint64_t flags, uint64_t t_ns);
+
+/**
+ * Records a tap timeout at `t_ns` while Shout Mode is on. At the KF_SHOUT_MAX_TIMEOUTS-th
+ * within KF_SHOUT_TIMEOUT_WINDOW_NS it turns Shout Mode off and raises shout_tripped; returns
+ * true then. Keytap thread; RT-safe.
+ */
+bool kf_keytap_note_timeout(kf_keytap_ctx *ctx, uint64_t t_ns);
 
 #endif /* KF_KEYTAP_INTERNAL_H */

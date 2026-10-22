@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-Proprietary
 // Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
 
+#include <string.h>
+
 #include <kf/kf_config.h>
 #include <kf/kf_engine.h>
 
@@ -122,4 +124,111 @@ void test_keytap_handle_key_routes_and_reports(void) {
     kf_keytap_set_release_sounds(true);
     kf_keytap_set_mute_external(false);
     ctx->callback = NULL;
+}
+
+void test_keytap_shout_rule(void) {
+    const uint64_t none = 0u;
+    const uint16_t letters[] = {KF_VK_A, KF_VK_M, KF_VK_Q, KF_VK_Z, KF_VK_B, KF_VK_P};
+    for (size_t i = 0u; i < sizeof letters / sizeof letters[0]; ++i) {
+        KF_EXPECT(kf_keytap_shout_flags(letters[i], none, 0.8f) == KF_FLAG_SHIFT);
+        KF_EXPECT(kf_keytap_shout_flags(letters[i], none, 0.79f) == none);
+    }
+    /* Every one of the 26 letter keys, and nothing else below 64. */
+    int shouted = 0;
+    for (uint16_t vk = 0u; vk < 128u; ++vk) {
+        shouted += kf_keytap_shout_flags(vk, none, 1.0f) != none ? 1 : 0;
+    }
+    KF_EXPECT(shouted == 26);
+    const uint16_t others[] = {KF_VK_DIGIT_1, KF_VK_SPACE, KF_VK_RETURN, KF_VK_TAB,
+                               KF_VK_DELETE,  KF_VK_COMMA, KF_VK_SHIFT,  KF_VK_F5};
+    for (size_t i = 0u; i < sizeof others / sizeof others[0]; ++i) {
+        KF_EXPECT(kf_keytap_shout_flags(others[i], none, 1.0f) == none);
+    }
+    /* Never under Command, Control or Option; other flags are kept. */
+    const uint64_t shortcuts[] = {KF_FLAG_COMMAND | KF_FLAG_LEFT_COMMAND, KF_FLAG_CONTROL,
+                                  KF_FLAG_OPTION};
+    for (size_t i = 0u; i < sizeof shortcuts / sizeof shortcuts[0]; ++i) {
+        KF_EXPECT(kf_keytap_shout_flags(KF_VK_C, shortcuts[i], 1.0f) == shortcuts[i]);
+    }
+    KF_EXPECT(kf_keytap_shout_flags(KF_VK_C, KF_FLAG_FUNCTION, 1.0f) ==
+              (KF_FLAG_FUNCTION | KF_FLAG_SHIFT));
+    KF_EXPECT(kf_keytap_shout_flags(KF_VK_C, KF_FLAG_SHIFT, 1.0f) == KF_FLAG_SHIFT);
+    /* No force yet (-1) or NaN: nothing changes. */
+    KF_EXPECT(kf_keytap_shout_flags(KF_VK_A, none, -1.0f) == none);
+    const float nan = __builtin_nanf("");
+    KF_EXPECT(kf_keytap_shout_flags(KF_VK_A, none, nan) == none);
+}
+
+void test_keytap_shout_needs_live_builtin_force(void) {
+    kf_keytap_ctx *ctx = kf_keytap_context();
+    kf_sensor_ctx *sensor = kf_sensor_context();
+    kf_sensor_reset();
+    atomic_store(&ctx->external_keyboards, 0u);
+    const uint64_t t = 500u * MS;
+    kf_keytap_counters before;
+    kf_keytap_get_counters(&before);
+
+    kf_keytap_set_shout(false);
+    atomic_store(&sensor->rolling_velocity, 0.9f);
+    kf_sensor_set_state(KF_SENSOR_LIVE);
+    atomic_store(&sensor->last_sample_ns, t);
+    KF_EXPECT(kf_keytap_shout(ctx, KF_VK_A, 0u, t) == 0u); /* Off. */
+    kf_keytap_set_shout(true);
+    KF_EXPECT(kf_keytap_shout_enabled());
+    KF_EXPECT(kf_keytap_shout(ctx, KF_VK_A, 0u, t) == KF_FLAG_SHIFT);
+    KF_EXPECT(kf_keytap_shout(ctx, KF_VK_DIGIT_1, 0u, t) == 0u);
+    /* Stale sensor: the rolling force is old news. */
+    KF_EXPECT(kf_keytap_shout(ctx, KF_VK_A, 0u, t + KF_SENSOR_STALE_NS + 1u) == 0u);
+    /* An external keyboard's key: the rolling force describes built-in keys only. */
+    atomic_store(&ctx->external_keyboards, 1u);
+    ctx->last_builtin_ns = 0u;
+    KF_EXPECT(kf_keytap_shout(ctx, KF_VK_A, 0u, t) == 0u);
+    atomic_store(&ctx->external_keyboards, 0u);
+    /* Softer typing, or a stopped sensor. */
+    atomic_store(&sensor->rolling_velocity, 0.5f);
+    KF_EXPECT(kf_keytap_shout(ctx, KF_VK_A, 0u, t) == 0u);
+    atomic_store(&sensor->rolling_velocity, 0.9f);
+    kf_sensor_set_state(KF_SENSOR_STOPPED);
+    KF_EXPECT(kf_keytap_shout(ctx, KF_VK_A, 0u, t) == 0u);
+
+    kf_keytap_counters after;
+    kf_keytap_get_counters(&after);
+    KF_EXPECT(after.shout_keys == before.shout_keys + 1u);
+    kf_keytap_set_shout(false);
+    kf_sensor_reset();
+}
+
+void test_keytap_shout_trips_after_timeouts(void) {
+    kf_keytap_ctx *ctx = kf_keytap_context();
+    const uint64_t s = 1000u * MS;
+    memset(ctx->timeouts_ns, 0, sizeof ctx->timeouts_ns);
+    ctx->timeouts_next = 0u;
+    (void)kf_keytap_take_shout_tripped();
+
+    kf_keytap_set_shout(false);
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 1u)); /* Off: timeouts don't count. */
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 2u));
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 3u));
+
+    /* Spaced out: a fourth timeout 49 s after the second is the third within a minute. */
+    kf_keytap_set_shout(true);
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 1u * s));
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 41u * s));
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 81u * s)); /* 80 s after the first. */
+    KF_EXPECT(!kf_keytap_take_shout_tripped());
+    KF_EXPECT(kf_keytap_note_timeout(ctx, 90u * s));
+    KF_EXPECT(!kf_keytap_shout_enabled());     /* Turned itself off... */
+    KF_EXPECT(kf_keytap_take_shout_tripped()); /* ...and says so once. */
+    KF_EXPECT(!kf_keytap_take_shout_tripped());
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 91u * s));
+
+    /* Three in quick succession. */
+    memset(ctx->timeouts_ns, 0, sizeof ctx->timeouts_ns);
+    ctx->timeouts_next = 0u;
+    kf_keytap_set_shout(true);
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 200u * s));
+    KF_EXPECT(!kf_keytap_note_timeout(ctx, 200u * s + 5u * MS));
+    KF_EXPECT(kf_keytap_note_timeout(ctx, 260u * s)); /* Exactly one minute after the first. */
+    KF_EXPECT(kf_keytap_take_shout_tripped());
+    kf_keytap_set_shout(false);
 }

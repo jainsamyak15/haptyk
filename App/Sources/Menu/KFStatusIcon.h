@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NS_ENUM(NSInteger, KFStatusIconState) {
     KFStatusIconOn = 0,
     KFStatusIconOff,       ///< Drawn dimmed.
-    KFStatusIconAttention, ///< A dot: Input Monitoring is missing.
+    KFStatusIconAttention, ///< A dot: Input Monitoring is missing, or a Labs feature stopped.
 };
 
 /// Template (monochrome) status-bar images, drawn in code so they follow the menu bar's

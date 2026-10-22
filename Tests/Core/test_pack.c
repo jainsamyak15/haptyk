@@ -135,7 +135,7 @@ void test_pack_rejects_bad_input(void) {
     KF_EXPECT(full != NULL); /* Exactly at the limit is fine. */
     kf_pack_free(full);
 
-    kf_pack_pcm bad = sound(KF_GROUP_COUNT, false, 0u, 10u);
+    kf_pack_pcm bad = sound(KF_SOUND_SLOTS, false, 0u, 10u);
     KF_EXPECT(kf_pack_from_pcm(&bad, 1u, RATE, err, sizeof err) == NULL);
     bad = sound(KF_GROUP_ALPHA, false, KF_TIER_COUNT, 10u);
     KF_EXPECT(kf_pack_from_pcm(&bad, 1u, RATE, err, sizeof err) == NULL);
@@ -145,6 +145,42 @@ void test_pack_rejects_bad_input(void) {
     KF_EXPECT(kf_pack_from_pcm(&bad, 1u, 1000.0, err, sizeof err) == NULL); /* Bad rate. */
     KF_EXPECT(kf_pack_from_pcm(NULL, 1u, RATE, err, sizeof err) == NULL);
     KF_EXPECT(kf_pack_from_pcm(&bad, 0u, RATE, NULL, 0u) == NULL); /* NULL err is fine. */
+}
+
+void test_pack_holds_the_boom(void) {
+    char err[160];
+    const kf_pack_pcm sounds[] = {
+        sound(KF_GROUP_ALPHA, false, KF_TIER_SOFT, 100u),
+        sound(KF_GROUP_ALPHA, true, 0u, 50u),
+        sound(KF_SOUND_BOOM, false, 0u, 700u),
+    };
+    kf_pack *p = kf_pack_from_pcm(sounds, 3u, RATE, err, sizeof err);
+    KF_EXPECT(p != NULL);
+    const kf_pack_sound *takes = NULL;
+    KF_EXPECT(kf_pack_sounds(p, KF_SOUND_BOOM, false, 0u, &takes) == 1u && takes[0].frames == 700u);
+    KF_EXPECT(kf_pack_sounds(p, KF_SOUND_BOOM, true, 0u, &takes) == 0u);   /* No release. */
+    KF_EXPECT(kf_pack_sounds(p, KF_SOUND_BOOM, false, 2u, &takes) == 0u);  /* One tier. */
+    KF_EXPECT(kf_pack_sounds(p, KF_SOUND_SLOTS, false, 0u, &takes) == 0u); /* Out of range. */
+    /* Keys never fall back to the boom: Enter without sounds of its own plays alpha's. */
+    for (uint8_t t = 0u; t < KF_TIER_COUNT; ++t) {
+        KF_EXPECT(kf_pack_sounds(p, KF_GROUP_ENTER, false, t, &takes) == 1u &&
+                  takes[0].frames == 100u);
+    }
+    KF_EXPECT(kf_pack_sounds(p, KF_GROUP_ENTER, true, 0u, &takes) == 1u && takes[0].frames == 50u);
+    KF_EXPECT(kf_pack_decoded_bytes(p) == (100u + 50u + 700u) * sizeof(int16_t));
+    kf_pack_free(p);
+
+    /* A pack without the boom plays none, and the boom alone is not a pack. */
+    p = kf_pack_from_pcm(sounds, 2u, RATE, err, sizeof err);
+    KF_EXPECT(p != NULL && kf_pack_sounds(p, KF_SOUND_BOOM, false, 0u, &takes) == 0u);
+    kf_pack_free(p);
+    KF_EXPECT(kf_pack_from_pcm(&sounds[2], 1u, RATE, err, sizeof err) == NULL);
+    KF_EXPECT(strstr(err, "alpha") != NULL);
+    /* The boom has one tier and no release sound. */
+    kf_pack_pcm bad[2] = {sounds[0], sound(KF_SOUND_BOOM, true, 0u, 10u)};
+    KF_EXPECT(kf_pack_from_pcm(bad, 2u, RATE, err, sizeof err) == NULL);
+    bad[1] = sound(KF_SOUND_BOOM, false, KF_TIER_HARD, 10u);
+    KF_EXPECT(kf_pack_from_pcm(bad, 2u, RATE, err, sizeof err) == NULL);
 }
 
 /* ------------------------------------------------------------------ decoding (macOS) */

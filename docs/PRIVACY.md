@@ -32,6 +32,10 @@ about them.
 
 - `kf_key_event` has no key-code field (`Core/include/kf/kf_types.h`).
 - The event tap respects Secure Input; the app never works around it.
+- Shout Mode (Labs, off by default) is the one feature that changes a keystroke: it adds the
+  Shift flag to a letter key's key-down, decided from the key code and the force of the last
+  three keystrokes. It never reads characters and never touches shortcuts or other keys
+  (ADR-0018).
 - Key data is logged only in debug builds with `KF_DEBUG_KEYS` enabled.
 - The upload payload is built by one function, `+[KFTelemetry payloadForDay:...]`, whose fields
   a unit test pins to exactly the list above.

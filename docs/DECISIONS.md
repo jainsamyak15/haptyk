@@ -183,3 +183,45 @@ decision; supersede it with a new one.
 - **Decision:** `KF_QUEUE_MAIN`, produced only by the main thread; the engine drains all queues.
 - **Consequences:** Every queue keeps exactly one producer, as the real-time rules require.
 
+
+## ADR-0017: Big Enter's boom travels with the pack
+
+- **Status:** Accepted
+- **Context:** The spec plays the Labs boom "as an extra voice request from the sensor thread"
+  on the same engine. The boom must be decoded at the device rate, re-decoded when the rate
+  changes, and never freed while a voice plays it: exactly what the pack hand-off already does.
+- **Decision:** A pack's index has one more row, `KF_SOUND_BOOM`, after the key groups. While Big
+  Enter is on and force detection exists, `KFPackLibrary` decodes `Resources/Labs/boom.wav` into
+  the pack (one file more); `kf_emit_keystroke()` adds a boom request when an Enter key-down's
+  velocity is at least `KF_BIG_ENTER_VELOCITY` and `kf_engine_set_big_enter()` is on. No
+  fallback rule reads or fills that row. Turning the feature on or off reloads the pack in the
+  background, through the usual swap. A boom that fails to decode is left out and the key
+  sounds still load. The boom itself is synthesized by `Tools/py/make_labs_sounds.py`, so the
+  project owns it; a test keeps the committed file equal to the script's output.
+- **Consequences:** One ownership and swap path for all audio, no second pending pointer and no
+  new lifetime rules. The 84 KB boom is in memory only while it can play. Only a measured
+  velocity reaches the threshold, so in fallback mode Big Enter is inert and costs nothing.
+
+## ADR-0018: Shout Mode runs an active tap only when it can act, and steps aside quietly
+
+- **Status:** Accepted
+- **Context:** An active (filtering) event tap that is slow delays every keystroke on the Mac,
+  and it needs Accessibility. Shout Mode can only act when force is measured. The spec asks to
+  skip Secure Input and to "tell the user" when repeated tap timeouts turn the feature off. The
+  public `IsSecureEventInputEnabled()` is no longer declared in the macOS 26 SDK.
+- **Decision:**
+  - The tap runs in active mode only while Shout Mode is on, force detection exists
+    (`kf_sensor_probe()`) and Accessibility is granted. Otherwise it stays listen-only, and
+    Accessibility is not even asked for. If macOS refuses the active tap, a listen-only tap
+    starts at once, so sounds never stop.
+  - The callback's decision is pure (`kf_keytap_shout_flags()`): Shift is added only to the 26
+    letter key codes, never under Command, Control or Option, only for built-in keys while the
+    sensor is live. It reads no characters. Secure Input is enforced by macOS itself, which
+    delivers no key events to event taps while it is on; a manual test row checks it.
+  - The core counts tap timeouts while Shout Mode is on and turns it off itself at the third
+    within a minute, then raises a flag. The app's key callback, which runs anyway, notices it
+    with one atomic load and hops to the main thread once. The app reverts to a listen-only tap
+    and shows the attention dot and a menu line until the user opens the menu: no modal alert
+    that would steal keystrokes mid-sentence, and no notification permission prompt.
+- **Consequences:** On every Mac without measured force (today, all of them: ADR-0011) Shout Mode
+  never filters a keystroke. The decision costs about 40 ns per key-down (`make bench`).

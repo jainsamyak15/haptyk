@@ -40,6 +40,7 @@
     X(emit_key_down_blends_tiers)              \
     X(emit_key_up_plays_release)               \
     X(emit_drops_when_queue_full)              \
+    X(emit_big_enter_adds_boom)                \
     X(render_drains_queues_and_is_silent)      \
     X(render_drops_stale_requests)             \
     X(sensor_resolves_after_window)            \
@@ -50,6 +51,7 @@
     X(tool_match_arguments)                    \
     X(tool_match_info)                         \
     X(mixer_plays_with_constant_power_pan)     \
+    X(mixer_plays_the_boom)                    \
     X(mixer_voice_ends_and_goes_silent)        \
     X(mixer_steals_the_oldest_voice)           \
     X(mixer_clipper_keeps_output_within_unity) \
@@ -59,10 +61,14 @@
     X(pack_fallback_rules)                     \
     X(pack_derived_flags)                      \
     X(pack_rejects_bad_input)                  \
+    X(pack_holds_the_boom)                     \
     X(pack_decodes_files)                      \
     X(keytap_modifier_down_and_up)             \
     X(keytap_builtin_rule)                     \
     X(keytap_handle_key_routes_and_reports)    \
+    X(keytap_shout_rule)                       \
+    X(keytap_shout_needs_live_builtin_force)   \
+    X(keytap_shout_trips_after_timeouts)       \
     X(sensor_decodes_each_layout)              \
     X(sensor_falls_back_without_a_layout)      \
     X(sensor_expired_keys_play_at_default)     \

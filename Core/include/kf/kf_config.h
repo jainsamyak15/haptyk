@@ -82,6 +82,15 @@
 /* Power ------------------------------------------------------------------ */
 #define KF_IDLE_TIMEOUT_S 30u
 
+/* Labs ------------------------------------------------------------------- */
+#define KF_BIG_ENTER_VELOCITY      0.85f          /**< Enter this hard or harder adds the boom. */
+#define KF_BIG_ENTER_GAIN          0.9f           /**< Level of the boom. */
+#define KF_SHOUT_FORCE             0.8f           /**< Rolling force that types capitals. */
+#define KF_SHOUT_MAX_TIMEOUTS      3u             /**< Tap timeouts that end Shout Mode... */
+#define KF_SHOUT_TIMEOUT_WINDOW_NS 60000000000ULL /**< ...within one minute. */
+#define KF_FORCE_METER_POLL_MS     50u            /**< Force Meter refresh, only while typing. */
+#define KF_FORCE_METER_SHOW_MS     1000u          /**< Each keystroke's force shows for 1 s. */
+
 /* Stats (app) -------------------------------------------------------------- */
 #define KF_STATS_FORCE_BUCKETS  10u    /**< Force histogram: log-spaced, the same for everyone. */
 #define KF_STATS_FORCE_MIN_G    0.005f /**< TBD-M0: lower edge of the first bucket. */

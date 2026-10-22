@@ -6,9 +6,11 @@
 #include <math.h>
 
 #include <kf/kf_config.h>
+#include <kf/kf_engine.h>
 #include <kf/kf_pack.h>
 #include <kf/kf_types.h>
 
+#import "Labs/KFForceMeterController.h"
 #import "Packs/KFPackLibrary.h"
 #import "Packs/KFPackManifest.h"
 #import "Power/KFPowerStateMachine.h"
@@ -278,6 +280,64 @@ void TestPackLibraryOrderAndDefault(void) {
     KFExpect([library isBundled:library.packs.firstObject]);
     NSError *error = nil;
     KFExpect(![library deletePack:library.packs.firstObject error:&error]); /* Bundled: never. */
+}
+
+#pragma mark - Labs
+
+void TestLabsBoomAndMeter(void) {
+    /* Force Meter: the text and the nearest recorded tier. */
+    KFExpect([[KFForceMeterController textForVelocity:-1.0f] isEqualToString:@"Not measured"]);
+    KFExpect([[KFForceMeterController textForVelocity:NAN] isEqualToString:@"Not measured"]);
+    KFExpect([[KFForceMeterController textForVelocity:0.0f] isEqualToString:@"0% · Soft"]);
+    KFExpect([[KFForceMeterController textForVelocity:0.72f] isEqualToString:@"72% · Hard"]);
+    KFExpect([[KFForceMeterController textForVelocity:7.0f] isEqualToString:@"100% · Slam"]);
+    KFExpect([[KFForceMeterController tierNameForVelocity:0.16f] isEqualToString:@"Soft"]);
+    KFExpect([[KFForceMeterController tierNameForVelocity:0.17f] isEqualToString:@"Medium"]);
+    KFExpect([[KFForceMeterController tierNameForVelocity:0.84f] isEqualToString:@"Slam"]);
+
+    /* Big Enter: the boom joins the pack only while set, and a change means a reload. */
+    KFExpect(kf_engine_init() == KF_OK);
+    NSURL *bundled = KFTestTemporaryFolder();
+    NSURL *pack =
+        MakePack(ValidManifest(), @[ @"samples/a.wav", @"samples/b.wav", @"samples/u.wav" ]);
+    [NSFileManager.defaultManager moveItemAtURL:pack
+                                          toURL:[bundled URLByAppendingPathComponent:@"t.kfpack"]
+                                          error:NULL];
+    KFPackLibrary *library = [[KFPackLibrary alloc] initWithBundledURL:bundled
+                                                               userURL:KFTestTemporaryFolder()];
+    KFPackManifest *manifest = library.packs.firstObject;
+    KFExpect(manifest != nil);
+    if (manifest == nil) {
+        return;
+    }
+    NSError *error = nil;
+    KFExpect([library needsLoad:manifest rate:48000.0]);
+    KFExpect([library loadPackNow:manifest rate:48000.0 error:&error]);
+    KFExpect(![library needsLoad:manifest rate:48000.0]);
+    KFExpect([library needsLoad:manifest rate:44100.0]);
+
+    NSURL *boom = [NSURL fileURLWithPath:@"App/Resources/Labs/boom.wav"];
+    library.boomURL = boom;
+    KFExpect([library needsLoad:manifest rate:48000.0]);
+    KFExpect([library loadPackNow:manifest rate:48000.0 error:&error]);
+    KFExpect(![library needsLoad:manifest rate:48000.0]);
+    kf_pack *decoded = [manifest loadPackAtSampleRate:48000.0 boom:boom error:&error];
+    const kf_pack_sound *takes = NULL;
+    KFExpect(decoded != NULL &&
+             kf_pack_sounds(decoded, KF_SOUND_BOOM, false, KF_TIER_SOFT, &takes) == 1u &&
+             takes[0].frames == 43200u); /* 0.9 s at 48 kHz. */
+    kf_pack_free(decoded);
+    decoded = [manifest loadPackAtSampleRate:44100.0 boom:boom error:&error];
+    KFExpect(decoded != NULL &&
+             kf_pack_sounds(decoded, KF_SOUND_BOOM, false, KF_TIER_SOFT, &takes) == 1u &&
+             takes[0].frames >= 39690u && takes[0].frames <= 39700u); /* Resampled. */
+    kf_pack_free(decoded);
+
+    /* A boom that fails to decode never costs the key sounds. */
+    library.boomURL = [bundled URLByAppendingPathComponent:@"missing.wav"];
+    KFExpect([library loadPackNow:manifest rate:48000.0 error:&error]);
+    KFExpect(library.boomURL == nil && ![library needsLoad:manifest rate:48000.0]);
+    kf_engine_set_pack(NULL);
 }
 
 #pragma mark - Preferences and stats

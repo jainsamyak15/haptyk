@@ -7,8 +7,10 @@
  * drain is simulated untimed after each keystroke, as real typing is far slower
  * than the queue; concurrent behaviour is covered by the SPSC stress test under
  * ThreadSanitizer. A second pass times the render callback's work for one buffer with the
- * whole voice pool sounding, the worst case. Exit status 1 when either p99 exceeds its budget
- * or a request drops.
+ * whole voice pool sounding, the worst case. A third times Shout Mode's decision in the active
+ * tap's callback, with the sensor live and the rolling force high, also the worst case. Big
+ * Enter is on throughout, so hard Enters queue the boom too. Exit status 1 when any p99
+ * exceeds its budget or a request drops.
  *
  * Usage: latency-bench [--iterations N]
  */
@@ -21,10 +23,14 @@
 #include <kf/kf.h>
 
 #include "engine/kf_engine_internal.h"
+#include "keymap/kf_vk.h"
+#include "keytap/kf_keytap_internal.h"
+#include "sensor/kf_sensor_internal.h"
 
 #define KF_BENCH_DEFAULT_ITERATIONS 100000u
 #define KF_BENCH_BUDGET_P99_NS      200000u /* docs/PERFORMANCE.md */
 #define KF_BENCH_RENDER_RUNS        20000u
+#define KF_BENCH_TAP_BUDGET_NS      50000u /* Spec: the tap callback returns within 50 us. */
 #define KF_BENCH_RATE               48000.0
 #define MS                          1000000ULL
 
@@ -122,10 +128,41 @@ static int bench_render(void) {
     return p99 <= budget ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
+/* Shout Mode, as the active tap's callback runs it for each key-down. */
+static int bench_shout(uint32_t iterations, uint64_t *latency) {
+    kf_sensor_reset();
+    kf_sensor_ctx *sensor = kf_sensor_context();
+    kf_keytap_ctx *tap = kf_keytap_context();
+    atomic_store(&sensor->rolling_velocity, 0.9f);
+    atomic_store(&tap->external_keyboards, 0u);
+    kf_sensor_set_state(KF_SENSOR_LIVE);
+    kf_keytap_set_shout(true);
+    uint64_t shouted = 0u;
+    for (uint32_t i = 0u; i < iterations; ++i) {
+        const uint16_t keycode = (uint16_t)(i % 0x30u); /* Letters and other keys. */
+        const uint64_t start = kf_time_now_ns();
+        atomic_store_explicit(&sensor->last_sample_ns, start, memory_order_relaxed);
+        const uint64_t flags = kf_keytap_shout(tap, keycode, 0u, start);
+        latency[i] = kf_time_now_ns() - start;
+        shouted += flags != 0u ? 1u : 0u;
+    }
+    kf_keytap_set_shout(false);
+    kf_sensor_reset();
+    qsort(latency, iterations, sizeof *latency, compare_u64);
+    const uint64_t p99 = latency[(uint32_t)(((uint64_t)iterations * 99u) / 100u)];
+    printf("latency-bench: Shout Mode decision, sensor live (%u key-downs, %llu capitals)\n",
+           iterations, (unsigned long long)shouted);
+    printf("  p50 %8llu ns\n  p99 %8llu ns   budget %u ns\n  max %8llu ns\n",
+           (unsigned long long)latency[iterations / 2u], (unsigned long long)p99,
+           KF_BENCH_TAP_BUDGET_NS, (unsigned long long)latency[iterations - 1u]);
+    return p99 <= KF_BENCH_TAP_BUDGET_NS && shouted > 0u ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
 int main(int argc, char **argv) {
     const uint32_t iterations = parse_iterations(argc, argv);
     kf_time_init();
     (void)kf_engine_init();
+    kf_engine_set_big_enter(true);
     fill_ring();
     const kf_calibration cal = kf_calibration_default();
 
@@ -156,7 +193,6 @@ int main(int argc, char **argv) {
     const uint64_t p50 = latency[iterations / 2u];
     const uint64_t p99 = latency[(uint32_t)(((uint64_t)iterations * 99u) / 100u)];
     const uint64_t max = latency[iterations - 1u];
-    free(latency);
 
     kf_engine_counters counters;
     kf_engine_get_counters(&counters);
@@ -167,7 +203,10 @@ int main(int argc, char **argv) {
     printf("  dropped requests: %llu\n", (unsigned long long)counters.requests_dropped);
 
     const int render = bench_render();
-    if (p99 > KF_BENCH_BUDGET_P99_NS || counters.requests_dropped != 0u || render != EXIT_SUCCESS) {
+    const int shout = bench_shout(iterations, latency);
+    free(latency);
+    if (p99 > KF_BENCH_BUDGET_P99_NS || counters.requests_dropped != 0u || render != EXIT_SUCCESS ||
+        shout != EXIT_SUCCESS) {
         printf("FAIL: p99 over budget or requests dropped\n");
         return EXIT_FAILURE;
     }

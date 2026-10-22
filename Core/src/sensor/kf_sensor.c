@@ -87,7 +87,7 @@ float kf_sensor_last_velocity(void) {
     return atomic_load_explicit(&g_ctx.last_velocity, memory_order_relaxed);
 }
 
-float kf_sensor_rolling_velocity(void) {
+KF_RT_SAFE float kf_sensor_rolling_velocity(void) {
     return atomic_load_explicit(&g_ctx.rolling_velocity, memory_order_relaxed);
 }
 

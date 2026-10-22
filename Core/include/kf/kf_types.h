@@ -47,6 +47,14 @@ typedef enum kf_key_group {
     KF_GROUP_COUNT
 } kf_key_group;
 
+/** Sounds a pack holds besides its key groups. Big Enter's boom (Labs) plays like a key group
+ * with one tier and no release sound; keys never fall back to it, and it falls back to
+ * nothing. */
+enum {
+    KF_SOUND_BOOM = KF_GROUP_COUNT, /**< Big Enter: added to the pack while the feature is on. */
+    KF_SOUND_SLOTS                  /**< Rows of a pack's index: key groups, then the boom. */
+};
+
 /** Physical keyboard row; drives per-row sensor calibration. */
 typedef enum kf_key_row {
     KF_ROW_NUMBER = 0,
@@ -80,7 +88,7 @@ typedef struct kf_key_event {
 /** A request for the audio thread to start one voice. */
 typedef struct kf_voice_req {
     uint64_t t_ns; /**< Keystroke time; stale requests are dropped. */
-    uint8_t group; /**< kf_key_group. */
+    uint8_t group; /**< kf_key_group, or KF_SOUND_BOOM. */
     uint8_t tier;  /**< kf_tier; ignored for key-up sounds. */
     bool is_up;    /**< Release sound. */
     float gain;    /**< 0..1. */

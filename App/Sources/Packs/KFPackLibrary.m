@@ -42,6 +42,7 @@ static NSError *ImportError(NSString *message) {
 @property (nonatomic, readwrite, copy) NSArray<KFPackManifest *> *packs;
 @property (nonatomic, readwrite, nullable) KFPackManifest *loadedPack;
 @property (nonatomic, readwrite) double loadedRate;
+@property (nonatomic, nullable) NSURL *loadedBoom;
 @end
 
 @implementation KFPackLibrary {
@@ -146,10 +147,38 @@ static NSError *ImportError(NSString *message) {
 
 #pragma mark - Loading
 
-- (void)installPack:(kf_pack *)decoded manifest:(KFPackManifest *)pack rate:(double)rate {
+/// Decodes `pack`, plus `boom` when given. A boom that fails to decode is left out, and logged,
+/// rather than costing the key sounds; *usedBoom says which happened. Any queue.
+static kf_pack *_Nullable DecodePack(KFPackManifest *pack, double rate, NSURL *_Nullable boom,
+                                     BOOL *usedBoom, NSError **error) {
+    *usedBoom = boom != nil;
+    kf_pack *decoded = [pack loadPackAtSampleRate:rate boom:boom error:error];
+    if (decoded == NULL && boom != nil) {
+        os_log_error(KFLogPacks(), "Big Enter's boom left out: %{public}@",
+                     error != NULL ? (*error).localizedDescription : @"decode failed");
+        *usedBoom = NO;
+        decoded = [pack loadPackAtSampleRate:rate boom:nil error:error];
+    }
+    return decoded;
+}
+
+- (BOOL)needsLoad:(KFPackManifest *)pack rate:(double)rate {
+    const BOOL sameBoom =
+        self.boomURL == self.loadedBoom || [self.boomURL isEqual:(NSURL *_Nonnull)self.loadedBoom];
+    return pack != self.loadedPack || rate != self.loadedRate || !sameBoom;
+}
+
+- (void)installPack:(kf_pack *)decoded
+           manifest:(KFPackManifest *)pack
+               rate:(double)rate
+               boom:(nullable NSURL *)boom {
     kf_engine_set_pack(decoded);
     self.loadedPack = pack;
     self.loadedRate = rate;
+    self.loadedBoom = boom;
+    if (boom == nil && self.boomURL != nil) {
+        self.boomURL = nil; /* It failed to decode: stop asking for it until set again. */
+    }
     [NSNotificationCenter.defaultCenter postNotificationName:KFPackLibraryDidChangeNotification
                                                       object:self];
 }
@@ -158,16 +187,19 @@ static NSError *ImportError(NSString *message) {
             rate:(double)rate
       completion:(nullable void (^)(NSError *_Nullable error))completion {
     const NSUInteger generation = ++_generation;
+    NSURL *wanted = self.boomURL;
     dispatch_async(_decodeQueue, ^{
         NSError *error = nil;
-        kf_pack *decoded = [pack loadPackAtSampleRate:rate error:&error];
+        BOOL usedBoom = NO;
+        kf_pack *decoded = DecodePack(pack, rate, wanted, &usedBoom, &error);
+        NSURL *boom = usedBoom ? wanted : nil;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (generation != self->_generation) {
                 kf_pack_free(decoded); /* A newer load won. */
                 return;
             }
             if (decoded != NULL) {
-                [self installPack:decoded manifest:pack rate:rate];
+                [self installPack:decoded manifest:pack rate:rate boom:boom];
             } else {
                 os_log_error(KFLogPacks(), "%{public}@", error.localizedDescription);
             }
@@ -180,11 +212,12 @@ static NSError *ImportError(NSString *message) {
 
 - (BOOL)loadPackNow:(KFPackManifest *)pack rate:(double)rate error:(NSError **)error {
     ++_generation;
-    kf_pack *decoded = [pack loadPackAtSampleRate:rate error:error];
+    BOOL usedBoom = NO;
+    kf_pack *decoded = DecodePack(pack, rate, self.boomURL, &usedBoom, error);
     if (decoded == NULL) {
         return NO;
     }
-    [self installPack:decoded manifest:pack rate:rate];
+    [self installPack:decoded manifest:pack rate:rate boom:usedBoom ? self.boomURL : nil];
     return YES;
 }
 

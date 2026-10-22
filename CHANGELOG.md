@@ -51,6 +51,19 @@ All notable changes are recorded here. The format follows
   Diagnostics; Sparkle 2 loaded at run time when embedded and configured; `scripts/release.sh`
   (sign inside-out, notarize, staple, DMG, appcast, 30 MB limit) and `scripts/fetch-sparkle.sh`
   (pinned SHA-256). Off until the owner configures the backend, feed and keys.
+- Milestone 6, Labs and polish: Big Enter (a hard Enter adds an original synthesized boom,
+  decoded with the pack: ADR-0017), Shout Mode (letters typed hard become capitals through an
+  active tap that adds Shift only; it asks for Accessibility only when it can work, never acts
+  under Command, Control or Option, and turns itself off after 3 tap timeouts in a minute:
+  ADR-0018) and Force Meter (a floating HUD that shows each keystroke's force for a second, its
+  timer running only while typing). Labs status in the menu and settings; Labs state and Shout
+  Mode counters in Export Diagnostics; accessibility labels and values on the remaining
+  controls; `Tools/py/make_labs_sounds.py`; Shout Mode's decision in `make bench`.
+
+### Fixed
+- The diagnostics object no longer ends its MetricKit subscription from `dealloc`, where
+  MetricKit's asynchronous removal could touch the freed object (an intermittent crash at the
+  end of `make test-app`).
 
 ### Changed
 - `make analyze` covers the tools; `make ci` also runs `test-py` and builds the tools.

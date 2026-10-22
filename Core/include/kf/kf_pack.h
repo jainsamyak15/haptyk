@@ -15,7 +15,9 @@
  *   - a group with neither uses alpha's key-down and release sounds;
  *   - a missing release list means no release sound.
  *
- * Every pack needs at least one alpha key-down sound.
+ * Every pack needs at least one alpha key-down sound. While Big Enter (Labs) is on, the app
+ * also passes the boom as one more file (group KF_SOUND_BOOM, key-down, tier 0), so it is
+ * decoded at the device rate, swapped and freed with the pack. No fallback involves it.
  */
 #ifndef KF_PACK_H
 #define KF_PACK_H
@@ -30,7 +32,7 @@ extern "C" {
 
 /** One audio file of a pack. */
 typedef struct kf_pack_file {
-    uint8_t group;    /**< kf_key_group. */
+    uint8_t group;    /**< kf_key_group, or KF_SOUND_BOOM. */
     uint8_t is_up;    /**< 0 key-down, 1 key-up. */
     uint8_t tier;     /**< kf_tier; ignored for key-up. */
     bool derived;     /**< Generated tier, not a real recording. */

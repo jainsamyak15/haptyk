@@ -33,6 +33,14 @@ void kf_keytap_set_mute_external(bool muted) {
     atomic_store_explicit(&g_ctx.mute_external, muted, memory_order_relaxed);
 }
 
+void kf_keytap_set_shout(bool enabled) {
+    atomic_store_explicit(&g_ctx.shout, enabled, memory_order_relaxed);
+}
+
+bool kf_keytap_shout_enabled(void) {
+    return atomic_load_explicit(&g_ctx.shout, memory_order_relaxed);
+}
+
 uint32_t kf_keytap_external_keyboards(void) {
     return atomic_load_explicit(&g_ctx.external_keyboards, memory_order_relaxed);
 }
@@ -45,6 +53,7 @@ void kf_keytap_get_counters(kf_keytap_counters *out) {
     out->events = atomic_load_explicit(&g_ctx.events, memory_order_relaxed);
     out->tap_timeouts = atomic_load_explicit(&g_ctx.tap_timeouts, memory_order_relaxed);
     out->autorepeat_dropped = atomic_load_explicit(&g_ctx.autorepeat_dropped, memory_order_relaxed);
+    out->shout_keys = atomic_load_explicit(&g_ctx.shout_keys, memory_order_relaxed);
 }
 
 #if defined(__APPLE__)
@@ -67,6 +76,10 @@ _Static_assert(KF_FLAG_RIGHT_OPTION == NX_DEVICERALTKEYMASK, "NX_DEVICERALTKEYMA
 _Static_assert(KF_FLAG_RIGHT_CONTROL == NX_DEVICERCTLKEYMASK, "NX_DEVICERCTLKEYMASK");
 _Static_assert(KF_FLAG_CAPS_LOCK == kCGEventFlagMaskAlphaShift, "kCGEventFlagMaskAlphaShift");
 _Static_assert(KF_FLAG_FUNCTION == kCGEventFlagMaskSecondaryFn, "kCGEventFlagMaskSecondaryFn");
+_Static_assert(KF_FLAG_SHIFT == kCGEventFlagMaskShift, "kCGEventFlagMaskShift");
+_Static_assert(KF_FLAG_CONTROL == kCGEventFlagMaskControl, "kCGEventFlagMaskControl");
+_Static_assert(KF_FLAG_OPTION == kCGEventFlagMaskAlternate, "kCGEventFlagMaskAlternate");
+_Static_assert(KF_FLAG_COMMAND == kCGEventFlagMaskCommand, "kCGEventFlagMaskCommand");
 
 CGEventRef kf_keytap_on_event(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *ref);
 void kf_keytap_on_report(void *ref, IOReturn result, void *sender, IOHIDValueRef value);
@@ -76,7 +89,6 @@ static atomic_bool g_running;
 static atomic_bool g_stop;
 static dispatch_semaphore_t g_ready;
 static kf_status g_start_status;
-static bool g_active_mode;
 
 bool kf_keytap_has_permission(void) {
     return CGPreflightListenEventAccess();
@@ -220,7 +232,7 @@ static void *tap_thread(void *arg) {
                              CGEventMaskBit(kCGEventFlagsChanged);
     CFMachPortRef tap =
         CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap,
-                         g_active_mode ? kCGEventTapOptionDefault : kCGEventTapOptionListenOnly,
+                         ctx->active_mode ? kCGEventTapOptionDefault : kCGEventTapOptionListenOnly,
                          mask, kf_keytap_on_event, ctx);
     if (tap == NULL) {
         g_start_status = KF_ERR_NO_PERMISSION;
@@ -258,7 +270,9 @@ kf_status kf_keytap_start(kf_key_cb callback, void *ctx, bool active_mode) {
     }
     g_ctx.callback = callback;
     g_ctx.callback_ctx = ctx;
-    g_active_mode = active_mode;
+    g_ctx.active_mode = active_mode;
+    memset(g_ctx.timeouts_ns, 0, sizeof g_ctx.timeouts_ns); /* A fresh minute for Shout Mode. */
+    g_ctx.timeouts_next = 0u;
     atomic_store_explicit(&g_stop, false, memory_order_relaxed);
     g_ready = dispatch_semaphore_create(0);
     if (g_ready == NULL) {

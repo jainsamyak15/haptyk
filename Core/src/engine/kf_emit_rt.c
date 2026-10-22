@@ -54,5 +54,12 @@ KF_RT_SAFE bool kf_emit_keystroke(const kf_key_event *event, float velocity, kf_
         req.gain = mix.gain[i] * level;
         all_queued = push_or_count(q, &req) && all_queued;
     }
+    if (event->group == (uint8_t)KF_GROUP_ENTER && v >= KF_BIG_ENTER_VELOCITY &&
+        atomic_load_explicit(&kf_engine_state()->big_enter, memory_order_relaxed)) {
+        req.group = (uint8_t)KF_SOUND_BOOM; /* Big Enter: on top of the switch sound. */
+        req.tier = (uint8_t)KF_TIER_SOFT;
+        req.gain = KF_BIG_ENTER_GAIN;
+        all_queued = push_or_count(q, &req) && all_queued;
+    }
     return all_queued;
 }

@@ -59,6 +59,26 @@ void kf_keytap_set_release_sounds(bool enabled);
  * silent (default off). The callback still sees them. Any thread. */
 void kf_keytap_set_mute_external(bool muted);
 
+/**
+ * Shout Mode (Labs). While on, and the tap runs in active mode, a letter key-down (a-z) from
+ * the built-in keyboard gets the Shift flag when the rolling force of the last
+ * KF_ROLLING_KEYS measured keys is at least KF_SHOUT_FORCE. It never touches another key, a
+ * shortcut with Command, Control or Option, or anything typed during Secure Input (macOS
+ * delivers no key events to the tap then). It reads no characters. Off by default. Any thread.
+ */
+void kf_keytap_set_shout(bool enabled);
+
+/** Whether Shout Mode is on in the core (it turns itself off, see below). Any thread. */
+bool kf_keytap_shout_enabled(void);
+
+/**
+ * True once after macOS disabled the active tap for a timeout KF_SHOUT_MAX_TIMEOUTS times
+ * within KF_SHOUT_TIMEOUT_WINDOW_NS: Shout Mode is already off and the app should say so.
+ * Clears the flag. A single atomic load when nothing happened, so the key callback may call
+ * it on every key. Any thread; RT-safe.
+ */
+bool kf_keytap_take_shout_tripped(void);
+
 /** External keyboards connected now (0 until the tap runs). Any thread. */
 uint32_t kf_keytap_external_keyboards(void);
 
@@ -67,6 +87,7 @@ typedef struct kf_keytap_counters {
     uint64_t events;             /**< Key events played. */
     uint64_t tap_timeouts;       /**< Times macOS disabled the tap and it was re-enabled. */
     uint64_t autorepeat_dropped; /**< Auto-repeat events ignored. */
+    uint64_t shout_keys;         /**< Key-downs Shout Mode added Shift to. */
 } kf_keytap_counters;
 
 /** Snapshot of the counters. Any thread. */

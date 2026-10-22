@@ -48,6 +48,10 @@ typedef NS_ERROR_ENUM(KFPackErrorDomain, KFPackError){
 /// Decodes the pack at `sampleRate` (kf_pack_load). Background queue only: takes tens of
 /// milliseconds. The caller owns the result and hands it to kf_engine_set_pack() or frees it.
 - (nullable kf_pack *)loadPackAtSampleRate:(double)sampleRate error:(NSError **)error;
+/// The same, plus Big Enter's boom (KF_SOUND_BOOM) when `boomURL` is set.
+- (nullable kf_pack *)loadPackAtSampleRate:(double)sampleRate
+                                      boom:(nullable NSURL *)boomURL
+                                     error:(NSError **)error;
 
 @end
 

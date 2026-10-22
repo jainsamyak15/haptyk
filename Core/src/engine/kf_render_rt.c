@@ -52,7 +52,7 @@ typedef struct mixer {
     float smooth_frames;
     float ns_per_frame;
     kf_rng rng;
-    uint16_t last_take[KF_GROUP_COUNT][KF_TIER_COUNT + 1u]; /* Last column: release. */
+    uint16_t last_take[KF_SOUND_SLOTS][KF_TIER_COUNT + 1u]; /* Last column: release. */
 } mixer;
 
 static mixer g_mixer;

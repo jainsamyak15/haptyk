@@ -30,9 +30,9 @@ struct kf_pack {
     double rate;
     size_t decoded_bytes;
     int16_t *block; /* Every sample of the pack, one allocation. */
-    kf_pack_range down[KF_GROUP_COUNT][KF_TIER_COUNT];
-    kf_pack_range up[KF_GROUP_COUNT];
-    bool derived[KF_GROUP_COUNT][KF_TIER_COUNT];
+    kf_pack_range down[KF_SOUND_SLOTS][KF_TIER_COUNT]; /* Key groups, then the boom. */
+    kf_pack_range up[KF_SOUND_SLOTS];
+    bool derived[KF_SOUND_SLOTS][KF_TIER_COUNT];
     uint32_t sound_count;
     kf_pack_sound sounds[]; /* Sorted by group, then tier, then release. */
 };
@@ -50,6 +50,9 @@ kf_pack *kf_pack_fail(char *err, size_t errlen, const char *format, ...) {
 }
 
 bool kf_pack_entry_is_valid(uint8_t group, uint8_t is_up, uint8_t tier) {
+    if (group == KF_SOUND_BOOM) {
+        return is_up == 0u && tier == 0u; /* One tier, no release sound. */
+    }
     return group < KF_GROUP_COUNT && is_up <= 1u && (is_up != 0u || tier < KF_TIER_COUNT);
 }
 
@@ -232,7 +235,7 @@ double kf_pack_sample_rate(const kf_pack *pack) {
 
 KF_RT_SAFE uint32_t kf_pack_sounds(const kf_pack *pack, uint8_t group, bool is_up, uint8_t tier,
                                    const kf_pack_sound **out) {
-    if (pack == NULL || group >= KF_GROUP_COUNT || (!is_up && tier >= KF_TIER_COUNT)) {
+    if (pack == NULL || group >= KF_SOUND_SLOTS || (!is_up && tier >= KF_TIER_COUNT)) {
         return 0u;
     }
     const kf_pack_range r = is_up ? pack->up[group] : pack->down[group][tier];

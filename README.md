@@ -93,7 +93,7 @@ Findings and the commands still to run are in [docs/SENSOR_NOTES.md](docs/SENSOR
 | M3 | Menu bar app | Done: `make run-app`; manual rows in docs/TEST_MATRIX.md |
 | M4 | Sound packs | Pipeline done; the 16 packs need licensed recordings (Packs/README.md) |
 | M5 | Shipping pipeline | Built; needs the owner's backend, Sparkle keys and Developer ID (docs/RELEASING.md) |
-| M6 | Labs and polish | Not started |
+| M6 | Labs and polish | Built: Big Enter, Shout Mode, Force Meter, accessibility; Labs react only to measured force; beta on several Macs pending |
 
 ## Documentation
 

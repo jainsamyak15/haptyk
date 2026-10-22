@@ -4,6 +4,7 @@
 #import "Power/KFPowerController.h"
 
 #import <AppKit/AppKit.h>
+#import <ApplicationServices/ApplicationServices.h>
 #include <stdatomic.h>
 #include <sys/sysctl.h>
 
@@ -21,7 +22,8 @@ NSNotificationName const KFPowerStateDidChangeNotification = @"KFPowerStateDidCh
  *
  * The key callback runs on the keytap thread and must return within 50 us: no Objective-C,
  * no locks, no allocation. It stores the key time, counts the key, and only for the first key
- * after idle hops to the main thread once (spec: "Implementation notes"). */
+ * after idle hops to the main thread once (spec: "Implementation notes"). The one other hop is
+ * as rare: once when Shout Mode has turned itself off after repeated tap timeouts. */
 
 static _Atomic(uint64_t) g_last_key_ns;
 static atomic_bool g_audio_active;
@@ -29,9 +31,13 @@ static atomic_bool g_wake_pending;
 static kf_live_stats *g_live; /* Set before the tap starts; read-only afterwards. */
 
 static void WakeOnMain(void *ctx);
+static void ShoutTrippedOnMain(void *ctx);
 
 static void OnKey(const kf_key_event *event, void *ctx) {
     atomic_store_explicit(&g_last_key_ns, event->t_ns, memory_order_relaxed);
+    if (kf_keytap_take_shout_tripped()) { /* One atomic load unless it just happened. */
+        dispatch_async_f(dispatch_get_main_queue(), ctx, ShoutTrippedOnMain);
+    }
     if (!event->is_down) {
         return;
     }
@@ -51,11 +57,16 @@ static void OnOutputChanged(void *ctx);
 @property (nonatomic, readwrite) BOOL microphoneMuted;
 @property (nonatomic, readwrite, copy, nullable) NSString *lastError;
 - (void)handle:(KFPowerEvent)event;
+- (void)shoutTripped;
 @end
 
 static void WakeOnMain(void *ctx) {
     atomic_store_explicit(&g_wake_pending, false, memory_order_relaxed);
     [(__bridge KFPowerController *)ctx handle:KFPowerEventKeyDown];
+}
+
+static void ShoutTrippedOnMain(void *ctx) {
+    [(__bridge KFPowerController *)ctx shoutTripped];
 }
 
 static void OnOutputChanged(void *ctx) {
@@ -70,6 +81,7 @@ static void OnOutputChanged(void *ctx) {
     dispatch_source_t _idleTimer;
     dispatch_source_t _flushTimer;
     BOOL _tapActiveMode;
+    BOOL _shoutTripped;
 }
 
 - (instancetype)initWithPreferences:(KFPreferences *)preferences
@@ -187,17 +199,31 @@ static void OnOutputChanged(void *ctx) {
     }
 }
 
-- (void)startTap {
-    if (!kf_keytap_has_permission()) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self handle:KFPowerEventPermissionLost];
-        });
-        return;
+/// The tap filters events (active mode) only for Shout Mode, and only when it can act: force
+/// detection exists and Accessibility is granted. Otherwise it only listens.
+- (BOOL)wantsActiveTap {
+    return _preferences.labsShoutMode && kf_sensor_probe() && AXIsProcessTrusted();
+}
+
+/// Opens the tap in the mode Shout Mode needs. If macOS refuses the active tap, sounds carry
+/// on with a listen-only one.
+- (kf_status)openTap {
+    _tapActiveMode = [self wantsActiveTap];
+    kf_status status = kf_keytap_start(OnKey, (__bridge void *)self, _tapActiveMode);
+    if (status != KF_OK && _tapActiveMode) {
+        os_log_info(KFLogPower(), "active tap refused; listening only");
+        _tapActiveMode = NO;
+        status = kf_keytap_start(OnKey, (__bridge void *)self, NO);
     }
-    _tapActiveMode = _preferences.labsShoutMode;
-    const kf_status status = kf_keytap_start(OnKey, (__bridge void *)self, _tapActiveMode);
+    kf_keytap_set_shout(_tapActiveMode);
     if (status != KF_OK) {
         self.lastError = @(kf_status_string(status));
+    }
+    return status;
+}
+
+- (void)startTap {
+    if (!kf_keytap_has_permission() || [self openTap] != KF_OK) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [self handle:KFPowerEventPermissionLost];
         });
@@ -209,14 +235,50 @@ static void OnOutputChanged(void *ctx) {
         return NO;
     }
     kf_keytap_stop();
-    _tapActiveMode = _preferences.labsShoutMode;
-    const kf_status status = kf_keytap_start(OnKey, (__bridge void *)self, _tapActiveMode);
-    if (status != KF_OK) {
-        self.lastError = @(kf_status_string(status));
+    if ([self openTap] != KF_OK) {
         [self handle:KFPowerEventPermissionLost];
         return NO;
     }
     return YES;
+}
+
+/// Restarts the tap only when Shout Mode needs the other mode.
+- (void)reconfigureTap {
+    if ([self wantsActiveTap] != _tapActiveMode) {
+        [self restartTap];
+    }
+    [NSNotificationCenter.defaultCenter postNotificationName:KFPowerStateDidChangeNotification
+                                                      object:self];
+}
+
+- (KFShoutStatus)shoutStatus {
+    if (!_preferences.labsShoutMode) {
+        return _shoutTripped ? KFShoutStatusTripped : KFShoutStatusOff;
+    }
+    if (!kf_sensor_probe()) {
+        return KFShoutStatusUnavailable;
+    }
+    if (!AXIsProcessTrusted()) {
+        return KFShoutStatusNeedsAccessibility;
+    }
+    return _tapActiveMode && kf_keytap_is_running() ? KFShoutStatusOn : KFShoutStatusPaused;
+}
+
+/// macOS disabled the active tap too often: the core has already stopped adding Shift. Back
+/// to a listen-only tap, and the menu tells the user (attention icon until they look).
+- (void)shoutTripped {
+    os_log_info(KFLogPower(), "Shout Mode off after %u tap timeouts in a minute",
+                (unsigned)KF_SHOUT_MAX_TIMEOUTS);
+    _shoutTripped = YES;
+    _preferences.labsShoutMode = NO; /* Reconfigures the tap through preferencesChanged:. */
+}
+
+- (void)acknowledgeShoutTrip {
+    if (_shoutTripped) {
+        _shoutTripped = NO;
+        [NSNotificationCenter.defaultCenter postNotificationName:KFPowerStateDidChangeNotification
+                                                          object:self];
+    }
 }
 
 - (void)checkPermission {
@@ -225,6 +287,9 @@ static void OnOutputChanged(void *ctx) {
         [self handle:KFPowerEventPermissionGranted];
     } else if (!granted && (self.state == KFPowerStateIdle || self.state == KFPowerStateActive)) {
         [self handle:KFPowerEventPermissionLost];
+    } else if (_preferences.labsShoutMode &&
+               (self.state == KFPowerStateIdle || self.state == KFPowerStateActive)) {
+        [self reconfigureTap]; /* Accessibility granted (or revoked) since the tap started. */
     }
 }
 
@@ -236,7 +301,7 @@ static void OnOutputChanged(void *ctx) {
     if (pack == nil || kf_engine_default_output_rate(&rate) != KF_OK) {
         return;
     }
-    if (pack != _library.loadedPack || rate != _library.loadedRate) {
+    if ([_library needsLoad:pack rate:rate]) {
         [_library loadPack:pack rate:rate completion:nil];
     }
 }
@@ -245,7 +310,7 @@ static void OnOutputChanged(void *ctx) {
     double rate = 0.0;
     if (kf_engine_default_output_rate(&rate) == KF_OK) {
         KFPackManifest *pack = [_library resolvePack:_preferences.packId];
-        if (pack != nil && (pack != _library.loadedPack || rate != _library.loadedRate)) {
+        if (pack != nil && [_library needsLoad:pack rate:rate]) {
             /* The device changed while idle: decode at the new rate now (tens of ms), so the
              * first key never plays at the wrong pitch. */
             [_library loadPackNow:pack rate:rate error:NULL];
@@ -362,7 +427,20 @@ static void OnOutputChanged(void *ctx) {
 
 #pragma mark - Preferences
 
+/// Big Enter: the boom joins the pack only while the feature is on and force detection
+/// exists to trigger it; otherwise it stays out of memory. The caller reloads the pack.
+- (void)applyBigEnter {
+    NSURL *boom = _preferences.labsBigEnter && kf_sensor_probe()
+                      ? [NSBundle.mainBundle URLForResource:@"boom"
+                                              withExtension:@"wav"
+                                               subdirectory:@"Labs"]
+                      : nil;
+    _library.boomURL = boom;
+    kf_engine_set_big_enter(boom != nil);
+}
+
 - (void)applyAllPreferences {
+    [self applyBigEnter];
     kf_engine_set_volume(_preferences.volume);
     kf_engine_set_stereo_width(_preferences.stereoWidth);
     kf_keytap_set_repeat_sounds(_preferences.repeatSounds);
@@ -388,12 +466,30 @@ static void OnOutputChanged(void *ctx) {
                [key isEqualToString:@"autoAdapt"]) {
         [self applyCalibration];
         [self updateForceStatus];
-    } else if ([key isEqualToString:@"labs.shoutMode"] &&
-               _tapActiveMode != _preferences.labsShoutMode) {
-        [self restartTap];
+    } else if ([key isEqualToString:@"labs.shoutMode"]) {
+        if (_preferences.labsShoutMode) {
+            _shoutTripped = NO;
+            [self requestAccessibilityIfUseful];
+        }
+        [self reconfigureTap];
+    } else if ([key isEqualToString:@"labs.bigEnter"]) {
+        [self applyBigEnter];
+        [self loadCurrentPack]; /* Adds or drops the boom: a background decode, no gap. */
+    } else if ([key isEqualToString:@"labs.forceMeter"]) {
+        /* KFForceMeterController watches this itself. */
     } else {
         [self applyAllPreferences];
     }
+}
+
+/// Accessibility is asked for only when the user turns on Shout Mode and it could work on
+/// this Mac (spec: "Onboarding"). macOS shows its own prompt; the app never touches TCC.
+- (void)requestAccessibilityIfUseful {
+    if (AXIsProcessTrusted() || !kf_sensor_probe()) {
+        return;
+    }
+    NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt : @YES};
+    (void)AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
 }
 
 #pragma mark - Calibration

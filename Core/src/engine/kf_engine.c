@@ -66,6 +66,7 @@ kf_status kf_engine_init(void) {
     atomic_store_explicit(&g_state.volume, 1.0f, memory_order_relaxed);
     atomic_store_explicit(&g_state.stereo_width, 1.0f, memory_order_relaxed);
     atomic_store_explicit(&g_state.muted, false, memory_order_relaxed);
+    atomic_store_explicit(&g_state.big_enter, false, memory_order_relaxed);
     kf_engine_render_reset((double)KF_SAMPLE_RATE_HZ);
     return KF_OK;
 }
@@ -95,6 +96,10 @@ void kf_engine_set_muted(bool muted) {
 
 void kf_engine_set_stereo_width(float width) {
     atomic_store_explicit(&g_state.stereo_width, clamp01(width), memory_order_relaxed);
+}
+
+void kf_engine_set_big_enter(bool enabled) {
+    atomic_store_explicit(&g_state.big_enter, enabled, memory_order_relaxed);
 }
 
 void kf_engine_set_change_handler(kf_engine_change_cb callback, void *ctx) {

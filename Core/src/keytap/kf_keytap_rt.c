@@ -85,11 +85,15 @@ KF_RT_SAFE bool kf_keytap_is_builtin(uint64_t t_ns, uint64_t last_builtin_ns,
            distance(t_ns, last_builtin_ns) <= distance(t_ns, last_external_ns);
 }
 
+static KF_RT_SAFE bool is_builtin_now(const kf_keytap_ctx *ctx, uint64_t t_ns) {
+    return kf_keytap_is_builtin(
+        t_ns, ctx->last_builtin_ns, ctx->last_external_ns,
+        atomic_load_explicit(&ctx->external_keyboards, memory_order_relaxed));
+}
+
 KF_RT_SAFE void kf_keytap_handle_key(kf_keytap_ctx *ctx, uint16_t keycode, bool is_down,
                                      uint64_t t_ns) {
-    const bool builtin =
-        kf_keytap_is_builtin(t_ns, ctx->last_builtin_ns, ctx->last_external_ns,
-                             atomic_load_explicit(&ctx->external_keyboards, memory_order_relaxed));
+    const bool builtin = is_builtin_now(ctx, t_ns);
     /* The key code ends here: kf_key_event has no field for it. */
     const kf_key_event event = kf_keymap_make_event(keycode, is_down, t_ns, builtin);
     atomic_store_explicit(&ctx->events,
@@ -104,6 +108,64 @@ KF_RT_SAFE void kf_keytap_handle_key(kf_keytap_ctx *ctx, uint16_t keycode, bool 
     if (ctx->callback != NULL) {
         ctx->callback(&event, ctx->callback_ctx);
     }
+}
+
+/* ------------------------------------------------------------------ Shout Mode */
+
+#define LETTER(vk) (1ULL << (vk))
+static const uint64_t k_letter_keys =
+    LETTER(KF_VK_A) | LETTER(KF_VK_B) | LETTER(KF_VK_C) | LETTER(KF_VK_D) | LETTER(KF_VK_E) |
+    LETTER(KF_VK_F) | LETTER(KF_VK_G) | LETTER(KF_VK_H) | LETTER(KF_VK_I) | LETTER(KF_VK_J) |
+    LETTER(KF_VK_K) | LETTER(KF_VK_L) | LETTER(KF_VK_M) | LETTER(KF_VK_N) | LETTER(KF_VK_O) |
+    LETTER(KF_VK_P) | LETTER(KF_VK_Q) | LETTER(KF_VK_R) | LETTER(KF_VK_S) | LETTER(KF_VK_T) |
+    LETTER(KF_VK_U) | LETTER(KF_VK_V) | LETTER(KF_VK_W) | LETTER(KF_VK_X) | LETTER(KF_VK_Y) |
+    LETTER(KF_VK_Z);
+#undef LETTER
+
+KF_RT_SAFE uint64_t kf_keytap_shout_flags(uint16_t keycode, uint64_t flags, float rolling_force) {
+    const uint64_t shortcut = KF_FLAG_COMMAND | KF_FLAG_CONTROL | KF_FLAG_OPTION;
+    if (keycode >= 64u || ((k_letter_keys >> keycode) & 1u) == 0u || (flags & shortcut) != 0u ||
+        !(rolling_force >= KF_SHOUT_FORCE)) { /* Also false for NaN and "no force yet" (-1). */
+        return flags;
+    }
+    return flags | KF_FLAG_SHIFT;
+}
+
+KF_RT_SAFE uint64_t kf_keytap_shout(kf_keytap_ctx *ctx, uint16_t keycode, uint64_t flags,
+                                    uint64_t t_ns) {
+    if (!atomic_load_explicit(&ctx->shout, memory_order_relaxed) ||
+        kf_sensor_state_now(t_ns) != KF_SENSOR_LIVE || !is_builtin_now(ctx, t_ns)) {
+        return flags;
+    }
+    const uint64_t shouted = kf_keytap_shout_flags(keycode, flags, kf_sensor_rolling_velocity());
+    if (shouted != flags) {
+        atomic_store_explicit(&ctx->shout_keys,
+                              atomic_load_explicit(&ctx->shout_keys, memory_order_relaxed) + 1u,
+                              memory_order_relaxed);
+    }
+    return shouted;
+}
+
+KF_RT_SAFE bool kf_keytap_note_timeout(kf_keytap_ctx *ctx, uint64_t t_ns) {
+    if (!atomic_load_explicit(&ctx->shout, memory_order_relaxed)) {
+        return false;
+    }
+    ctx->timeouts_ns[ctx->timeouts_next] = t_ns;
+    ctx->timeouts_next = (ctx->timeouts_next + 1u) % KF_SHOUT_MAX_TIMEOUTS;
+    /* Now the next slot holds the oldest of the last KF_SHOUT_MAX_TIMEOUTS (0: fewer yet). */
+    const uint64_t oldest = ctx->timeouts_ns[ctx->timeouts_next];
+    if (oldest == 0u || t_ns - oldest > KF_SHOUT_TIMEOUT_WINDOW_NS) {
+        return false;
+    }
+    atomic_store_explicit(&ctx->shout, false, memory_order_relaxed);
+    atomic_store_explicit(&ctx->shout_tripped, true, memory_order_release);
+    return true;
+}
+
+KF_RT_SAFE bool kf_keytap_take_shout_tripped(void) {
+    kf_keytap_ctx *ctx = kf_keytap_context();
+    return atomic_load_explicit(&ctx->shout_tripped, memory_order_relaxed) &&
+           atomic_exchange_explicit(&ctx->shout_tripped, false, memory_order_acquire);
 }
 
 #if defined(__APPLE__)
@@ -128,6 +190,9 @@ KF_RT_SAFE CGEventRef kf_keytap_on_event(CGEventTapProxy proxy, CGEventType type
     if (type == kCGEventTapDisabledByTimeout || type == kCGEventTapDisabledByUserInput) {
         CGEventTapEnable((CFMachPortRef)ctx->tap, true);
         bump(&ctx->tap_timeouts);
+        if (type == kCGEventTapDisabledByTimeout && ctx->active_mode) {
+            (void)kf_keytap_note_timeout(ctx, now); /* The app learns of a trip at the next key. */
+        }
         return event;
     }
     const uint16_t keycode = (uint16_t)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
@@ -140,6 +205,14 @@ KF_RT_SAFE CGEventRef kf_keytap_on_event(CGEventTapProxy proxy, CGEventType type
             return event;
         }
     } else if (type == kCGEventKeyDown || type == kCGEventKeyUp) {
+        if (type == kCGEventKeyDown && ctx->active_mode) {
+            /* Shout Mode, decided from earlier keys only: it never waits for sensor data. */
+            const uint64_t flags = (uint64_t)CGEventGetFlags(event);
+            const uint64_t shouted = kf_keytap_shout(ctx, keycode, flags, now);
+            if (shouted != flags) {
+                CGEventSetFlags(event, (CGEventFlags)shouted);
+            }
+        }
         if (CGEventGetIntegerValueField(event, kCGKeyboardEventAutorepeat) != 0 &&
             !atomic_load_explicit(&ctx->repeat_sounds, memory_order_relaxed)) {
             bump(&ctx->autorepeat_dropped);
@@ -150,7 +223,7 @@ KF_RT_SAFE CGEventRef kf_keytap_on_event(CGEventTapProxy proxy, CGEventType type
         return event;
     }
     kf_keytap_handle_key(ctx, keycode, is_down, now);
-    return event; /* Passed through untouched. */
+    return event; /* Passed through untouched, but for Shout Mode's Shift. */
 }
 
 /* A keyboard's HID report: records only when, and whether from the built-in keyboard. */

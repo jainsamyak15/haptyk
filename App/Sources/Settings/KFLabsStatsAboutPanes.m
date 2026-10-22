@@ -28,6 +28,7 @@ static const CGFloat kPaneWidth = 560.0;
     NSButton *_shout;
     NSButton *_meter;
     NSTextField *_shoutStatus;
+    NSButton *_openAccessibility;
     NSTextField *_forceNote;
 }
 
@@ -37,6 +38,8 @@ static const CGFloat kPaneWidth = 560.0;
     _shout = KFCheckbox(@"Shout Mode", self, @selector(toggle:));
     _meter = KFCheckbox(@"Force Meter", self, @selector(toggle:));
     _shoutStatus = KFSecondaryLabel(@"");
+    _openAccessibility =
+        KFPushButton(@"Open Accessibility Settings…", self, @selector(openAccessibility:));
     _forceNote = KFSecondaryLabel(@"");
     self.view = KFPane(
         @[
@@ -53,8 +56,8 @@ static const CGFloat kPaneWidth = 560.0;
                     _shout,
                     KFSecondaryLabel(@"Typing letters hard types them as capitals. "
                                      @"Needs Accessibility, to add Shift; nothing else "
-                                     @"is ever changed."),
-                    _shoutStatus
+                                     @"is ever changed, and never in password fields."),
+                    _shoutStatus, _openAccessibility
                 ],
                 3.0),
             KFVStack(
@@ -67,15 +70,56 @@ static const CGFloat kPaneWidth = 560.0;
         kPaneWidth);
 }
 
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    /* Back from System Settings: Accessibility may have been granted. No polling. */
+    [NSNotificationCenter.defaultCenter addObserver:self
+                                           selector:@selector(appBecameActive:)
+                                               name:NSApplicationDidBecomeActiveNotification
+                                             object:nil];
+}
+
+- (void)viewWillAppear {
+    [super viewWillAppear];
+    [self.context.power checkPermission];
+}
+
+- (void)appBecameActive:(NSNotification *)note {
+    (void)note;
+    if (self.viewLoaded && self.view.window.visible) {
+        [self.context.power checkPermission];
+    }
+}
+
++ (NSString *)textForShoutStatus:(KFShoutStatus)status {
+    switch (status) {
+    case KFShoutStatusOff:
+        return AXIsProcessTrusted() ? @"Accessibility: allowed."
+                                    : @"Turning Shout Mode on asks for Accessibility.";
+    case KFShoutStatusOn:
+        return @"On: hard typing types capitals.";
+    case KFShoutStatusNeedsAccessibility:
+        return @"Waiting for Accessibility. Allow Keyfeel in System Settings → Privacy & "
+               @"Security → Accessibility; until then keys pass through unchanged.";
+    case KFShoutStatusUnavailable:
+        return @"Force detection is not available on this Mac, so Shout Mode stays idle.";
+    case KFShoutStatusPaused:
+        return @"Paused while Keyfeel's sounds are off.";
+    case KFShoutStatusTripped:
+        return @"Turned off: macOS kept pausing the keyboard tap, so Keyfeel stepped aside. "
+               @"Turn it on again to retry.";
+    }
+    return @"";
+}
+
 - (void)refresh {
     KFPreferences *prefs = self.context.preferences;
     _bigEnter.state = prefs.labsBigEnter;
     _shout.state = prefs.labsShoutMode;
     _meter.state = prefs.labsForceMeter;
-    const BOOL trusted = AXIsProcessTrusted();
-    _shoutStatus.stringValue = trusted ? @"Accessibility: allowed."
-                                       : @"Accessibility: not allowed yet. Turning Shout Mode on "
-                                         @"asks for it.";
+    const KFShoutStatus status = self.context.power.shoutStatus;
+    _shoutStatus.stringValue = [KFLabsPane textForShoutStatus:status];
+    _openAccessibility.hidden = status != KFShoutStatusNeedsAccessibility;
     _forceNote.stringValue = self.context.power.forceStatus == KFForceStatusUnavailable
                                  ? @"Force detection is not available on this Mac, so these extras "
                                    @"have nothing to react to."
@@ -90,12 +134,18 @@ static const CGFloat kPaneWidth = 560.0;
     } else if (sender == _meter) {
         prefs.labsForceMeter = on;
     } else if (sender == _shout) {
-        if (on && !AXIsProcessTrusted()) {
-            /* Asked only when the user turns on a feature that needs it (spec: Onboarding). */
-            NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt : @YES};
-            (void)AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
-        }
-        prefs.labsShoutMode = on;
+        prefs.labsShoutMode = on; /* The power controller asks for Accessibility if useful. */
+    }
+}
+
+/// Opens the pane only: the user decides there. The app never touches the TCC database.
+- (void)openAccessibility:(id)sender {
+    (void)sender;
+    NSURL *url = [NSURL
+        URLWithString:
+            @"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"];
+    if (url != nil) {
+        [NSWorkspace.sharedWorkspace openURL:url];
     }
 }
 
@@ -198,6 +248,16 @@ static const CGFloat kPaneWidth = 560.0;
     _histogram.counts = [stats histogramForLastDays:7];
     _histogram.accessibilityLabel = @"Force histogram for the last 7 days";
     _histogram.accessibilityRole = NSAccessibilityImageRole;
+    NSUInteger measured = 0;
+    for (NSNumber *n in _histogram.counts) {
+        measured += n.unsignedIntegerValue;
+    }
+    _histogram.accessibilityValue =
+        measured == 0
+            ? @"No measured keystrokes yet"
+            : [NSString stringWithFormat:@"%lu measured keystrokes, softer to harder: %@",
+                                         (unsigned long)measured,
+                                         [_histogram.counts componentsJoinedByString:@", "]];
     [_histogram setNeedsDisplay:YES];
     _optIn.state = self.context.preferences.telemetryOptIn;
     double percentile = 0.0;

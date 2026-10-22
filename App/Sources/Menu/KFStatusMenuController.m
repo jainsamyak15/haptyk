@@ -53,6 +53,7 @@ static const NSTimeInterval kLiveRefresh = 0.5;
     KFMenuHeaderView *_header;
     KFVolumeMenuView *_volume;
     NSMenuItem *_permissionItem;
+    NSMenuItem *_shoutTripItem;
     NSMenuItem *_micItem;
     NSMenuItem *_packsEnd; /* Pack items sit above this "More packs…" item. */
     NSMutableArray<NSMenuItem *> *_packItems;
@@ -64,6 +65,7 @@ static const NSTimeInterval kLiveRefresh = 0.5;
     NSMenuItem *_bigEnterItem;
     NSMenuItem *_shoutItem;
     NSMenuItem *_meterItem;
+    NSMenuItem *_shoutStatusItem;
     NSTimer *_liveTimer;
 }
 
@@ -128,6 +130,14 @@ static NSMenuItem *Info(NSString *title) {
     _permissionItem.image = [NSImage imageWithSystemSymbolName:@"exclamationmark.circle"
                                       accessibilityDescription:@"Needs attention"];
     [_menu addItem:_permissionItem];
+    _shoutTripItem = [self action:@"Shout Mode turned itself off…"
+                         selector:@selector(showLabs:)
+                              key:@""];
+    _shoutTripItem.image = [NSImage imageWithSystemSymbolName:@"exclamationmark.circle"
+                                     accessibilityDescription:@"Needs attention"];
+    _shoutTripItem.toolTip = @"macOS kept pausing the keyboard tap, so Keyfeel stopped adding "
+                             @"Shift. Open Labs to turn it on again.";
+    [_menu addItem:_shoutTripItem];
 
     NSMenuItem *volume = [NSMenuItem new];
     _volume = [KFVolumeMenuView new];
@@ -166,7 +176,12 @@ static NSMenuItem *Info(NSString *title) {
     _bigEnterItem = [self action:@"Big Enter" selector:@selector(toggleLab:) key:@""];
     _shoutItem = [self action:@"Shout Mode" selector:@selector(toggleLab:) key:@""];
     _meterItem = [self action:@"Force Meter" selector:@selector(toggleLab:) key:@""];
-    for (NSMenuItem *lab in @[ _bigEnterItem, _shoutItem, _meterItem ]) {
+    _bigEnterItem.toolTip = @"Slamming Enter adds a deep boom.";
+    _shoutItem.toolTip = @"Typing letters hard types them as capitals. Needs Accessibility.";
+    _meterItem.toolTip = @"A small floating meter shows each keystroke's force.";
+    _shoutStatusItem = Info(@"");
+    _shoutStatusItem.indentationLevel = 1;
+    for (NSMenuItem *lab in @[ _bigEnterItem, _shoutItem, _shoutStatusItem, _meterItem ]) {
         [labsMenu addItem:lab];
     }
     [labsMenu addItem:NSMenuItem.separatorItem];
@@ -216,10 +231,32 @@ static NSMenuItem *Info(NSString *title) {
 
 - (void)refreshIcon {
     const KFPowerState state = _context.power.state;
-    const KFStatusIconState icon = state == KFPowerStateNoPermission ? KFStatusIconAttention
-                                   : state == KFPowerStateDisabled   ? KFStatusIconOff
-                                                                     : KFStatusIconOn;
+    const BOOL attention =
+        state == KFPowerStateNoPermission || _context.power.shoutStatus == KFShoutStatusTripped;
+    const KFStatusIconState icon = attention                       ? KFStatusIconAttention
+                                   : state == KFPowerStateDisabled ? KFStatusIconOff
+                                                                   : KFStatusIconOn;
     _item.button.image = [KFStatusIcon imageForState:icon];
+    _item.button.accessibilityLabel = attention                       ? @"Keyfeel, needs attention"
+                                      : state == KFPowerStateDisabled ? @"Keyfeel, sounds off"
+                                                                      : @"Keyfeel";
+}
+
+- (nullable NSString *)shoutStatusText {
+    switch (_context.power.shoutStatus) {
+    case KFShoutStatusNeedsAccessibility:
+        return @"Waiting for Accessibility";
+    case KFShoutStatusUnavailable:
+        return @"No force detection on this Mac";
+    case KFShoutStatusPaused:
+        return @"Paused while sounds are off";
+    case KFShoutStatusTripped:
+        return @"Turned off: the keyboard tap was paused";
+    case KFShoutStatusOff:
+    case KFShoutStatusOn:
+        return nil;
+    }
+    return nil;
 }
 
 - (void)refreshPacks {
@@ -270,6 +307,10 @@ static NSMenuItem *Info(NSString *title) {
     _header.toggle.state = prefs.enabled ? NSControlStateValueOn : NSControlStateValueOff;
     _volume.volume = prefs.volume;
     _permissionItem.hidden = _context.power.state != KFPowerStateNoPermission;
+    _shoutTripItem.hidden = _context.power.shoutStatus != KFShoutStatusTripped;
+    NSString *shout = [self shoutStatusText];
+    _shoutStatusItem.hidden = shout == nil;
+    _shoutStatusItem.title = shout ?: @"";
     _micItem.hidden = !_context.power.microphoneMuted;
     _forceItem.title = [self forceText];
     _bigEnterItem.state = prefs.labsBigEnter ? NSControlStateValueOn : NSControlStateValueOff;
@@ -317,6 +358,7 @@ static NSMenuItem *Info(NSString *title) {
     if (menu == _menu) {
         [_liveTimer invalidate];
         _liveTimer = nil;
+        [_context.power acknowledgeShoutTrip]; /* Seen: the icon's dot can go. */
     }
 }
 

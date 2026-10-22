@@ -14,6 +14,8 @@
         NSImageView *low = [NSImageView imageViewWithImage:KFSymbol(@"speaker.fill", nil)];
         NSImageView *high = [NSImageView imageViewWithImage:KFSymbol(@"speaker.wave.3.fill", nil)];
         low.contentTintColor = high.contentTintColor = NSColor.secondaryLabelColor;
+        low.accessibilityElement = high.accessibilityElement = NO; /* Decoration: the slider
+                                                                      is labelled "Volume". */
         _slider = [NSSlider sliderWithValue:0.7
                                    minValue:0.0
                                    maxValue:1.0

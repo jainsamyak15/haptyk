@@ -32,6 +32,12 @@ extern NSNotificationName const KFPackLibraryDidChangeNotification;
 /// The pack in the engine and the rate it was decoded at (0 when none).
 @property (nonatomic, readonly, nullable) KFPackManifest *loadedPack;
 @property (nonatomic, readonly) double loadedRate;
+/// Big Enter's boom (Resources/Labs/boom.wav), decoded into every pack loaded while it is set;
+/// nil keeps it out of memory. Changing it does not reload: see -needsLoad:rate:. A boom that
+/// fails to decode is left out of the pack (the key sounds still load) and this becomes nil.
+@property (nonatomic, copy, nullable) NSURL *boomURL;
+/// Whether `pack` at `rate`, with the current boomURL, differs from what the engine holds.
+- (BOOL)needsLoad:(KFPackManifest *)pack rate:(double)rate;
 
 /// Decodes `pack` at `rate` on a background queue, hands it to the engine on the main queue,
 /// then calls `completion` there (nil error on success).

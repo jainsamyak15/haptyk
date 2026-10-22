@@ -17,6 +17,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Subscribes to MetricKit and drops reports older than 30 days.
 - (void)start;
+/// Ends the MetricKit subscription. Call while the object stays alive (it finishes later).
+- (void)stop;
 /// Saved reports not yet uploaded (sent only with the stats opt-in), as JSON objects.
 - (NSArray<NSDictionary *> *)unsentReports;
 - (void)markAllSent;

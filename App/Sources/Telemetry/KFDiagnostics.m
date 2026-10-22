@@ -22,6 +22,7 @@ static NSString *const kSentSuffix = @".sent";
 
 @implementation KFDiagnostics {
     NSURL *_directory;
+    BOOL _subscribed;
 }
 
 - (instancetype)initWithDirectory:(NSURL *)directory {
@@ -37,11 +38,19 @@ static NSString *const kSentSuffix = @".sent";
 
 - (void)start {
     [self prune];
-    [MXMetricManager.sharedManager addSubscriber:self];
+    if (!_subscribed) {
+        [MXMetricManager.sharedManager addSubscriber:self];
+        _subscribed = YES;
+    }
 }
 
-- (void)dealloc {
-    [MXMetricManager.sharedManager removeSubscriber:self];
+/* Never from dealloc: removeSubscriber: finishes asynchronously and still touches the
+ * subscriber, which by then would be freed. */
+- (void)stop {
+    if (_subscribed) {
+        [MXMetricManager.sharedManager removeSubscriber:self];
+        _subscribed = NO;
+    }
 }
 
 #pragma mark - MetricKit
@@ -148,6 +157,24 @@ static NSString *SensorState(kf_sensor_state state) {
     return @"?";
 }
 
+static const char *ShoutState(KFShoutStatus status) {
+    switch (status) {
+    case KFShoutStatusOff:
+        return "off";
+    case KFShoutStatusOn:
+        return "on";
+    case KFShoutStatusNeedsAccessibility:
+        return "waiting for Accessibility";
+    case KFShoutStatusUnavailable:
+        return "unavailable";
+    case KFShoutStatusPaused:
+        return "paused";
+    case KFShoutStatusTripped:
+        return "turned off after tap timeouts";
+    }
+    return "?";
+}
+
 - (NSString *)reportForContext:(KFAppContext *)context {
     NSDictionary *info = NSBundle.mainBundle.infoDictionary;
     kf_engine_counters engine;
@@ -193,11 +220,13 @@ static NSString *SensorState(kf_sensor_state state) {
              (double)engine.callback_p99_ns / 1e3, (double)engine.max_callback_ns / 1e3,
              engine.callback_overruns, engine.requests_dropped, engine.requests_stale,
              engine.voices_stolen];
-    [out appendFormat:@"Key tap: %s; %llu events, %llu tap timeouts, %llu repeats dropped; %u "
-                      @"external keyboards\n",
-                      kf_keytap_is_running() ? "running" : "stopped", keytap.events,
+    [out appendFormat:@"Key tap: %s%s; %llu events, %llu tap timeouts, %llu repeats dropped; %u "
+                      @"external keyboards; Shout Mode %s, %llu capitals\n",
+                      kf_keytap_is_running() ? "running" : "stopped",
+                      kf_keytap_shout_enabled() ? " (active)" : "", keytap.events,
                       keytap.tap_timeouts, keytap.autorepeat_dropped,
-                      kf_keytap_external_keyboards()];
+                      kf_keytap_external_keyboards(), ShoutState(context.power.shoutStatus),
+                      keytap.shout_keys];
     [out appendFormat:@"Pack: %@\n", pack != nil
                                          ? [NSString stringWithFormat:@"%@ %@ (%@)", pack.name,
                                                                       pack.version, pack.identifier]

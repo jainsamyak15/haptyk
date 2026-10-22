@@ -53,6 +53,29 @@ changes on every build, so grant it again after rebuilding (System Settings > Pr
 - [ ] 1,000 keys a minute bursts and a held key: no dropped or late sounds; repeats only with
       "Play sounds for repeating keys".
 
+## Labs (M6)
+
+Shout Mode and Big Enter react only to measured force: until the sensor layout is measured
+(ADR-0011) they stay idle, and the rows below wait for a Mac with force detection.
+
+- [ ] Big Enter on: a slammed Enter adds the boom on top of the switch sound; a normal Enter
+      does not; turning it off mid-typing removes the boom without a gap or click.
+- [ ] Shout Mode on: macOS asks for Accessibility once; until it is granted the Labs pane says
+      "Waiting for Accessibility" and keys pass through unchanged.
+- [ ] Shout Mode, typing hard: capitals appear in TextEdit, Safari, Notes, Terminal and a
+      Chromium browser; typing softly: lower case again within three keys.
+- [ ] Shout Mode never changes ⌘C, ⌃A, ⌥E, digits, punctuation, Return or arrows.
+- [ ] Shout Mode in a password field (Safari, Terminal with Secure Keyboard Entry): nothing is
+      changed (macOS sends the tap nothing).
+- [ ] Shout Mode under heavy load (e.g. a large build): if macOS pauses the tap three times in a
+      minute, Shout Mode turns off, the icon shows the dot and the menu says so; opening the
+      menu clears the dot; typing never stalls.
+- [ ] Force Meter on: the HUD shows each keystroke's force for a second, top right, on every
+      Space and over full-screen apps; it never takes focus or clicks; it is gone 1 s after
+      typing stops, and Activity Monitor shows no wakeups from it once idle.
+- [ ] VoiceOver: every control in the menu, Settings, onboarding and calibration is announced
+      with a name; the status item says "Keyfeel" (and "needs attention" with the dot).
+
 ## Results
 
 | Date | Build | Mac | macOS | Rows passed | Notes |

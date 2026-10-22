@@ -60,6 +60,10 @@ void kf_engine_set_muted(bool muted);
 /** Stereo spread of the key positions: 0 mono .. 1 full. Applies to new voices. Any thread. */
 void kf_engine_set_stereo_width(float width);
 
+/** Big Enter (Labs): a key-down on Enter at KF_BIG_ENTER_VELOCITY or harder also plays the
+ * pack's boom (KF_SOUND_BOOM), if it holds one. Off by default. Any thread. */
+void kf_engine_set_big_enter(bool enabled);
+
 /**
  * Hands a pack to the engine, which owns it from now on; NULL unloads. While running, the
  * audio thread swaps it in at its next callback and fades the old pack's voices over
@@ -77,7 +81,9 @@ void kf_engine_set_change_handler(kf_engine_change_cb callback, void *ctx);
 
 /**
  * Queues the voices for one key event. Key-ups play the release sound; key-downs blend two
- * tiers by `velocity` (0..1, negative for unmeasured). Call only from the queue's own
+ * tiers by `velocity` (0..1, negative for unmeasured), plus the boom for a Big Enter. Only a
+ * measured velocity can reach the Big Enter threshold, so in practice the boom comes from the
+ * sensor thread's queue (and from the main thread's previews). Call only from the queue's own
  * producer thread. Returns false if any request was dropped. RT-safe.
  */
 bool kf_emit_keystroke(const kf_key_event *event, float velocity, kf_queue queue);

@@ -72,6 +72,17 @@ keyboard
 The sensor thread resolves keys because it is the only thread that knows when a key's window of
 samples has arrived. That needs no timers and adds no wakeups.
 
+Labs ride on the same flow (ADR-0017, ADR-0018):
+
+- **Big Enter:** `kf_emit_keystroke()` adds a `KF_SOUND_BOOM` request when an Enter key-down's
+  measured velocity reaches the threshold, so the boom comes from queue B and plays from the
+  same pack, which holds it while the feature is on.
+- **Shout Mode:** in active mode the keytap callback adds Shift to a letter key-down before
+  passing it on, decided from the rolling force the sensor thread publishes as an atomic float.
+  It never waits for the sensor.
+- **Force Meter:** the main thread reads the sensor's and the live stats' atomic counters on a
+  timer that runs only while typing with the feature on. Nothing is added to the key path.
+
 ## Real-time translation units
 
 Code that runs on the audio thread, the sensor callback or the keytap callback lives in files

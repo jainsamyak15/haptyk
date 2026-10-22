@@ -433,8 +433,15 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
 #pragma mark - Decoding
 
 - (nullable kf_pack *)loadPackAtSampleRate:(double)sampleRate error:(NSError **)error {
+    return [self loadPackAtSampleRate:sampleRate boom:nil error:error];
+}
+
+- (nullable kf_pack *)loadPackAtSampleRate:(double)sampleRate
+                                      boom:(nullable NSURL *)boomURL
+                                     error:(NSError **)error {
     NSArray<KFPackFileEntry *> *entries = self.files;
-    kf_pack_file *files = calloc(entries.count, sizeof *files);
+    const NSUInteger count = entries.count + (boomURL != nil ? 1u : 0u);
+    kf_pack_file *files = calloc(count, sizeof *files);
     if (files == NULL) {
         if (error != NULL) {
             SetError(error, PackError(KFPackErrorLimit, @"out of memory"));
@@ -449,7 +456,11 @@ static NSInteger IndexOf(NSString *const *names, NSInteger count, NSString *name
             files[i] =
                 (kf_pack_file){e.group, e.isUp, e.tier, e.derived, e.path.fileSystemRepresentation};
         }
-        pack = kf_pack_load(files, entries.count, sampleRate, message, sizeof message);
+        if (boomURL != nil) {
+            files[entries.count] = (kf_pack_file){KF_SOUND_BOOM, 0u, KF_TIER_SOFT, false,
+                                                  boomURL.fileSystemRepresentation};
+        }
+        pack = kf_pack_load(files, count, sampleRate, message, sizeof message);
     }
     free(files);
     if (pack == NULL && error != NULL) {

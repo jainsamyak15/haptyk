@@ -8,6 +8,7 @@
 #include <kf/kf.h>
 
 #import "Calibration/KFCalibrationController.h"
+#import "Labs/KFForceMeterController.h"
 #import "Menu/KFStatusMenuController.h"
 #import "Onboarding/KFOnboardingWindowController.h"
 #import "Packs/KFPackLibrary.h"
@@ -23,6 +24,7 @@
 @implementation KFAppDelegate {
     KFAppContext *_context;
     KFStatusMenuController *_menu;
+    KFForceMeterController *_forceMeter;
     /* Windows exist only while open: each is dropped in its onClose. */
     KFSettingsWindowController *_settings;
     KFOnboardingWindowController *_onboarding;
@@ -61,6 +63,7 @@
                                                               stats:_context.stats];
     _menu = [[KFStatusMenuController alloc] initWithContext:_context];
     [_context.power start];
+    _forceMeter = [[KFForceMeterController alloc] initWithContext:_context];
     [_context.telemetry start];
     [_context.updater start];
 #if defined(KF_DEBUG) && KF_DEBUG
@@ -90,6 +93,7 @@
 - (void)applicationWillTerminate:(NSNotification *)notification {
     (void)notification;
     [_context.telemetry stop];
+    [_context.diagnostics stop];
     [_context.power shutdown];
 }
 

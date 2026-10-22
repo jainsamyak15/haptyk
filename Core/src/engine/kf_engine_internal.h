@@ -41,6 +41,7 @@ typedef struct kf_engine_shared {
     _Atomic(float) volume;
     _Atomic(float) stereo_width;
     atomic_bool muted;
+    atomic_bool big_enter; /* Labs: hard Enter adds the pack's boom. */
     /* Counters: each has a single writer. */
     _Atomic(uint64_t) dropped; /* Producers: separate threads, so fetch_add. */
     _Atomic(uint64_t) stale;
