@@ -60,12 +60,13 @@ All notable changes are recorded here. The format follows
   Mode counters in Export Diagnostics; accessibility labels and values on the remaining
   controls; `Tools/py/make_labs_sounds.py`; Shout Mode's decision in `make bench`.
 
-- Eleven bundled sound packs from licensed Freesound recordings (ten CC0, one CC BY 4.0
-  credited in About), named after what was recorded: Alps SKCM Orange, Buckling Spring, Cherry
-  MX Black, Blue, Brown and Red, Gateron Baby Kangaroo, Gateron Blue, Holy Panda, IBM Model F and
-  Topre (HHKB) (ADR-0019). `Tools/py/extract_keystrokes.py` cuts clean presses and releases out
-  of typing recordings; `Tools/py/build_packs.py` (`make packs`) rebuilds every pack from
-  `Packs/packs.json` with its `SOURCES.md` and licence text.
+- Nineteen bundled sound packs: fifteen of the spec's sixteen (all but Biscuit) plus Alps SKCM
+  Orange, Gateron Baby Kangaroo, Gateron Blue and IBM Model F. Seven come from Mechvibes and
+  seven from kbsim under their MIT licences, credited in About (ADR-0020); five from CC0
+  Freesound recordings (ADR-0019). `Tools/py/extract_keystrokes.py` cuts clean presses and
+  releases out of typing recordings; `Tools/py/build_packs.py` (`make packs`) rebuilds every
+  pack from `Packs/packs.json`, with repository files pinned to a commit, and writes each
+  `SOURCES.md` with its licence text.
 
 ### Fixed
 - The diagnostics object no longer ends its MetricKit subscription from `dealloc`, where

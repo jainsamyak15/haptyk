@@ -1,0 +1,197 @@
+{
+  "format": 1,
+  "id": "com.keyfeel.cherry-mx-blue-pbt",
+  "name": "Cherry MX Blue PBT",
+  "switch_type": "clicky",
+  "author": "Hai Nguyen and Mechvibes contributors (Mechvibes)",
+  "license": "MIT (Copyright (c) 2021 Hai Nguyen)",
+  "version": "1.0.0",
+  "source_url": "https://github.com/hainguyents13/mechvibes/tree/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/src/audio/cherrymx-blue-pbt",
+  "attribution": "Cherry MX Blue PBT: sounds from Mechvibes (https://github.com/hainguyents13/mechvibes), Copyright (c) 2021 Hai Nguyen, MIT License",
+  "derived": [
+    "alpha/hard",
+    "alpha/slam",
+    "alpha/soft",
+    "backspace/hard",
+    "backspace/slam",
+    "backspace/soft",
+    "enter/hard",
+    "enter/slam",
+    "enter/soft",
+    "modifier/hard",
+    "modifier/slam",
+    "modifier/soft",
+    "space/hard",
+    "space/slam",
+    "space/soft",
+    "tab/hard",
+    "tab/slam",
+    "tab/soft"
+  ],
+  "groups": {
+    "alpha": {
+      "down": {
+        "soft": [
+          "samples/alpha_down_soft_1.caf",
+          "samples/alpha_down_soft_2.caf",
+          "samples/alpha_down_soft_3.caf",
+          "samples/alpha_down_soft_4.caf",
+          "samples/alpha_down_soft_5.caf",
+          "samples/alpha_down_soft_6.caf",
+          "samples/alpha_down_soft_7.caf",
+          "samples/alpha_down_soft_8.caf",
+          "samples/alpha_down_soft_9.caf",
+          "samples/alpha_down_soft_10.caf"
+        ],
+        "medium": [
+          "samples/alpha_down_medium_1.caf",
+          "samples/alpha_down_medium_2.caf",
+          "samples/alpha_down_medium_3.caf",
+          "samples/alpha_down_medium_4.caf",
+          "samples/alpha_down_medium_5.caf",
+          "samples/alpha_down_medium_6.caf",
+          "samples/alpha_down_medium_7.caf",
+          "samples/alpha_down_medium_8.caf",
+          "samples/alpha_down_medium_9.caf",
+          "samples/alpha_down_medium_10.caf"
+        ],
+        "hard": [
+          "samples/alpha_down_hard_1.caf",
+          "samples/alpha_down_hard_2.caf",
+          "samples/alpha_down_hard_3.caf",
+          "samples/alpha_down_hard_4.caf",
+          "samples/alpha_down_hard_5.caf",
+          "samples/alpha_down_hard_6.caf",
+          "samples/alpha_down_hard_7.caf",
+          "samples/alpha_down_hard_8.caf",
+          "samples/alpha_down_hard_9.caf",
+          "samples/alpha_down_hard_10.caf"
+        ],
+        "slam": [
+          "samples/alpha_down_slam_1.caf",
+          "samples/alpha_down_slam_2.caf",
+          "samples/alpha_down_slam_3.caf",
+          "samples/alpha_down_slam_4.caf",
+          "samples/alpha_down_slam_5.caf",
+          "samples/alpha_down_slam_6.caf",
+          "samples/alpha_down_slam_7.caf",
+          "samples/alpha_down_slam_8.caf",
+          "samples/alpha_down_slam_9.caf",
+          "samples/alpha_down_slam_10.caf"
+        ]
+      }
+    },
+    "space": {
+      "down": {
+        "soft": [
+          "samples/space_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/space_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/space_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/space_down_slam_1.caf"
+        ]
+      }
+    },
+    "enter": {
+      "down": {
+        "soft": [
+          "samples/enter_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/enter_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/enter_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/enter_down_slam_1.caf"
+        ]
+      }
+    },
+    "backspace": {
+      "down": {
+        "soft": [
+          "samples/backspace_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/backspace_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/backspace_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/backspace_down_slam_1.caf"
+        ]
+      }
+    },
+    "modifier": {
+      "down": {
+        "soft": [
+          "samples/modifier_down_soft_1.caf",
+          "samples/modifier_down_soft_2.caf",
+          "samples/modifier_down_soft_3.caf",
+          "samples/modifier_down_soft_4.caf",
+          "samples/modifier_down_soft_5.caf",
+          "samples/modifier_down_soft_6.caf",
+          "samples/modifier_down_soft_7.caf",
+          "samples/modifier_down_soft_8.caf",
+          "samples/modifier_down_soft_9.caf"
+        ],
+        "medium": [
+          "samples/modifier_down_medium_1.caf",
+          "samples/modifier_down_medium_2.caf",
+          "samples/modifier_down_medium_3.caf",
+          "samples/modifier_down_medium_4.caf",
+          "samples/modifier_down_medium_5.caf",
+          "samples/modifier_down_medium_6.caf",
+          "samples/modifier_down_medium_7.caf",
+          "samples/modifier_down_medium_8.caf",
+          "samples/modifier_down_medium_9.caf"
+        ],
+        "hard": [
+          "samples/modifier_down_hard_1.caf",
+          "samples/modifier_down_hard_2.caf",
+          "samples/modifier_down_hard_3.caf",
+          "samples/modifier_down_hard_4.caf",
+          "samples/modifier_down_hard_5.caf",
+          "samples/modifier_down_hard_6.caf",
+          "samples/modifier_down_hard_7.caf",
+          "samples/modifier_down_hard_8.caf",
+          "samples/modifier_down_hard_9.caf"
+        ],
+        "slam": [
+          "samples/modifier_down_slam_1.caf",
+          "samples/modifier_down_slam_2.caf",
+          "samples/modifier_down_slam_3.caf",
+          "samples/modifier_down_slam_4.caf",
+          "samples/modifier_down_slam_5.caf",
+          "samples/modifier_down_slam_6.caf",
+          "samples/modifier_down_slam_7.caf",
+          "samples/modifier_down_slam_8.caf",
+          "samples/modifier_down_slam_9.caf"
+        ]
+      }
+    },
+    "tab": {
+      "down": {
+        "soft": [
+          "samples/tab_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/tab_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/tab_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/tab_down_slam_1.caf"
+        ]
+      }
+    }
+  }
+}

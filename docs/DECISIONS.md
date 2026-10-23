@@ -228,7 +228,8 @@ decision; supersede it with a new one.
 
 ## ADR-0019: Bundled packs from licensed Freesound typing recordings
 
-- **Status:** Accepted (the owner's approval of each pack's sound is still required, spec M4)
+- **Status:** Accepted, amended by ADR-0020: five Freesound packs remain (the owner's approval of
+  each pack's sound is still required, spec M4)
 - **Context:** The spec's 16 packs need recordings licensed for commercial use in an app, and
   says to rename or drop any that can't be sourced legally. Commissioned four-force sessions
   are not available. Freesound holds CC0 and CC BY recordings of real keyboards, but as
@@ -249,3 +250,25 @@ decision; supersede it with a new one.
   Ink, Gateron Red Ink V2, Kailh Box Navy, NK Cream and Turquoise Tealios wait for commissioned
   recordings (Packs/README.md). Pack names are switch makers' trademarks used descriptively:
   confirm with a lawyer before launch (Appendix B).
+
+## ADR-0020: Mechvibes and kbsim packs under their MIT licences
+
+- **Status:** Accepted (owner's decision, 2026-10-23)
+- **Context:** Eight of the spec's sixteen switches have no Freesound recording licensed for
+  commercial use (ADR-0019). Mechvibes (© 2021 Hai Nguyen) and kbsim (© Thomas Lai) publish
+  packs for them in repositories under the MIT License, which permits commercial use, copying
+  and redistribution, provided the copyright and permission notice travel with the copies. The
+  spec's Appendix B said never to copy audio from another app; the owner has chosen to rely on
+  these licences instead.
+- **Decision:** Take Cherry MX Black, Blue, Brown and Red PBT, EG Crystal Purple, Topre PBT and
+  NK Cream from Mechvibes, and Alpaca, Blue Alps, Gateron Black Ink, Gateron Red Ink, Holy Panda,
+  Kailh Box Navy and Turquoise Tealios from kbsim, fetched at pinned commits by
+  `build_packs.py`. Each pack's `SOURCES.md` holds the repository's MIT notice, and About shows
+  an attribution line for each. The Freesound recordings of the same switches are dropped, so
+  each name appears once; Buckling Spring stays on Freesound's CC0 recording, and four
+  Freesound-only switches stay as extras. Biscuit is not available anywhere and is left out.
+- **Consequences:** Fifteen of the sixteen spec packs ship, with per-key-group sounds. The
+  repositories credit no recordist (NK Cream names "Ryan"), so the licence rests on the
+  repositories' authors having had the right to grant it; if a recordist objects, that pack
+  must be replaced, ideally by a commissioned recording. Packs total 18 MB (DMG budget 30 MB);
+  the largest decodes to 1.8 MB (budget 8 MB).

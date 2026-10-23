@@ -1,0 +1,119 @@
+{
+  "format": 1,
+  "id": "com.keyfeel.gateron-red-ink",
+  "name": "Gateron Red Ink",
+  "switch_type": "linear",
+  "author": "Thomas Lai (kbsim) (kbsim)",
+  "license": "MIT (Copyright (c) Thomas Lai)",
+  "version": "1.0.0",
+  "source_url": "https://github.com/tplai/kbsim/tree/ba103f3b0afa9dab80447aa2e7e2ed80b6bd80e4/src/assets/audio/redink",
+  "attribution": "Gateron Red Ink: sounds from kbsim (https://github.com/tplai/kbsim), Copyright (c) Thomas Lai, MIT License",
+  "derived": [
+    "alpha/hard",
+    "alpha/slam",
+    "alpha/soft",
+    "backspace/hard",
+    "backspace/slam",
+    "backspace/soft",
+    "enter/hard",
+    "enter/slam",
+    "enter/soft",
+    "space/hard",
+    "space/slam",
+    "space/soft"
+  ],
+  "groups": {
+    "alpha": {
+      "down": {
+        "soft": [
+          "samples/alpha_down_soft_1.caf",
+          "samples/alpha_down_soft_2.caf",
+          "samples/alpha_down_soft_3.caf",
+          "samples/alpha_down_soft_4.caf",
+          "samples/alpha_down_soft_5.caf"
+        ],
+        "medium": [
+          "samples/alpha_down_medium_1.caf",
+          "samples/alpha_down_medium_2.caf",
+          "samples/alpha_down_medium_3.caf",
+          "samples/alpha_down_medium_4.caf",
+          "samples/alpha_down_medium_5.caf"
+        ],
+        "hard": [
+          "samples/alpha_down_hard_1.caf",
+          "samples/alpha_down_hard_2.caf",
+          "samples/alpha_down_hard_3.caf",
+          "samples/alpha_down_hard_4.caf",
+          "samples/alpha_down_hard_5.caf"
+        ],
+        "slam": [
+          "samples/alpha_down_slam_1.caf",
+          "samples/alpha_down_slam_2.caf",
+          "samples/alpha_down_slam_3.caf",
+          "samples/alpha_down_slam_4.caf",
+          "samples/alpha_down_slam_5.caf"
+        ]
+      },
+      "up": [
+        "samples/alpha_up_1.caf"
+      ]
+    },
+    "space": {
+      "down": {
+        "soft": [
+          "samples/space_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/space_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/space_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/space_down_slam_1.caf"
+        ]
+      },
+      "up": [
+        "samples/space_up_1.caf"
+      ]
+    },
+    "enter": {
+      "down": {
+        "soft": [
+          "samples/enter_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/enter_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/enter_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/enter_down_slam_1.caf"
+        ]
+      },
+      "up": [
+        "samples/enter_up_1.caf"
+      ]
+    },
+    "backspace": {
+      "down": {
+        "soft": [
+          "samples/backspace_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/backspace_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/backspace_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/backspace_down_slam_1.caf"
+        ]
+      },
+      "up": [
+        "samples/backspace_up_1.caf"
+      ]
+    }
+  }
+}

@@ -3,12 +3,25 @@
   "id": "com.keyfeel.holy-panda",
   "name": "Holy Panda",
   "switch_type": "tactile",
-  "author": "leakwok (Freesound)",
-  "license": "CC BY 4.0",
+  "author": "Thomas Lai (kbsim) (kbsim)",
+  "license": "MIT (Copyright (c) Thomas Lai)",
   "version": "1.0.0",
-  "source_url": "https://freesound.org/people/leakwok/sounds/680830/",
-  "attribution": "Holy Panda: \u201ctyping on my keyboard.m4a\u201d by leakwok (https://freesound.org/people/leakwok/sounds/680830/), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); cut into single keystrokes and level-normalised",
-  "derived": [],
+  "source_url": "https://github.com/tplai/kbsim/tree/ba103f3b0afa9dab80447aa2e7e2ed80b6bd80e4/src/assets/audio/holypanda",
+  "attribution": "Holy Panda: sounds from kbsim (https://github.com/tplai/kbsim), Copyright (c) Thomas Lai, MIT License",
+  "derived": [
+    "alpha/hard",
+    "alpha/slam",
+    "alpha/soft",
+    "backspace/hard",
+    "backspace/slam",
+    "backspace/soft",
+    "enter/hard",
+    "enter/slam",
+    "enter/soft",
+    "space/hard",
+    "space/slam",
+    "space/soft"
+  ],
   "groups": {
     "alpha": {
       "down": {
@@ -17,61 +30,89 @@
           "samples/alpha_down_soft_2.caf",
           "samples/alpha_down_soft_3.caf",
           "samples/alpha_down_soft_4.caf",
-          "samples/alpha_down_soft_5.caf",
-          "samples/alpha_down_soft_6.caf",
-          "samples/alpha_down_soft_7.caf",
-          "samples/alpha_down_soft_8.caf",
-          "samples/alpha_down_soft_9.caf",
-          "samples/alpha_down_soft_10.caf"
+          "samples/alpha_down_soft_5.caf"
         ],
         "medium": [
           "samples/alpha_down_medium_1.caf",
           "samples/alpha_down_medium_2.caf",
           "samples/alpha_down_medium_3.caf",
           "samples/alpha_down_medium_4.caf",
-          "samples/alpha_down_medium_5.caf",
-          "samples/alpha_down_medium_6.caf",
-          "samples/alpha_down_medium_7.caf",
-          "samples/alpha_down_medium_8.caf",
-          "samples/alpha_down_medium_9.caf",
-          "samples/alpha_down_medium_10.caf"
+          "samples/alpha_down_medium_5.caf"
         ],
         "hard": [
           "samples/alpha_down_hard_1.caf",
           "samples/alpha_down_hard_2.caf",
           "samples/alpha_down_hard_3.caf",
           "samples/alpha_down_hard_4.caf",
-          "samples/alpha_down_hard_5.caf",
-          "samples/alpha_down_hard_6.caf",
-          "samples/alpha_down_hard_7.caf",
-          "samples/alpha_down_hard_8.caf",
-          "samples/alpha_down_hard_9.caf",
-          "samples/alpha_down_hard_10.caf"
+          "samples/alpha_down_hard_5.caf"
         ],
         "slam": [
           "samples/alpha_down_slam_1.caf",
           "samples/alpha_down_slam_2.caf",
           "samples/alpha_down_slam_3.caf",
           "samples/alpha_down_slam_4.caf",
-          "samples/alpha_down_slam_5.caf",
-          "samples/alpha_down_slam_6.caf",
-          "samples/alpha_down_slam_7.caf",
-          "samples/alpha_down_slam_8.caf",
-          "samples/alpha_down_slam_9.caf",
-          "samples/alpha_down_slam_10.caf"
+          "samples/alpha_down_slam_5.caf"
         ]
       },
       "up": [
-        "samples/alpha_up_1.caf",
-        "samples/alpha_up_2.caf",
-        "samples/alpha_up_3.caf",
-        "samples/alpha_up_4.caf",
-        "samples/alpha_up_5.caf",
-        "samples/alpha_up_6.caf",
-        "samples/alpha_up_7.caf",
-        "samples/alpha_up_8.caf",
-        "samples/alpha_up_9.caf",
-        "samples/alpha_up_10.caf"
+        "samples/alpha_up_1.caf"
+      ]
+    },
+    "space": {
+      "down": {
+        "soft": [
+          "samples/space_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/space_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/space_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/space_down_slam_1.caf"
+        ]
+      },
+      "up": [
+        "samples/space_up_1.caf"
+      ]
+    },
+    "enter": {
+      "down": {
+        "soft": [
+          "samples/enter_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/enter_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/enter_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/enter_down_slam_1.caf"
+        ]
+      },
+      "up": [
+        "samples/enter_up_1.caf"
+      ]
+    },
+    "backspace": {
+      "down": {
+        "soft": [
+          "samples/backspace_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/backspace_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/backspace_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/backspace_down_slam_1.caf"
+        ]
+      },
+      "up": [
+        "samples/backspace_up_1.caf"
       ]
     }
   }

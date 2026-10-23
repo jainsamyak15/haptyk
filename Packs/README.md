@@ -81,36 +81,37 @@ spot for every pack; quiet room; 0.5 s of silence between takes.
 
 ## Bundled packs (v1)
 
-Eleven packs, each named after what was actually recorded (spec: "drop or rename any of the 16
-that can't be sourced legally"), built from Freesound recordings whose licence allows commercial
-use in an app. `Packs/packs.json` is the source of truth; each `Packs/sources/<id>/SOURCES.md`
-holds the paper trail and the full licence text (ADR-0019).
+Nineteen packs: fifteen of the spec's sixteen plus four extra switches, each named after what was
+recorded. `Packs/packs.json` is the source of truth; each `Packs/sources/<id>/SOURCES.md` holds
+the source, licence and full licence text (ADR-0019, ADR-0020).
 
-| Pack | Switch type | Recording | Author | Licence | Tiers |
-| --- | --- | --- | --- | --- | --- |
-| Alps SKCM Orange | tactile | Apple M0118 (1987) | robni7 | CC0 1.0 | 1 recorded, 3 derived |
-| Buckling Spring | buckling | Unicomp | SamsterBirdies | CC0 1.0 | 4 by loudness |
-| Cherry MX Black | linear | Leopold FC980M PD | ujonathan | CC0 1.0 | 4 by loudness |
-| Cherry MX Blue | clicky | MX Blue keyboard | SamsterBirdies | CC0 1.0 | 4 by loudness |
-| Cherry MX Brown | tactile | MX Brown keyboard | majod | CC0 1.0 | 4 by loudness |
-| Cherry MX Red | linear | Corsair K95, 96 kHz raw | handygaber | CC0 1.0 | 4 by loudness |
-| Gateron Baby Kangaroo | tactile | Nuphy 95 | redpanda69 | CC0 1.0 | 4 by loudness |
-| Gateron Blue | clicky | Anne Pro 2, PBT keycaps | forfii | CC0 1.0 | 4 by loudness |
-| Holy Panda | tactile | custom board, iPhone recording | leakwok | CC BY 4.0 (credited in About) | 4 by loudness |
-| IBM Model F | buckling | 1981 IBM Model F | nakkivene66 | CC0 1.0 | 1 recorded, 3 derived |
-| Topre (HHKB) | topre | Happy Hacking Keyboard | grcekh | CC0 1.0 | 4 by loudness |
+| Pack | Type | Source | Licence | Sounds |
+| --- | --- | --- | --- | --- |
+| Alpaca | linear | kbsim | MIT | 5 alpha, space, enter, backspace; releases |
+| Alps SKCM Orange | tactile | Freesound, robni7 (Apple M0118) | CC0 1.0 | 10 alpha; releases |
+| Blue Alps | clicky | kbsim | MIT | 5 alpha, space, enter, backspace; releases |
+| Buckling Spring | buckling | Freesound, SamsterBirdies (Unicomp) | CC0 1.0 | 30 alpha in 4 tiers; releases |
+| Cherry MX Black PBT | linear | Mechvibes | MIT | 10 alpha, space, enter, backspace, tab, 9 modifiers |
+| Cherry MX Blue PBT | clicky | Mechvibes | MIT | as above |
+| Cherry MX Brown PBT | tactile | Mechvibes | MIT | as above |
+| Cherry MX Red PBT | linear | Mechvibes | MIT | as above |
+| EG Crystal Purple | tactile | Mechvibes | MIT | as above |
+| Gateron Baby Kangaroo | tactile | Freesound, redpanda69 (Nuphy 95) | CC0 1.0 | 24 alpha in 4 tiers; releases |
+| Gateron Black Ink | linear | kbsim | MIT | 5 alpha, space, enter, backspace; releases |
+| Gateron Blue | clicky | Freesound, forfii (Anne Pro 2) | CC0 1.0 | 40 alpha in 4 tiers; releases |
+| Gateron Red Ink | linear | kbsim | MIT | 5 alpha, space, enter, backspace; releases |
+| Holy Panda | tactile | kbsim | MIT | 5 alpha, space, enter, backspace; releases |
+| IBM Model F | buckling | Freesound, nakkivene66 (1981 Model F) | CC0 1.0 | 7 alpha; releases |
+| Kailh Box Navy | clicky | kbsim | MIT | 5 alpha, space, enter, backspace; releases |
+| NK Cream | linear | Mechvibes ("original by Ryan") | MIT | 10 alpha, space, enter, backspace, tab, 8 modifiers |
+| Topre PBT | topre | Mechvibes (Topre Purple Hybrid) | MIT | 10 alpha, space, enter, backspace, tab, 9 modifiers |
+| Turquoise Tealios | linear | kbsim | MIT | 5 alpha, space, enter, backspace; releases |
 
-Not sourced, because no recording with a licence allowing commercial use was found (Freesound,
-Wikimedia Commons, OpenGameArt and community packs searched on 2026-10-23): Alpaca, Biscuit, EG
-Crystal Purple, Gateron Black Ink, Gateron Red Ink V2, Kailh Box Navy, NK Cream and Turquoise
-Tealios; Blue Alps is replaced by Alps SKCM Orange. Keyboard-sound apps and Mechvibes packs that
-carry these names give no recording credits or licence, so they are not used (Appendix B). The
-Freesound Kailh Box Jade and Gateron Black clips hold too few clean keystrokes for a pack. These
-need commissioned recordings (spec below).
-
-All keystrokes are alpha keys; the other groups fall back to alpha (ADR-0012). Tiers "by
-loudness" are the typist's own natural variation, split into quartiles: recorded, not generated,
-but not force-controlled either. Commissioned four-force recordings remain the best source.
+Missing: **Biscuit**, for which no pack or recording exists in any of the sources. "Gateron Red
+Ink V2" is named "Gateron Red Ink" because kbsim does not state the version. Mechvibes and kbsim
+packs record one force, so build_pack.py derives the soft, hard and slam tiers; the Freesound
+packs' tiers are the typist's natural loudness variation (see below). Keys without their own
+sound fall back to alpha (ADR-0012).
 
 ## From a typing recording (`build_packs.py`)
 
@@ -130,8 +131,8 @@ Clicky switches need `merge_ms` 60 to 75, since the click and the bottom-out are
 
 ### Lossless originals
 
-The bundled packs are built from Freesound's public high-quality previews (Ogg Vorbis), which the
-same licence covers. For a lossless build, sign in to Freesound, download each original from the
+The five Freesound packs are built from Freesound's public high-quality previews (Ogg Vorbis),
+which the same licence covers. For a lossless build, sign in to Freesound, download each original from the
 URL in `Packs/packs.json` into `Packs/sources/<id>/raw/` (keep the sound id in the file name,
 as Freesound does), and run `make packs`: an original always wins over the preview, and
 `SOURCES.md` records which was used.
