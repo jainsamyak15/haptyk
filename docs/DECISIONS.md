@@ -307,9 +307,12 @@ decision; supersede it with a new one.
 - **Decision:** A new pack kind, `mechvibes-community`: the published zip, pinned by SHA-256, read
   like a Mechvibes pack (missing files and clipped sounds skipped), with the permission recorded in
   `SOURCES.md`, the author credited in About, and the author's written reply kept in
-  `Packs/sources/<id>/permission/`. Kailh Box White is bundled this way. Razer Green waits for the
-  owner's decision on its GPL v3 licence.
-- **Consequences:** The permission rests on the author's reply, which must be saved. A GPL v3 pack
-  would bring conditions (its licence text and original files shipped with it, recipients'
-  freedoms kept) and some risk for a closed-source app, unless its author grants use without
-  them.
+  `Packs/sources/<id>/permission/`. Kailh Box White is bundled this way. Razer Green is bundled
+  too, on the owner's instruction, under the GPL v3 it ships with: its `SOURCES.md` holds the
+  licence text and lists the changes, the original files it was made from (with `config.json`
+  and `LICENSE.txt`) travel inside the pack in `original/`, and the pack stays a separate data
+  file the app loads, not part of the app's code.
+- **Consequences:** Each permission rests on the author's reply, which must be saved. Razer
+  Green's sounds stay under the GPL v3 for anyone who receives them; treating a data file as
+  separate from a closed-source program is common practice but not tested in court, so a
+  written grant from Akira for use without the GPL terms would remove the remaining risk.

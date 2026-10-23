@@ -239,6 +239,33 @@ class CommunityPackTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 bps.build_community(pack, src, False)
 
+    def test_gpl_pack_ships_its_licence_and_originals(self) -> None:
+        import zipfile
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "src"
+            (src / "raw").mkdir(parents=True)
+            archive = src / "raw" / "gpl.zip"
+            key = Path(tmp) / "k.wav"
+            sf.write(str(key), tone(80), 44100)
+            with zipfile.ZipFile(archive, "w") as z:
+                z.writestr("config.json", json.dumps({"key_define_type": "multi", "defines": {
+                    "30": "k.wav", "31": "unused-by-config.wav"}}))
+                z.write(key, "k.wav")
+                z.write(key, "Full recording.wav")  # In the zip, not used: not shipped.
+                z.writestr("LICENSE.txt", "GNU GENERAL PUBLIC LICENSE Version 3")
+            pack = self.community_pack(archive)
+            pack["source"].update({"licence": bps.GPL3, "licence_file": "GPL-3.0.txt",
+                                   "permission": "Used under the GPL v3."})
+            result = bps.build_community(pack, src, False)
+            self.assertEqual(sorted(p.name for p in result["originals"]),
+                             ["LICENSE.txt", "config.json", "k.wav"])
+            text = (src / "SOURCES.md").read_text(encoding="utf-8")
+            self.assertIn("## Corresponding source", text)
+            self.assertIn("GNU GENERAL PUBLIC LICENSE", text.split("## Licence text", 1)[1])
+            sources = build_pack.read_sources(src)
+            self.assertEqual(sources.licence, bps.GPL3)
+            self.assertIn("GNU GPL v3", sources.attribution)
+
 
 class ManifestTests(unittest.TestCase):
     """The committed Packs/packs.json and the packs built from it."""
@@ -265,10 +292,12 @@ class ManifestTests(unittest.TestCase):
                 self.assertTrue(45 <= e["merge_ms"] <= 75 and e["max_hold_ms"] <= 400
                                 and e["quiet_ms"] >= 60)
             elif p["kind"] == "mechvibes-community":
-                self.assertEqual(s["licence"], bps.PERMISSION)
+                self.assertIn(s["licence"], (bps.PERMISSION, bps.GPL3))
                 self.assertTrue(s["zip"].startswith(bps.COMMUNITY_URL))
                 self.assertTrue(bps.SHA256.fullmatch(s["sha256"]), p["id"])
                 self.assertIn("reports", s["permission"])
+                if s["licence"] == bps.GPL3:
+                    self.assertTrue((bps.REPO / "Packs" / "licenses" / s["licence_file"]).is_file())
             else:
                 self.assertIn(p["kind"], ("mechvibes", "kbsim"))
                 self.assertEqual(s["licence"], "MIT")
@@ -291,9 +320,12 @@ class ManifestTests(unittest.TestCase):
             self.assertIn("| Commercial use in an app allowed | Yes |", sources)
             if p["source"]["licence"].startswith("CC0"):
                 self.assertEqual(built["attribution"], "")
-            elif p["source"]["licence"] == bps.PERMISSION:
+            elif p["source"]["licence"] in (bps.PERMISSION, bps.GPL3):
                 self.assertIn(p["source"]["author"], built["attribution"])
                 self.assertIn("## Permission", sources)
+                if p["source"]["licence"] == bps.GPL3:
+                    self.assertTrue((folder / "original" / "LICENSE.txt").is_file())
+                    self.assertTrue(any((folder / "original").glob("*.wav")))
             elif p["source"]["licence"] == "MIT":
                 self.assertIn(p["source"]["copyright"], built["attribution"])
                 self.assertIn("Permission is hereby granted", sources)

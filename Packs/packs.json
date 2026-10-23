@@ -589,6 +589,25 @@
       }
     },
     {
+      "id": "razer-green",
+      "name": "Razer Green",
+      "switch_type": "clicky",
+      "kind": "mechvibes-community",
+      "recording": "Razer Green switches, Razer BlackWidow Elite keyboard (Mechvibes community pack “Razor Green by Akira (Blackwidow Elite)”)",
+      "source": {
+        "site": "mechvibes.com",
+        "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000076/",
+        "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000076/dist/Razer+Green+%28Blackwidow+Elite%29+-+Akira.zip",
+        "sha256": "70f3c486f80ce8201627dca7dd032b2576a4bdba3db047e14413f8aa522ba323",
+        "title": "Razor Green by Akira (Blackwidow Elite)",
+        "author": "Akira",
+        "licence": "GNU GPL v3",
+        "licence_file": "GPL-3.0.txt",
+        "permission": "The pack's zip ships the GNU GPL v3, under which it is used here. The owner also asked Akira and reports, on 2026-10-23, that the author said the pack is open for anyone to use; keep that reply in Packs/sources/razer-green/permission/.",
+        "downloaded": "2026-10-23"
+      }
+    },
+    {
       "id": "topre-pbt",
       "name": "Topre PBT",
       "switch_type": "topre",

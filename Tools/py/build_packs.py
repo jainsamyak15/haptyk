@@ -62,6 +62,7 @@ COMMIT = re.compile(r"[0-9a-f]{40}")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 COMMUNITY_URL = "https://mechvibes.com/sound-packs/"
 PERMISSION = "Permission from the author"
+GPL3 = "GNU GPL v3"  # Shipped with its text and the author's original files (ADR-0022).
 RATE = 48000  # Community packs mix files of several rates: everything is brought to this one.
 MAX_ZIP_BYTES = 100 * 1024 * 1024
 MAX_ZIP_FILES = 2000
@@ -253,24 +254,26 @@ def kbsim_takes(source: dict, raw: Path, fetch: bool) -> tuple[dict, str, int]:
     return takes, f"{sum(len(v) for v in present.values())} MP3 files", rate
 
 
-def community_takes(folder: Path) -> dict[tuple[str, str], list[np.ndarray]]:
+def community_takes(folder: Path, used: list[Path] | None = None
+                    ) -> dict[tuple[str, str], list[np.ndarray]]:
     """Each key's own sound from a Mechvibes v1 pack in `folder` (sprite or per-key files), at
     RATE. Duplicates, missing files (packs copied from others sometimes name files they lack)
-    and clipped sounds are skipped; at most MAX_TAKES alpha and MAX_OTHER_TAKES other takes."""
+    and clipped sounds are skipped; at most MAX_TAKES alpha and MAX_OTHER_TAKES other takes.
+    `used`, when given, collects the files the kept sounds came from, with config.json."""
     configs = sorted(folder.rglob("config.json"))
     if not configs:
         return {}
     base = configs[0].parent
     config = json.loads(configs[0].read_text(encoding="utf-8-sig"))
     defines = {int(k): v for k, v in (config.get("defines") or {}).items() if v and str(k).isdigit()}
-    takes: dict[tuple[str, str], list[np.ndarray]] = {}
+    found: dict[tuple[str, str], list[tuple[np.ndarray, Path]]] = {}
     seen: dict[str, set] = {}
-    sprite = None
+    sprite, sprite_path = None, None
     if config.get("key_define_type") == "single":
-        path = base / str(config.get("sound", ""))
-        if not path.is_file():
+        sprite_path = base / str(config.get("sound", ""))
+        if not sprite_path.is_file():
             return {}
-        sprite = load(path)
+        sprite = load(sprite_path)
     for code in sorted(defines):
         group, value = mechvibes_group(code), defines[code]
         key = tuple(value) if isinstance(value, list) else value
@@ -279,17 +282,20 @@ def community_takes(folder: Path) -> dict[tuple[str, str], list[np.ndarray]]:
         seen[group].add(key)
         if sprite is not None and isinstance(value, list) and len(value) == 2:
             x, rate = sprite
-            x = x[int(value[0] * rate / 1000):int((value[0] + value[1]) * rate / 1000)]
-        elif isinstance(value, str) and (base / value).is_file() and ".." not in Path(value).parts:
+            x, path = x[int(value[0] * rate / 1000):int((value[0] + value[1]) * rate / 1000)], sprite_path
+        elif isinstance(value, str) and ".." not in Path(value).parts and (base / value).is_file():
             try:
-                x, rate = load(base / value)
+                (x, rate), path = load(base / value), base / value
             except (RuntimeError, sf.LibsndfileError):
                 continue
         else:
             continue
         if len(x) > 32 and not clipped(x):
-            takes.setdefault((group, "down"), []).append(to_rate(x, rate))
-    return {k: spread(v, MAX_TAKES if k[0] == "alpha" else MAX_OTHER_TAKES) for k, v in takes.items()}
+            found.setdefault((group, "down"), []).append((to_rate(x, rate), path))
+    kept = {k: spread(v, MAX_TAKES if k[0] == "alpha" else MAX_OTHER_TAKES) for k, v in found.items()}
+    if used is not None:
+        used.extend(sorted({configs[0], *(path for v in kept.values() for _, path in v)}))
+    return {k: [x for x, _ in v] for k, v in kept.items()}
 
 
 def write_takes(takes: dict, src: Path, rate: int) -> dict[str, int]:
@@ -318,6 +324,9 @@ def attribution(pack: dict) -> str:
     if s["licence"] == PERMISSION:
         return (f"{pack['name']}: sounds by {s['author']} (Mechvibes community pack, {s['url']}), "
                 f"used with the author's permission")
+    if s["licence"] == GPL3:
+        return (f"{pack['name']}: sounds by {s['author']} (Mechvibes community pack, {s['url']}), "
+                f"GNU GPL v3; cut, normalised and re-encoded, the original files are in the pack")
     if s["licence"] == "MIT":
         return (f"{pack['name']}: sounds from {s['site']} ({s['project_url']}), {s['copyright']}, "
                 f"MIT License")
@@ -447,7 +456,7 @@ def community_sources_md(pack: dict, counts: dict[str, int]) -> str:
         ("URL or contract", s["url"]),
         ("Title", s["title"]),
         ("Author", s["author"]),
-        ("Licence", PERMISSION),
+        ("Licence", s["licence"]),
         ("Permission", s["permission"]),
         ("Commercial use in an app allowed", "Yes"),
         ("Attribution required (shown in About)", attribution(pack)),
@@ -475,8 +484,20 @@ encoded CAF/ALAC.
 
 ## Permission
 
-The pack carries no licence file. {s['permission']}
-"""
+{"The pack carries no licence file. " if s["licence"] == PERMISSION else ""}{s['permission']}
+""" + (f"""
+## Corresponding source
+
+This pack is a modified version of {s['author']}'s pack, conveyed under the GNU GPL v3. The
+original files it was made from ship with it in `original/` (with the pack's `config.json` and
+`LICENSE.txt`); the changes are listed under Processing above. They remain under the GPL v3.
+
+## Licence text
+
+```
+{licence_text(s)}
+```
+""" if s["licence"] == GPL3 else "")
 
 
 # ---------------------------------------------------------------------------- build
@@ -536,12 +557,17 @@ def build_community(pack: dict, src: Path, fetch: bool) -> dict:
     if unpacked.exists():
         shutil.rmtree(unpacked)  # Only the folder this script unpacks.
     safe_unzip(archive, unpacked)
-    takes = community_takes(unpacked)
+    used: list[Path] = []
+    takes = community_takes(unpacked, used)
     if not takes.get(("alpha", "down")):
         raise SystemExit(f"build_packs: {pack['id']}: no alpha key sounds")
     counts = write_takes(takes, src, RATE)
     (src / "SOURCES.md").write_text(community_sources_md(pack, counts), encoding="utf-8")
-    return {"takes": counts}
+    originals = []
+    if source["licence"] == GPL3:  # The GPL's corresponding source travels with the pack.
+        licence = next(iter(sorted(unpacked.rglob("LICENSE*"))), None)
+        originals = sorted({*used, *([licence] if licence else [])})
+    return {"takes": counts, "originals": originals, "root": unpacked}
 
 
 def build_one(pack: dict, out: Path, fetch: bool) -> dict:
@@ -562,6 +588,11 @@ def build_one(pack: dict, out: Path, fetch: bool) -> dict:
     if status != 0:
         raise SystemExit(f"build_packs: build_pack.py failed for {pack['id']}")
     folder = out / (re.sub(r"[^A-Za-z0-9]+", "-", pack["name"]).strip("-") + ".kfpack")
+    for path in summary.pop("originals", []):
+        target = folder / "original" / path.relative_to(summary["root"])
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(path, target)
+    summary.pop("root", None)
     valid = None
     if KF_CLI.exists():
         valid = subprocess.run([str(KF_CLI), "--validate", str(folder)], capture_output=True,

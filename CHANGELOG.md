@@ -70,7 +70,8 @@ All notable changes are recorded here. The format follows
   pack from `Packs/packs.json`, with repository files pinned to a commit, and writes each
   `SOURCES.md` with its licence text.
 
-- Kailh Box White, a Mechvibes community pack by edy., bundled with its author's permission
+- Kailh Box White (by edy., with the author's permission) and Razer Green (by Akira, under the
+  GNU GPL v3 its zip ships with, original files in the pack), two Mechvibes community packs
   (ADR-0022); `build_packs.py` reads community zips pinned by SHA-256.
 - `make review` (`Tools/py/build_review.py`): a git-ignored `Packs/review/` folder with every
   bundled pack, every licensed alternative and every unlicensed community pack considered, each

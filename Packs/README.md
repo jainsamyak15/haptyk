@@ -81,8 +81,8 @@ spot for every pack; quiet room; 0.5 s of silence between takes.
 
 ## Bundled packs (v1)
 
-Twenty-four packs: fifteen of the spec's sixteen, the four Cherry MX ABS-keycap variants and
-five extra switches, each named after what was recorded. `Packs/packs.json` is the source of
+Twenty-five packs: fifteen of the spec's sixteen, the four Cherry MX ABS-keycap variants and
+six extra switches, each named after what was recorded. `Packs/packs.json` is the source of
 truth; each `Packs/sources/<id>/SOURCES.md` holds the source, licence and full licence text
 (ADR-0019, ADR-0020, ADR-0021). Bandwidth and SNR are measured on the source files (lossy
 codecs cut the top end; 20 kHz and up means no audible loss).
@@ -100,6 +100,7 @@ codecs cut the top end; 20 kHz and up means no audible loss).
 | Alps SKCM Orange | tactile | Freesound, robni7 (Apple M0118) | CC0 1.0 | 18.9 kHz | 10 alpha; releases |
 | Gateron Baby Kangaroo | tactile | Freesound, redpanda69 (Nuphy 95) | CC0 1.0 | 16.6 kHz | 24 alpha in 4 tiers; releases |
 | Kailh Box White | clicky | Mechvibes community pack by edy. | Author's permission (ADR-0022) | 17.9 kHz | 10 alpha; space, enter, backspace, tab; 4 modifiers |
+| Razer Green | clicky | Mechvibes community pack by Akira (BlackWidow Elite) | GNU GPL v3, originals shipped in the pack (ADR-0022) | 20.9 kHz | 6 alpha; space, enter, backspace, tab; 4 modifiers |
 | Alpaca, Blue Alps, Gateron Black Ink, Gateron Red Ink, Holy Panda, Kailh Box Navy, Turquoise Tealios | linear / clicky / linear / linear / tactile / clicky / linear | kbsim | MIT | 13.6-18 kHz, 36-56 dB (MP3) | 5 alpha; space, enter, backspace; releases |
 
 Missing: **Biscuit**, which exists in none of the sources. "Gateron Red Ink V2" is named
@@ -116,8 +117,8 @@ no better free recording of the kbsim switches exists: the community "Full Trave
 kbsim copies, Tealios V2 by Akira measures lower (13.8 kHz, 38 dB), Glorious Panda has a single
 sample, and Model F XT clips. Two community packs measure high but carry no licence, so they are
 not bundled: **Razer Green by Akira** (21.7 kHz, 72 dB) and **Kailh Box White** (18.5 kHz,
-72 dB). Kailh Box White is now bundled with its author's permission (ADR-0022); Razer Green
-ships a GPL v3 licence file and waits for the owner's decision. Where one switch had several
+72 dB). Both are now bundled (ADR-0022): Kailh Box White with its author's permission, Razer
+Green under the GPL v3 licence its zip ships with. Where one switch had several
 licensed recordings, the cleanest was kept: Buckling Spring uses fastson's PCM-M10 recording
 (43.5 dB keystroke SNR, 24 kHz) over a lavalier recording (33.5 dB, 20.4 kHz); IBM Model F uses
 nakkivene66's (50.5 dB) over Fractal_'s (30.9 dB). keesound's WAVs are conversions of the same

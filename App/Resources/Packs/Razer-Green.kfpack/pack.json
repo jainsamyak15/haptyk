@@ -1,0 +1,161 @@
+{
+  "format": 1,
+  "id": "com.keyfeel.razer-green",
+  "name": "Razer Green",
+  "switch_type": "clicky",
+  "author": "Akira (mechvibes.com)",
+  "license": "GNU GPL v3",
+  "version": "1.0.0",
+  "source_url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000076/",
+  "attribution": "Razer Green: sounds by Akira (Mechvibes community pack, https://mechvibes.com/sound-packs/custom-sound-pack-1203000000076/), GNU GPL v3; cut, normalised and re-encoded, the original files are in the pack",
+  "derived": [
+    "alpha/hard",
+    "alpha/slam",
+    "alpha/soft",
+    "backspace/hard",
+    "backspace/slam",
+    "backspace/soft",
+    "enter/hard",
+    "enter/slam",
+    "enter/soft",
+    "modifier/hard",
+    "modifier/slam",
+    "modifier/soft",
+    "space/hard",
+    "space/slam",
+    "space/soft",
+    "tab/hard",
+    "tab/slam",
+    "tab/soft"
+  ],
+  "groups": {
+    "alpha": {
+      "down": {
+        "soft": [
+          "samples/alpha_down_soft_1.caf",
+          "samples/alpha_down_soft_2.caf",
+          "samples/alpha_down_soft_3.caf",
+          "samples/alpha_down_soft_4.caf",
+          "samples/alpha_down_soft_5.caf",
+          "samples/alpha_down_soft_6.caf"
+        ],
+        "medium": [
+          "samples/alpha_down_medium_1.caf",
+          "samples/alpha_down_medium_2.caf",
+          "samples/alpha_down_medium_3.caf",
+          "samples/alpha_down_medium_4.caf",
+          "samples/alpha_down_medium_5.caf",
+          "samples/alpha_down_medium_6.caf"
+        ],
+        "hard": [
+          "samples/alpha_down_hard_1.caf",
+          "samples/alpha_down_hard_2.caf",
+          "samples/alpha_down_hard_3.caf",
+          "samples/alpha_down_hard_4.caf",
+          "samples/alpha_down_hard_5.caf",
+          "samples/alpha_down_hard_6.caf"
+        ],
+        "slam": [
+          "samples/alpha_down_slam_1.caf",
+          "samples/alpha_down_slam_2.caf",
+          "samples/alpha_down_slam_3.caf",
+          "samples/alpha_down_slam_4.caf",
+          "samples/alpha_down_slam_5.caf",
+          "samples/alpha_down_slam_6.caf"
+        ]
+      }
+    },
+    "space": {
+      "down": {
+        "soft": [
+          "samples/space_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/space_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/space_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/space_down_slam_1.caf"
+        ]
+      }
+    },
+    "enter": {
+      "down": {
+        "soft": [
+          "samples/enter_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/enter_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/enter_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/enter_down_slam_1.caf"
+        ]
+      }
+    },
+    "backspace": {
+      "down": {
+        "soft": [
+          "samples/backspace_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/backspace_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/backspace_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/backspace_down_slam_1.caf"
+        ]
+      }
+    },
+    "modifier": {
+      "down": {
+        "soft": [
+          "samples/modifier_down_soft_1.caf",
+          "samples/modifier_down_soft_2.caf",
+          "samples/modifier_down_soft_3.caf",
+          "samples/modifier_down_soft_4.caf"
+        ],
+        "medium": [
+          "samples/modifier_down_medium_1.caf",
+          "samples/modifier_down_medium_2.caf",
+          "samples/modifier_down_medium_3.caf",
+          "samples/modifier_down_medium_4.caf"
+        ],
+        "hard": [
+          "samples/modifier_down_hard_1.caf",
+          "samples/modifier_down_hard_2.caf",
+          "samples/modifier_down_hard_3.caf",
+          "samples/modifier_down_hard_4.caf"
+        ],
+        "slam": [
+          "samples/modifier_down_slam_1.caf",
+          "samples/modifier_down_slam_2.caf",
+          "samples/modifier_down_slam_3.caf",
+          "samples/modifier_down_slam_4.caf"
+        ]
+      }
+    },
+    "tab": {
+      "down": {
+        "soft": [
+          "samples/tab_down_soft_1.caf"
+        ],
+        "medium": [
+          "samples/tab_down_medium_1.caf"
+        ],
+        "hard": [
+          "samples/tab_down_hard_1.caf"
+        ],
+        "slam": [
+          "samples/tab_down_slam_1.caf"
+        ]
+      }
+    }
+  }
+}
