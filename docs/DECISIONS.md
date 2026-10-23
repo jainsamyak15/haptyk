@@ -122,6 +122,10 @@ decision; supersede it with a new one.
   properties. The app reads the sensor only through a plain open of the HID device. Until that
   delivers samples, Keyfeel runs in fallback mode: every key plays at the default velocity.
   Option 1 (the read-only root test) remains the owner's call.
+- **Update (2026-10-24):** The owner ran option 1: root opens the sensor but receives no
+  reports either (0 in 5 s). With option 2 not pursued, option 3 is what remains; closing the
+  gate on it is the owner's decision. The probes are worth repeating on new Mac models and
+  major macOS releases.
 - **Consequences:** M1–M6 are built and tested in fallback mode. The sensor path is
   implemented against the documented interface and stays dormant (`KF_SENSOR_ABSENT`) while
   the device sends nothing.
