@@ -8,7 +8,8 @@
 
 Captured, read-only: motion-sensor drivers (SPU HID devices and drivers in the IORegistry), HID
 services, every audio device (default devices, sample rates, buffer sizes, volume, mute),
-power settings and assertions, keyboard preferences, launch agents, daemons and privileged
+every power profile (AC and battery), the active power source, Keyfeel's power assertions,
+keyboard preferences, launch agents, daemons and privileged
 helpers, and the app's own data folders. Each item is saved raw, plus a "stable" view without
 counters and timestamps that change on their own, which is what `diff` compares.
 
@@ -44,6 +45,8 @@ VOLATILE_KEYS = {
     "IOUserClientCreator",
     "IORegistryEntryID",
     "IOCFPlugInTypes",
+    "IOServiceBusyTime",  # Cumulative time the service has been busy.
+    "IOObjectRetainCount",  # Rises and falls as processes open and close connections.
     "CurrentLux",  # Ambient light: changes with the room.
 }
 KEYBOARD_PREFS = [
@@ -116,7 +119,14 @@ def capture_meta() -> dict[str, Any]:
         "os": f"{sysctl('kern.osproductversion')} ({sysctl('kern.osversion')})",
         "boot_time": sysctl("kern.boottime"),
         "uid": os.getuid(),
+        "power_source": power_source(run(["pmset", "-g", "ps"])[1]),
     }
+
+
+def power_source(text: str) -> str:
+    """"AC Power" or "Battery Power" from `pmset -g ps`; "" when it says neither."""
+    found = re.search(r"drawing from '([^']+)'", text)
+    return found.group(1) if found else ""
 
 
 def capture_audio() -> tuple[str, Any]:
@@ -154,15 +164,18 @@ def capture_folders() -> dict[str, Any]:
 
 
 def capture_power() -> tuple[str, str, list[str]]:
-    settings = run(["pmset", "-g"])[1]
+    """Every power profile (`pmset -g custom`), not only the active one, which changes when the
+    charger is plugged in or out."""
+    active = run(["pmset", "-g"])[1]
+    profiles = run(["pmset", "-g", "custom"])[1]
     assertions = run(["pmset", "-g", "assertions"])[1]
     ours = [
         line.strip()
         for line in assertions.splitlines()
         if any(name in line for name in ("Keyfeel", "keyfeel", "kf-cli", "sensor-log"))
     ]
-    stable_settings = normalize_power(settings)
-    return settings + "\n--- assertions ---\n" + assertions, stable_settings, ours
+    raw = f"{active}\n--- profiles ---\n{profiles}\n--- assertions ---\n{assertions}"
+    return raw, normalize_power(profiles), ours
 
 
 def normalize_power(text: str) -> str:
@@ -173,6 +186,12 @@ def normalize_power(text: str) -> str:
         for line in text.splitlines()
         if not line.lower().startswith("currently in use")
     )
+
+
+def has_power_profiles(lines: list[str]) -> bool:
+    """Whether power settings list every profile ("AC Power:", "Battery Power:"). Snapshots
+    taken before 2026-10-24 hold only the active one, which cannot be compared with these."""
+    return any(re.fullmatch(r"[A-Za-z ]+ Power:", line.strip()) for line in lines)
 
 
 def stable_lines(path: Path) -> list[str]:
@@ -225,11 +244,17 @@ def diff(a: Path, b: Path) -> int:
     print(f"A: {a} ({meta_a['taken_utc']})\nB: {b} ({meta_b['taken_utc']})")
     if meta_a["boot_time"] != meta_b["boot_time"]:
         print("note: the Mac rebooted between the snapshots")
+    source_a, source_b = meta_a.get("power_source", ""), meta_b.get("power_source", "")
+    if source_a and source_b and source_a != source_b:
+        print(f"note: power source changed ({source_a} -> {source_b}); not a setting change")
     changed = 0
     names = sorted({p.name for p in (a / "stable").iterdir()} | {p.name for p in (b / "stable").iterdir()})
     for name in names:
         left = stable_lines(a / "stable" / name)
         right = stable_lines(b / "stable" / name)
+        if name == "power-settings.txt" and has_power_profiles(left) != has_power_profiles(right):
+            print(f"  skip  {name}: one snapshot predates per-profile power settings")
+            continue
         delta = list(difflib.unified_diff(left, right, f"A/{name}", f"B/{name}", lineterm="", n=2))
         if delta:
             changed += 1
