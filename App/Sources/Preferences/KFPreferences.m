@@ -26,6 +26,7 @@ static NSString *const kForceMeter = @"labs.forceMeter";
 static NSString *const kTelemetry = @"telemetryOptIn";
 static NSString *const kOnboarding = @"onboardingDone";
 static NSString *const kInstallId = @"installId";
+static NSString *const kPanelStyle = @"panelStyle";
 
 static float Clamp(float value, float lo, float hi) {
     if (!(value >= lo)) {
@@ -66,6 +67,7 @@ static float Clamp(float value, float lo, float hi) {
             kForceMeter : @NO,
             kTelemetry : @NO,
             kOnboarding : @NO,
+            kPanelStyle : @"graphite",
         }];
     }
     return self;
@@ -102,6 +104,18 @@ static float Clamp(float value, float lo, float hi) {
 }
 
 #pragma mark - Settings
+
+- (NSString *)panelStyle {
+    NSString *value = [_defaults stringForKey:kPanelStyle];
+    return [value isEqualToString:@"glass"] ? @"glass" : @"graphite";
+}
+- (void)setPanelStyle:(NSString *)value {
+    NSString *style = [value isEqualToString:@"glass"] ? @"glass" : @"graphite";
+    if (![style isEqualToString:self.panelStyle]) {
+        [_defaults setObject:style forKey:kPanelStyle];
+        [self changed:kPanelStyle];
+    }
+}
 
 - (BOOL)enabled {
     return [_defaults boolForKey:kEnabled];

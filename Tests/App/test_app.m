@@ -411,6 +411,25 @@ void TestStatusPanelPieces(void) {
     KFPillSwitch *pill = [KFPillSwitch new];
     pill.on = YES;
     KFExpect([pill.accessibilityValue isEqual:@1] && pill.state == NSControlStateValueOn);
+
+    /* Glass: clear panel, translucent surfaces, white accent in dark, orange only as the brand;
+     * larger radii. Graphite again afterwards. */
+    const KFThemeStyle saved = KFTheme.style;
+    KFTheme.style = KFThemeStyleGlass;
+    KFExpect(KFTheme.glass);
+    KFExpect(Resolved(KFTheme.background, NSAppearanceNameDarkAqua).alphaComponent == 0.0);
+    const CGFloat surfaceAlpha = Resolved(KFTheme.surface, NSAppearanceNameDarkAqua).alphaComponent;
+    KFExpect(surfaceAlpha > 0.0 && surfaceAlpha < 0.5);
+    NSColor *white = Resolved(KFTheme.accent, NSAppearanceNameDarkAqua);
+    KFExpect(white.redComponent > 0.99 && white.greenComponent > 0.99 &&
+             white.blueComponent > 0.99);
+    NSColor *brand = Resolved(KFTheme.brand, NSAppearanceNameDarkAqua);
+    KFExpect(brand.redComponent > 0.9 && brand.blueComponent < 0.3);
+    KFExpect([KFTheme radius:10.0] > 10.0);
+    KFTheme.style = KFThemeStyleGraphite;
+    KFExpect([KFTheme radius:10.0] == 10.0);
+    KFExpect(Resolved(KFTheme.background, NSAppearanceNameDarkAqua).alphaComponent == 1.0);
+    KFTheme.style = saved;
 }
 
 #pragma mark - Preferences and stats
@@ -423,6 +442,11 @@ void TestPreferencesDefaultsAndClamping(void) {
     KFExpect(!prefs.repeatSounds && !prefs.muteExternalKeyboard && !prefs.telemetryOptIn);
     KFExpect(!prefs.labsBigEnter && !prefs.labsShoutMode && !prefs.labsForceMeter);
     KFExpect(prefs.idleTimeoutS == 30 && prefs.packId == nil && prefs.calibration == nil);
+    KFExpect([prefs.panelStyle isEqualToString:@"graphite"]);
+    prefs.panelStyle = @"glass";
+    KFExpect([prefs.panelStyle isEqualToString:@"glass"]);
+    prefs.panelStyle = @"neon"; // Unknown: the default.
+    KFExpect([prefs.panelStyle isEqualToString:@"graphite"]);
     prefs.volume = 3.0f;
     KFExpect(prefs.volume == 1.0f);
     prefs.sensitivity = -9.0f;

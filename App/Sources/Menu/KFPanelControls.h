@@ -35,8 +35,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// A rounded surface with a hairline: cards and tiles.
 @interface KFCardView : NSView
-@property (nonatomic) CGFloat cornerRadius;
+@property (nonatomic) CGFloat cornerRadius; ///< Graphite radius; Glass rounds more (KFTheme).
 @property (nonatomic, nullable) NSColor *fillColor; ///< Default KFTheme.surface.
+/// Set when the card sits on a glass tile, which then provides its surface: no fill or line.
+@property (nonatomic) BOOL glassBacked;
 @end
 
 /// A small stat: label above, value below.

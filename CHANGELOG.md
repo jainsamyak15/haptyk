@@ -75,6 +75,9 @@ All notable changes are recorded here. The format follows
   power switch, a Feel card (last keystroke's force tier and the last minute's typing), volume,
   a pack chooser with switch-type filters, stats, Labs and every menu command. A right click
   still opens the classic menu.
+- A "Glass" panel style (Settings > General > Menu bar panel, ADR-0024): translucent tiles over
+  the desktop like Control Center, with Liquid Glass on macOS 26 and later and the system blur
+  before; Graphite stays the default.
 - Kailh Box White (by edy., with the author's permission) and Razer Green (by Akira, under the
   GNU GPL v3 its zip ships with, original files in the pack), two Mechvibes community packs
   (ADR-0022); `build_packs.py` reads community zips pinned by SHA-256.

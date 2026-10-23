@@ -73,6 +73,7 @@ static const CGFloat kPaneWidth = 560.0;
     NSButton *_mic;
     NSButton *_external;
     NSPopUpButton *_idle;
+    NSSegmentedControl *_style;
 }
 
 - (void)loadView {
@@ -93,12 +94,22 @@ static const CGFloat kPaneWidth = 560.0;
     _idle.target = self;
     _idle.action = @selector(changeSetting:);
     _idle.accessibilityLabel = @"Sleep after no typing"; /* Its row labels the stack. */
+    _style = [NSSegmentedControl segmentedControlWithLabels:@[ @"Graphite", @"Glass" ]
+                                               trackingMode:NSSegmentSwitchTrackingSelectOne
+                                                     target:self
+                                                     action:@selector(changeSetting:)];
+    _style.accessibilityLabel = @"Menu bar panel style";
+    NSTextField *styleNote = KFSecondaryLabel(
+        @"Graphite: warm graphite with a signal-orange accent. Glass: translucent tiles over your "
+        @"desktop, like Control Center (Liquid Glass on macOS 26 and later). Right-click the menu "
+        @"bar icon for the classic menu.");
     NSTextField *idleNote = KFSecondaryLabel(
         @"Audio and the motion sensor sleep when you stop typing, so Keyfeel uses no power while "
         @"idle. The first key after a pause plays a moment late.");
     self.view = KFPane(
         @[
             KFFormRow(@"Startup:", KFVStack(@[ _login, _loginNote ], 4.0)),
+            KFFormRow(@"Menu bar panel:", KFVStack(@[ _style, styleNote ], 4.0)),
             KFFormRow(@"Keys:", KFVStack(@[ _release, _repeat ], 6.0)),
             KFFormRow(@"Stereo width:", KFVStack(
                                             @[
@@ -123,6 +134,7 @@ static const CGFloat kPaneWidth = 560.0;
     if (![_idle selectItemWithTag:prefs.idleTimeoutS]) {
         [_idle selectItemWithTag:30];
     }
+    _style.selectedSegment = [prefs.panelStyle isEqualToString:@"glass"] ? 1 : 0;
     const SMAppServiceStatus status = SMAppService.mainAppService.status;
     _login.state =
         status == SMAppServiceStatusEnabled ? NSControlStateValueOn : NSControlStateValueOff;
@@ -145,6 +157,8 @@ static const CGFloat kPaneWidth = 560.0;
         prefs.muteExternalKeyboard = _external.state == NSControlStateValueOn;
     } else if (sender == _idle) {
         prefs.idleTimeoutS = _idle.selectedTag;
+    } else if (sender == _style) {
+        prefs.panelStyle = _style.selectedSegment == 1 ? @"glass" : @"graphite";
     }
 }
 

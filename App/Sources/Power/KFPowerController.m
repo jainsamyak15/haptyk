@@ -475,8 +475,8 @@ static void OnOutputChanged(void *ctx) {
     } else if ([key isEqualToString:@"labs.bigEnter"]) {
         [self applyBigEnter];
         [self loadCurrentPack]; /* Adds or drops the boom: a background decode, no gap. */
-    } else if ([key isEqualToString:@"labs.forceMeter"]) {
-        /* KFForceMeterController watches this itself. */
+    } else if ([key isEqualToString:@"labs.forceMeter"] || [key isEqualToString:@"panelStyle"]) {
+        /* Watched by KFForceMeterController and the status panel themselves. */
     } else {
         [self applyAllPreferences];
     }

@@ -63,6 +63,9 @@ changes on every build, so grant it again after rebuilding (System Settings > Pr
 - [ ] VoiceOver reads every control with a name and value, and the Feel card as a summary.
 - [ ] Light and dark appearance, and Increase Contrast, all look right; no purple or pink.
 - [ ] Activity Monitor shows no extra CPU while the panel is closed.
+- [ ] Settings > General > Menu bar panel: Glass. The next open shows separate glass tiles over
+      the desktop (Liquid Glass on macOS 26+), legible over a bright and a dark wallpaper, in
+      light and dark appearance; Graphite switches back.
 
 ## Packs (M4)
 

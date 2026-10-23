@@ -49,8 +49,8 @@ static NSUserInterfaceItemIdentifier const kCellID = @"KFPackCell";
     if (_hovered && !self.selected && !self.current) {
         [KFTheme.surfaceHover setFill];
         [[NSBezierPath bezierPathWithRoundedRect:NSInsetRect(self.bounds, 2.0, 1.0)
-                                         xRadius:7.0
-                                         yRadius:7.0] fill];
+                                         xRadius:[KFTheme radius:7.0]
+                                         yRadius:[KFTheme radius:7.0]] fill];
     }
 }
 
@@ -69,7 +69,9 @@ static NSUserInterfaceItemIdentifier const kCellID = @"KFPackCell";
 - (void)drawMarks {
     const NSRect row = NSInsetRect(self.bounds, 2.0, 1.0);
     [KFTheme.surfaceHover setFill]; // Neutral: the accent is kept for the bar and the check.
-    [[NSBezierPath bezierPathWithRoundedRect:row xRadius:7.0 yRadius:7.0] fill];
+    [[NSBezierPath bezierPathWithRoundedRect:row
+                                     xRadius:[KFTheme radius:7.0]
+                                     yRadius:[KFTheme radius:7.0]] fill];
     if (self.current) {
         [KFTheme.accent setFill];
         [[NSBezierPath bezierPathWithRoundedRect:NSMakeRect(NSMinX(row) + 2.0, NSMinY(row) + 7.0,
@@ -144,6 +146,7 @@ static NSUserInterfaceItemIdentifier const kCellID = @"KFPackCell";
     NSScrollView *_scroll;
     NSTableView *_table;
     NSLayoutConstraint *_height;
+    KFCardView *_card;
     BOOL _reloading;
 }
 
@@ -210,6 +213,7 @@ static NSUserInterfaceItemIdentifier const kCellID = @"KFPackCell";
 
         KFCardView *card = [KFCardView new];
         card.cornerRadius = 12.0;
+        _card = card;
         for (NSView *v in @[ chipRow, card, _scroll ]) {
             v.translatesAutoresizingMaskIntoConstraints = NO;
         }
@@ -233,6 +237,11 @@ static NSUserInterfaceItemIdentifier const kCellID = @"KFPackCell";
         ]];
     }
     return self;
+}
+
+- (void)setGlassBacked:(BOOL)glassBacked {
+    _glassBacked = glassBacked;
+    _card.glassBacked = glassBacked;
 }
 
 - (void)setVisibleRows:(NSUInteger)visibleRows {

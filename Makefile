@@ -112,7 +112,8 @@ APP_SRCS       := $(if $(filter Darwin,$(UNAME_S)),$(sort $(shell find App/Sourc
 APP_OBJS       := $(patsubst %,$(OBJ)/%.o,$(basename $(APP_SRCS)))
 APP_LIB_OBJS   := $(filter-out $(OBJ)/App/Sources/Application/main.o,$(APP_OBJS))
 APP_FRAMEWORKS := $(FRAMEWORKS) -framework AppKit -framework ServiceManagement \
-                  -framework UniformTypeIdentifiers -framework MetricKit
+                  -framework UniformTypeIdentifiers -framework MetricKit \
+                  -framework CoreImage
 xcconfig        = $(shell sed -n 's/^$(1) = //p' Config/App.xcconfig)
 
 APP_TEST_SRCS := $(if $(filter Darwin,$(UNAME_S)),$(sort $(wildcard Tests/App/*.m)))

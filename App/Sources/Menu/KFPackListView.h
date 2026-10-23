@@ -18,6 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Visible rows before the list scrolls.
 @property (nonatomic) NSUInteger visibleRows;
+/// On a glass tile: the list's card draws no surface of its own.
+@property (nonatomic) BOOL glassBacked;
 
 /// Rebuilds the rows (after packs, the current pack or the filter change).
 - (void)reload;

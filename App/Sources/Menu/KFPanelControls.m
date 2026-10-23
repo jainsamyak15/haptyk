@@ -323,12 +323,21 @@ static void TrackHover(NSView *view) {
     return self;
 }
 
+- (void)setGlassBacked:(BOOL)glassBacked {
+    _glassBacked = glassBacked;
+    [self setNeedsDisplay:YES];
+}
+
 - (void)drawRect:(NSRect)dirty {
     (void)dirty;
+    if (self.glassBacked) {
+        return; // The glass tile underneath is the surface.
+    }
+    const CGFloat radius = [KFTheme radius:self.cornerRadius];
     const NSRect card = NSInsetRect(self.bounds, 0.5, 0.5);
     NSBezierPath *shape = [NSBezierPath bezierPathWithRoundedRect:card
-                                                          xRadius:self.cornerRadius
-                                                          yRadius:self.cornerRadius];
+                                                          xRadius:radius
+                                                          yRadius:radius];
     [(self.fillColor ?: KFTheme.surface) setFill];
     [shape fill];
     [KFTheme.stroke setStroke];

@@ -3,6 +3,8 @@
 
 #import "Menu/KFStatusPanel.h"
 
+#import <CoreImage/CoreImage.h>
+
 #include <kf/kf.h>
 
 #import "Menu/KFFeelView.h"
@@ -18,6 +20,7 @@
 static const CGFloat kWidth = 344.0;
 static const CGFloat kPad = 16.0;
 static const CGFloat kCorner = 16.0;
+static const CGFloat kGlassGap = 10.0;      // Between glass tiles, as in Control Center.
 static const NSTimeInterval kRefresh = 0.5; // Spec: live stats every 0.5 s while open.
 
 /// A borderless panel that can take the keyboard without activating Keyfeel.
@@ -36,14 +39,23 @@ static const NSTimeInterval kRefresh = 0.5; // Spec: live stats every 0.5 s whil
 
 @end
 
-/// The panel's rounded background and hairline.
+/// The panel's rounded background and hairline (Graphite); nothing in Glass, where the tiles
+/// float over the desktop. A preview may draw a desktop backdrop instead.
 @interface KFPanelBackground : NSView
+@property (nonatomic, nullable) NSImage *backdrop;
 @end
 
 @implementation KFPanelBackground
 
 - (void)drawRect:(NSRect)dirty {
     (void)dirty;
+    if (self.backdrop != nil) {
+        [self.backdrop drawInRect:self.bounds];
+        return;
+    }
+    if (KFTheme.glass) {
+        return;
+    }
     const NSRect r = NSInsetRect(self.bounds, 0.5, 0.5);
     NSBezierPath *shape = [NSBezierPath bezierPathWithRoundedRect:r
                                                           xRadius:kCorner
@@ -79,16 +91,17 @@ static const NSTimeInterval kRefresh = 0.5; // Spec: live stats every 0.5 s whil
         _link.prominent = YES;
         NSStackView *row = [NSStackView stackViewWithViews:@[ mark, _text, _link ]];
         row.spacing = 8.0;
-        row.edgeInsets = NSEdgeInsetsMake(8, 10, 8, 10);
         [_text setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow
                                         forOrientation:NSLayoutConstraintOrientationHorizontal];
         row.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:row];
+        // Required padding (a stack's edge insets give way when a container compresses it).
         [NSLayoutConstraint activateConstraints:@[
-            [row.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
-            [row.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
-            [row.topAnchor constraintEqualToAnchor:self.topAnchor],
-            [row.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
+            [row.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:10.0],
+            [row.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-10.0],
+            [row.topAnchor constraintEqualToAnchor:self.topAnchor constant:6.0],
+            [row.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-6.0],
+            [row.heightAnchor constraintGreaterThanOrEqualToConstant:22.0],
         ]];
     }
     return self;
@@ -110,6 +123,161 @@ static const NSTimeInterval kRefresh = 0.5; // Spec: live stats every 0.5 s whil
 
 @end
 
+static BOOL DrawingDark(void) {
+    NSAppearanceName match = [NSAppearance.currentDrawingAppearance
+        bestMatchFromAppearancesWithNames:@[ NSAppearanceNameAqua, NSAppearanceNameDarkAqua ]];
+    return [match isEqualToString:NSAppearanceNameDarkAqua];
+}
+
+/// The bright edge of a glass tile, for the system-blur fallback. Never takes clicks.
+@interface KFGlassEdge : NSView
+@property (nonatomic) CGFloat radius;
+@end
+
+@implementation KFGlassEdge
+
+- (NSView *)hitTest:(NSPoint)point {
+    (void)point;
+    return nil;
+}
+
+- (void)drawRect:(NSRect)dirty {
+    (void)dirty;
+    NSBezierPath *shape = [NSBezierPath bezierPathWithRoundedRect:NSInsetRect(self.bounds, 0.5, 0.5)
+                                                          xRadius:self.radius
+                                                          yRadius:self.radius];
+    [KFTheme.stroke setStroke];
+    shape.lineWidth = 1.0;
+    [shape stroke];
+}
+
+@end
+
+/// A glass tile drawn from a blurred backdrop, for previews: an offscreen drawing cannot see what
+/// is behind a window, which real glass and blur need.
+@interface KFSimulatedGlass : NSView
+@property (nonatomic) CGFloat radius;
+@property (nonatomic, nullable) NSImage *backdrop; ///< Blurred, the size of the window.
+@end
+
+@implementation KFSimulatedGlass
+
+- (void)drawRect:(NSRect)dirty {
+    (void)dirty;
+    NSBezierPath *shape = [NSBezierPath bezierPathWithRoundedRect:NSInsetRect(self.bounds, 0.5, 0.5)
+                                                          xRadius:self.radius
+                                                          yRadius:self.radius];
+    [NSGraphicsContext saveGraphicsState];
+    [shape addClip];
+    const NSRect inWindow = [self convertRect:self.bounds toView:nil];
+    [self.backdrop drawInRect:self.bounds
+                     fromRect:inWindow
+                    operation:NSCompositingOperationCopy
+                     fraction:1.0
+               respectFlipped:YES
+                        hints:nil];
+    const BOOL dark = DrawingDark();
+    [[NSColor colorWithWhite:dark ? 0.0 : 1.0 alpha:dark ? 0.28 : 0.42] setFill];
+    NSRectFillUsingOperation(self.bounds, NSCompositingOperationSourceOver);
+    [[NSColor colorWithWhite:1.0 alpha:dark ? 0.07 : 0.0] setFill];
+    NSRectFillUsingOperation(self.bounds, NSCompositingOperationSourceOver);
+    [NSGraphicsContext restoreGraphicsState];
+    [[NSColor colorWithWhite:1.0 alpha:dark ? 0.22 : 0.75] setStroke];
+    shape.lineWidth = 1.0;
+    [shape stroke];
+}
+
+@end
+
+/// A resizable rounded-rectangle mask for NSVisualEffectView.
+static NSImage *RoundedMask(CGFloat radius) {
+    const CGFloat side = radius * 2.0 + 1.0;
+    NSImage *mask = [NSImage imageWithSize:NSMakeSize(side, side)
+                                   flipped:NO
+                            drawingHandler:^BOOL(NSRect rect) {
+                                [NSColor.blackColor setFill];
+                                [[NSBezierPath bezierPathWithRoundedRect:rect
+                                                                 xRadius:radius
+                                                                 yRadius:radius] fill];
+                                return YES;
+                            }];
+    mask.capInsets = NSEdgeInsetsMake(radius, radius, radius, radius);
+    mask.resizingMode = NSImageResizingModeStretch;
+    return mask;
+}
+
+/// The desktop picture's top-right corner (where the panel sits), `size` points at 2x; blurred
+/// and saturated like a glass material when `blur`. Falls back to a neutral backdrop.
+static NSImage *Backdrop(NSSize size, BOOL blur) {
+    NSScreen *screen = NSScreen.mainScreen;
+    NSURL *url =
+        screen != nil ? [NSWorkspace.sharedWorkspace desktopImageURLForScreen:screen] : nil;
+    NSImage *source = url != nil ? [[NSImage alloc] initWithContentsOfURL:url] : nil;
+    CGImageRef cg = [source CGImageForProposedRect:NULL context:nil hints:nil];
+    CIImage *image = cg != NULL ? [CIImage imageWithCGImage:cg] : nil;
+    if (image == nil || CGRectIsEmpty(image.extent) || CGRectIsInfinite(image.extent)) {
+        NSImage *neutral = [NSImage
+             imageWithSize:NSMakeSize(400, 600)
+                   flipped:NO
+            drawingHandler:^BOOL(NSRect rect) {
+                [[NSColor colorWithSRGBRed:0.13 green:0.15 blue:0.17 alpha:1] setFill];
+                NSRectFill(rect);
+                const struct {
+                    CGFloat x, y, r, red, green, blue;
+                } blobs[] = {{80, 450, 170, 0.18, 0.49, 0.48},
+                             {320, 160, 200, 0.79, 0.55, 0.18},
+                             {260, 520, 120, 0.23, 0.29, 0.35}};
+                for (size_t i = 0; i < 3; ++i) {
+                    [[NSColor colorWithSRGBRed:blobs[i].red
+                                         green:blobs[i].green
+                                          blue:blobs[i].blue
+                                         alpha:1] setFill];
+                    [[NSBezierPath
+                        bezierPathWithOvalInRect:NSMakeRect(blobs[i].x - blobs[i].r,
+                                                            blobs[i].y - blobs[i].r, blobs[i].r * 2,
+                                                            blobs[i].r * 2)] fill];
+                }
+                return YES;
+            }];
+        CGImageRef fallback = [neutral CGImageForProposedRect:NULL context:nil hints:nil];
+        if (fallback == NULL) {
+            return [[NSImage alloc] initWithSize:size];
+        }
+        image = [[CIImage imageWithCGImage:fallback] imageByApplyingGaussianBlurWithSigma:40.0];
+        image = [image imageByCroppingToRect:CGRectMake(0, 0, 400, 600)];
+    }
+    const CGRect extent = image.extent;
+    const CGFloat aspect = size.width / size.height;
+    CGFloat h = extent.size.height * 0.8;
+    CGFloat w = h * aspect;
+    if (w > extent.size.width) {
+        w = extent.size.width;
+        h = w / aspect;
+    }
+    const CGRect crop = CGRectMake(CGRectGetMaxX(extent) - w, CGRectGetMaxY(extent) - h, w, h);
+    const CGFloat scale = size.width * 2.0 / w;
+    image = [[image imageByCroppingToRect:crop]
+        imageByApplyingTransform:CGAffineTransformConcat(CGAffineTransformMakeTranslation(
+                                                             -crop.origin.x, -crop.origin.y),
+                                                         CGAffineTransformMakeScale(scale, scale))];
+    const CGRect target = CGRectMake(0, 0, size.width * 2.0, size.height * 2.0);
+    if (blur) {
+        image = [[image imageByClampingToExtent] imageByApplyingGaussianBlurWithSigma:36.0];
+        image = [image imageByApplyingFilter:@"CIColorControls"
+                         withInputParameters:@{
+                             kCIInputSaturationKey : @1.5
+                         }];
+        image = [image imageByCroppingToRect:target];
+    }
+    CGImageRef rendered = [[CIContext context] createCGImage:image fromRect:target];
+    if (rendered == NULL) {
+        return [[NSImage alloc] initWithSize:size];
+    }
+    NSImage *out = [[NSImage alloc] initWithCGImage:rendered size:size];
+    CGImageRelease(rendered);
+    return out;
+}
+
 @interface KFStatusPanelController () <NSWindowDelegate>
 @end
 
@@ -120,6 +288,7 @@ static const NSTimeInterval kRefresh = 0.5; // Spec: live stats every 0.5 s whil
     KFPillSwitch *_power;
     NSTextField *_subtitle;
     KFBanner *_banner;
+    NSView *_bannerTile; // The banner, or its glass tile.
     SEL _bannerAction;
     KFFeelView *_feel;
     KFLevelSlider *_volume;
@@ -133,11 +302,17 @@ static const NSTimeInterval kRefresh = 0.5; // Spec: live stats every 0.5 s whil
     NSTimer *_timer;
     id _outsideMonitor;
     id _keyMonitor;
+    KFPanelBackground *_background;
+    BOOL _simulateGlass; // Previews: tiles drawn from a backdrop instead of live glass.
+    NSImage *_backdropBlur;
 }
 
 - (instancetype)initWithContext:(KFAppContext *)context {
     if ((self = [super init])) {
         _context = context;
+        KFTheme.style = [context.preferences.panelStyle isEqualToString:@"glass"]
+                            ? KFThemeStyleGlass
+                            : KFThemeStyleGraphite;
         for (NSNotificationName name in @[
                  KFPowerStateDidChangeNotification, KFPreferencesDidChangeNotification,
                  KFPackLibraryDidChangeNotification
@@ -179,11 +354,92 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
     return view;
 }
 
+/// Glass: `content` on its own glass tile, `inset` inside it; Graphite: `content` unchanged.
+- (NSView *)tile:(NSView *)content inset:(CGFloat)inset radius:(CGFloat)radius {
+    if (!KFTheme.glass) {
+        return content;
+    }
+    NSView *inner = [NSView new];
+    content.translatesAutoresizingMaskIntoConstraints = NO;
+    [inner addSubview:content];
+    [NSLayoutConstraint activateConstraints:@[
+        [content.topAnchor constraintEqualToAnchor:inner.topAnchor constant:inset],
+        [content.bottomAnchor constraintEqualToAnchor:inner.bottomAnchor constant:-inset],
+        [content.leadingAnchor constraintEqualToAnchor:inner.leadingAnchor constant:inset + 2.0],
+        [content.trailingAnchor constraintEqualToAnchor:inner.trailingAnchor constant:-inset - 2.0],
+    ]];
+    NSView *tile = nil;
+    if (_simulateGlass) {
+        KFSimulatedGlass *glass = [KFSimulatedGlass new];
+        glass.radius = radius;
+        glass.backdrop = _backdropBlur;
+        tile = glass;
+    } else if (@available(macOS 26.0, *)) {
+        // The glass is the tile's background, with the content above it rather than inside:
+        // Liquid Glass sizes its own content view to a preferred height, which would squeeze
+        // ours. It still renders and blends with its neighbours the same way.
+        NSGlassEffectView *glass = [NSGlassEffectView new];
+        glass.cornerRadius = radius;
+        glass.style = NSGlassEffectViewStyleRegular;
+        // A light tint keeps text legible over bright or busy desktops.
+        glass.tintColor = [NSColor colorWithName:nil
+                                 dynamicProvider:^NSColor *(NSAppearance *appearance) {
+                                     NSAppearanceName m =
+                                         [appearance bestMatchFromAppearancesWithNames:@[
+                                             NSAppearanceNameAqua, NSAppearanceNameDarkAqua
+                                         ]];
+                                     return [m isEqualToString:NSAppearanceNameDarkAqua]
+                                                ? [NSColor colorWithWhite:0.0 alpha:0.22]
+                                                : [NSColor colorWithWhite:1.0 alpha:0.30];
+                                 }];
+        tile = [NSView new];
+        glass.translatesAutoresizingMaskIntoConstraints = NO;
+        [tile addSubview:glass];
+        [NSLayoutConstraint activateConstraints:@[
+            [glass.topAnchor constraintEqualToAnchor:tile.topAnchor],
+            [glass.bottomAnchor constraintEqualToAnchor:tile.bottomAnchor],
+            [glass.leadingAnchor constraintEqualToAnchor:tile.leadingAnchor],
+            [glass.trailingAnchor constraintEqualToAnchor:tile.trailingAnchor],
+        ]];
+        [glass setContentHuggingPriority:1 forOrientation:NSLayoutConstraintOrientationVertical];
+        [glass setContentCompressionResistancePriority:1
+                                        forOrientation:NSLayoutConstraintOrientationVertical];
+    } else {
+        NSVisualEffectView *blur = [NSVisualEffectView new];
+        blur.material = NSVisualEffectMaterialPopover;
+        blur.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+        blur.state = NSVisualEffectStateActive;
+        blur.maskImage = RoundedMask(radius);
+        KFGlassEdge *edge = [KFGlassEdge new];
+        edge.radius = radius;
+        edge.translatesAutoresizingMaskIntoConstraints = NO;
+        [blur addSubview:edge];
+        [NSLayoutConstraint activateConstraints:@[
+            [edge.topAnchor constraintEqualToAnchor:blur.topAnchor],
+            [edge.bottomAnchor constraintEqualToAnchor:blur.bottomAnchor],
+            [edge.leadingAnchor constraintEqualToAnchor:blur.leadingAnchor],
+            [edge.trailingAnchor constraintEqualToAnchor:blur.trailingAnchor],
+        ]];
+        tile = blur;
+    }
+    inner.translatesAutoresizingMaskIntoConstraints = NO;
+    // Above the live glass; below the fallback's bright edge, which never takes clicks.
+    const BOOL edgeOnTop = [tile isKindOfClass:NSVisualEffectView.class];
+    [tile addSubview:inner positioned:edgeOnTop ? NSWindowBelow : NSWindowAbove relativeTo:nil];
+    [NSLayoutConstraint activateConstraints:@[
+        [inner.topAnchor constraintEqualToAnchor:tile.topAnchor],
+        [inner.bottomAnchor constraintEqualToAnchor:tile.bottomAnchor],
+        [inner.leadingAnchor constraintEqualToAnchor:tile.leadingAnchor],
+        [inner.trailingAnchor constraintEqualToAnchor:tile.trailingAnchor],
+    ]];
+    return tile;
+}
+
 - (NSView *)header {
     NSTextField *title = KFThemedLabel(
         @"Keyfeel", [NSFont systemFontOfSize:16.0 weight:NSFontWeightBold], KFTheme.textPrimary);
     NSTextField *dot =
-        KFThemedLabel(@".", [NSFont systemFontOfSize:16.0 weight:NSFontWeightBold], KFTheme.accent);
+        KFThemedLabel(@".", [NSFont systemFontOfSize:16.0 weight:NSFontWeightBold], KFTheme.brand);
     dot.accessibilityElement = NO;
     NSStackView *word = [NSStackView stackViewWithViews:@[ title, dot ]];
     word.spacing = 0.0;
@@ -212,7 +468,19 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
         Icon(@"speaker.fill", @"Quieter"), _volume, Icon(@"speaker.wave.3.fill", @"Louder")
     ]];
     row.spacing = 10.0;
-    return row;
+    if (!KFTheme.glass) {
+        return row;
+    }
+    // Glass: a titled module, as Control Center's Sound.
+    NSTextField *title = KFThemedLabel(
+        @"Volume", [NSFont systemFontOfSize:13.0 weight:NSFontWeightSemibold], KFTheme.textPrimary);
+    title.accessibilityElement = NO;
+    NSStackView *module = [NSStackView stackViewWithViews:@[ title, row ]];
+    module.orientation = NSUserInterfaceLayoutOrientationVertical;
+    module.alignment = NSLayoutAttributeLeading;
+    module.spacing = 8.0;
+    [row.widthAnchor constraintEqualToAnchor:module.widthAnchor].active = YES;
+    return module;
 }
 
 - (NSView *)packSection {
@@ -241,9 +509,14 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
     _keysTile = [[KFStatTile alloc] initWithLabel:@"Keys today"];
     _tapsTile = [[KFStatTile alloc] initWithLabel:@"Taps / min"];
     _thirdTile = [[KFStatTile alloc] initWithLabel:@"Active today"];
-    NSStackView *row = [NSStackView stackViewWithViews:@[ _keysTile, _tapsTile, _thirdTile ]];
+    NSMutableArray<NSView *> *tiles = [NSMutableArray array];
+    for (KFStatTile *tile in @[ _keysTile, _tapsTile, _thirdTile ]) {
+        tile.glassBacked = KFTheme.glass;
+        [tiles addObject:[self tile:tile inset:0.0 radius:18.0]];
+    }
+    NSStackView *row = [NSStackView stackViewWithViews:tiles];
     row.distribution = NSStackViewDistributionFillEqually;
-    row.spacing = 8.0;
+    row.spacing = KFTheme.glass ? kGlassGap : 8.0;
     return row;
 }
 
@@ -307,33 +580,79 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
 }
 
 - (void)build {
+    const BOOL glass = KFTheme.glass;
     _banner = [KFBanner new];
     _banner.link.target = self;
     _banner.link.action = @selector(bannerAction:);
+    _banner.glassBacked = glass;
     _feel = [KFFeelView new];
+    _feel.glassBacked = glass;
+    NSView *packs = [self packSection];
+    _packs.glassBacked = glass;
     NSArray<NSView *> *rows = @[
-        [self header], _banner, _feel, [self volumeRow], [self packSection], [self tiles],
-        [self labsRow], Hairline(), [self footer]
+        [self tile:[self header] inset:12.0 radius:24.0],
+        [self tile:_banner inset:0.0 radius:18.0],
+        [self tile:_feel inset:0.0 radius:22.0],
+        [self tile:[self volumeRow] inset:12.0 radius:24.0],
+        [self tile:packs inset:12.0 radius:24.0],
+        [self tiles],
+        [self tile:[self labsRow] inset:12.0 radius:24.0],
+        Hairline(),
+        [self tile:[self footer] inset:9.0 radius:20.0],
     ];
+    rows[7].hidden = glass; // Glass separates by tiles, not rules.
+    // Glass: the banner's tile shows and hides with the banner.
+    _bannerTile = rows[1];
     _stack = [NSStackView stackViewWithViews:rows];
     _stack.orientation = NSUserInterfaceLayoutOrientationVertical;
     _stack.alignment = NSLayoutAttributeLeading;
-    _stack.spacing = 14.0;
-    [_stack setCustomSpacing:12.0 afterView:rows[0]];
-    [_stack setCustomSpacing:10.0 afterView:rows[7]];
-    _stack.edgeInsets = NSEdgeInsetsMake(kPad, kPad, kPad - 4.0, kPad);
+    _stack.spacing = glass ? kGlassGap : 14.0;
+    if (!glass) {
+        [_stack setCustomSpacing:12.0 afterView:rows[0]];
+        [_stack setCustomSpacing:10.0 afterView:rows[7]];
+    }
+    const CGFloat pad = glass ? 8.0 : kPad; // Glass: room for the tiles' own edges.
+    _stack.edgeInsets = glass ? NSEdgeInsetsMake(pad, pad, pad, pad)
+                              : NSEdgeInsetsMake(kPad, kPad, kPad - 4.0, kPad);
     _stack.translatesAutoresizingMaskIntoConstraints = NO;
     for (NSView *row in rows) {
-        [row.widthAnchor constraintEqualToConstant:kWidth - 2.0 * kPad].active = YES;
+        [row.widthAnchor constraintEqualToConstant:kWidth - 2.0 * pad].active = YES;
     }
     KFPanelBackground *background =
         [[KFPanelBackground alloc] initWithFrame:NSMakeRect(0, 0, kWidth, 600)];
-    [background addSubview:_stack];
+    _background = background;
+    NSView *holder = _stack;
+    if (glass && !_simulateGlass) {
+        if (@available(macOS 26.0, *)) {
+            // Groups the tiles so neighbouring glass renders and blends together.
+            NSGlassEffectContainerView *group = [NSGlassEffectContainerView new];
+            group.spacing = kGlassGap;
+            NSView *content = [NSView new];
+            [content addSubview:_stack];
+            [NSLayoutConstraint activateConstraints:@[
+                [_stack.topAnchor constraintEqualToAnchor:content.topAnchor],
+                [_stack.leadingAnchor constraintEqualToAnchor:content.leadingAnchor],
+                [_stack.trailingAnchor constraintEqualToAnchor:content.trailingAnchor],
+                [_stack.bottomAnchor constraintEqualToAnchor:content.bottomAnchor],
+            ]];
+            group.contentView = content;
+            content.translatesAutoresizingMaskIntoConstraints = NO;
+            [NSLayoutConstraint activateConstraints:@[
+                [content.topAnchor constraintEqualToAnchor:group.topAnchor],
+                [content.bottomAnchor constraintEqualToAnchor:group.bottomAnchor],
+                [content.leadingAnchor constraintEqualToAnchor:group.leadingAnchor],
+                [content.trailingAnchor constraintEqualToAnchor:group.trailingAnchor],
+            ]];
+            group.translatesAutoresizingMaskIntoConstraints = NO;
+            holder = group;
+        }
+    }
+    [background addSubview:holder];
     [NSLayoutConstraint activateConstraints:@[
-        [_stack.topAnchor constraintEqualToAnchor:background.topAnchor],
-        [_stack.leadingAnchor constraintEqualToAnchor:background.leadingAnchor],
-        [_stack.trailingAnchor constraintEqualToAnchor:background.trailingAnchor],
-        [_stack.bottomAnchor constraintEqualToAnchor:background.bottomAnchor],
+        [holder.topAnchor constraintEqualToAnchor:background.topAnchor],
+        [holder.leadingAnchor constraintEqualToAnchor:background.leadingAnchor],
+        [holder.trailingAnchor constraintEqualToAnchor:background.trailingAnchor],
+        [holder.bottomAnchor constraintEqualToAnchor:background.bottomAnchor],
         [background.widthAnchor constraintEqualToConstant:kWidth],
     ]];
     background.accessibilityElement = YES;
@@ -348,7 +667,7 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
     _panel.contentView = background;
     _panel.opaque = NO;
     _panel.backgroundColor = NSColor.clearColor;
-    _panel.hasShadow = YES;
+    _panel.hasShadow = YES; // Glass tiles' window shadow follows each tile's shape.
     _panel.level = NSPopUpMenuWindowLevel;
     _panel.hidesOnDeactivate = NO;
     _panel.releasedWhenClosed = NO;
@@ -444,7 +763,15 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
 #pragma mark - Refreshing
 
 - (void)changed:(NSNotification *)note {
-    (void)note;
+    if ([note.userInfo[KFPreferencesKey] isEqualToString:@"panelStyle"]) {
+        // A new look is a new panel: built afresh at the next open.
+        KFTheme.style = [_context.preferences.panelStyle isEqualToString:@"glass"]
+                            ? KFThemeStyleGlass
+                            : KFThemeStyleGraphite;
+        [self close];
+        _panel = nil;
+        return;
+    }
     if (self.shown) {
         [self refreshAll];
     }
@@ -479,7 +806,7 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
     } else if (_context.power.microphoneMuted) {
         text = @"Muted while the microphone is in use.";
     }
-    _banner.hidden = text == nil;
+    _bannerTile.hidden = text == nil;
     _banner.text.stringValue = text ?: @"";
     _banner.link.title = link ?: @"";
     _banner.link.hidden = link == nil;
@@ -646,18 +973,57 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
     _tapsTile.value = @"312";
     _thirdTile.label = @"Hammer";
     _thirdTile.value = @"81%";
-    _banner.hidden = YES;
+    _bannerTile.hidden = YES;
     _bigEnter.on = YES;
 }
 
 - (BOOL)renderPreviewToDirectory:(NSURL *)directory {
-    if (_panel == nil) {
+    const KFThemeStyle saved = KFTheme.style;
+    BOOL ok = YES;
+    for (NSNumber *style in @[ @(KFThemeStyleGraphite), @(KFThemeStyleGlass) ]) {
+        KFTheme.style = (KFThemeStyle)style.integerValue;
+        _simulateGlass = KFTheme.glass;
+        _panel = nil;
         [self build];
+        [self refreshAll];
+        if (_simulateGlass) { // The desktop behind the tiles, sharp, and blurred for the glass.
+            const NSSize size = _panel.contentView.fittingSize;
+            _backdropBlur = Backdrop(size, YES);
+            _panel = nil;
+            [self build]; // Tiles take the blurred backdrop when built.
+            [self refreshAll];
+            _background.backdrop = Backdrop(size, NO);
+        }
+        NSString *name = KFTheme.glass ? @"glass" : @"graphite";
+        ok = [self renderTo:directory suffix:[@"-" stringByAppendingString:name]] && ok;
+        [self fillDemo];
+        ok = [self renderTo:directory suffix:[NSString stringWithFormat:@"-%@-in-use", name]] && ok;
     }
-    BOOL ok = [self renderTo:directory suffix:@""];
-    [self fillDemo];
-    ok = [self renderTo:directory suffix:@"-in-use"] && ok;
+    // The live glass cannot be drawn offscreen, but its layout can be checked: every tile
+    // must have a real size.
+    KFTheme.style = KFThemeStyleGlass;
+    _simulateGlass = NO;
+    _backdropBlur = nil;
+    _panel = nil;
+    [self build];
     [self refreshAll];
+    [_panel.contentView layoutSubtreeIfNeeded];
+    const NSSize size = _panel.contentView.fittingSize;
+    [_panel setFrame:NSMakeRect(-10000, -10000, size.width, size.height) display:NO];
+    [_panel.contentView layoutSubtreeIfNeeded];
+    NSMutableArray<NSString *> *rows = [NSMutableArray array];
+    for (NSView *row in _stack.arrangedSubviews) {
+        if (!row.hidden) {
+            [rows
+                addObject:[NSString stringWithFormat:@"%@ %.0fx%.0f", row.className,
+                                                     row.frame.size.width, row.frame.size.height]];
+            ok = ok && row.frame.size.height >= 20.0 && row.frame.size.width > 300.0;
+        }
+    }
+    fprintf(stderr, "KFRenderPanel: live glass %.0fx%.0f: %s\n", size.width, size.height,
+            [rows componentsJoinedByString:@", "].UTF8String);
+    KFTheme.style = saved;
+    _panel = nil; // Rebuilt, live, at the next open.
     return ok;
 }
 
