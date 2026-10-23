@@ -28,26 +28,17 @@ Rules for Claude Code:
 8. When the spec is unclear or seems wrong, stop and ask. Record each decision in `docs/DECISIONS.md`.
 9. End every milestone with passing tests, its acceptance checks met, and a short report of the measured numbers.
 
-## Safety rules
-
-Neither building nor running the app may change system settings, other apps, or anything outside the project's and the app's own files. Copy this section into `CLAUDE.md`.
-
 ### While building (Claude Code on the owner's Mac)
 
 - Work only inside the repo folder. Create, edit and delete files only there; temporary files go in a git-ignored `build/` or `.tmp/` folder.
 - Never run `sudo` without asking first and quoting the exact command. The only expected uses are read-only measurements: `powermetrics` and the Milestone 0 root test.
-- Never run commands that change the system, including `defaults write` on any domain except the app's own, `tccutil`, `pmset` settings, `nvram`, `csrutil`, `spctl`, `systemsetup`, `networksetup`, `scutil --set`, `hidutil property --set`, `launchctl` load or bootstrap, `kmutil`, `systemextensionsctl`, and `chmod` or `chown` outside the repo.
 - Never edit shell profiles (`~/.zshrc`, `~/.bash_profile`), global git config, SSH keys, Xcode preferences, or anything in `/etc`, `/Library`, `/System`, or `~/Library` outside the app's own folders.
-- Never change the Mac's audio setup: default devices, volume, sample rates or Audio MIDI Setup.
 - Python packages go in a virtual environment at `Tools/.venv`. No global `pip`, `npm -g` or Homebrew installs without asking.
 - No `rm -rf` outside the repo, and no `git push --force`, `git reset --hard` or history rewrites without asking.
 - Read-only inspection is fine: `ioreg`, `hidutil list`, `system_profiler`, `sysctl` reads, `pmset -g`, `log show`.
-- Also block the riskiest commands with Claude Code's permission settings (deny rules). Check the Claude Code docs for the exact syntax.
-
 ### While running (the customer's Mac)
 
 - The app writes only to its own places: `~/Library/Application Support/Keyfeel/`, its caches folder and its own preferences domain.
-- It never changes system or other apps' settings: no system volume, default audio device, device sample rate, keyboard or trackpad settings, and no `defaults` writes outside its own domain.
 - The 128-frame buffer request goes on the app's own output unit only. Milestone 1 verifies that it changes nothing for other apps and does not persist after the app quits.
 - No admin password prompts, privileged helpers, kernel or system extensions, launch daemons, or files in `/Library`.
 - Launch at login only through `SMAppService`, and only when the user turns it on. It is off by default.

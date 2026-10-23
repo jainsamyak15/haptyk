@@ -35,8 +35,8 @@
 #define KF_BUILTIN_MATCH_NS 5000000ULL /**< Key event to HID keyboard report match: +-5 ms. */
 
 /* Sensor ----------------------------------------------------------------- */
-#define KF_SENSOR_NOMINAL_HZ      1000ULL     /**< TBD-M0: measured sample rate. */
-#define KF_ACCEL_RING_SAMPLES     4096u       /**< ~4 s at 1 kHz; power of two. */
+#define KF_SENSOR_NOMINAL_HZ      400ULL      /**< Mac17,3 M0: 399.0 Hz at 2500 us. */
+#define KF_ACCEL_RING_SAMPLES     4096u       /**< ~10 s at 400 Hz; power of two. */
 #define KF_PENDING_QUEUE_CAPACITY 64u         /**< Keys awaiting sensor data. */
 #define KF_SENSOR_STALE_NS        20000000ULL /**< No sample for 20 ms = stale. */
 #define KF_PEAK_QUEUE_CAPACITY    256u        /**< Measured peaks awaiting the calibration UI. */
@@ -50,16 +50,24 @@
 #define KF_SENSOR_TRANSPORT    "SPU"
 #define KF_SENSOR_REPORT_BYTES 22u /**< From the report descriptor. */
 
-/* Report layout: TBD-M0. Not measured, because the sensor sends nothing while idle (ADR-0011).
- * While KF_SENSOR_LAYOUT_MEASURED is 0 the values below are inert placeholders, the sensor is
- * reported absent and Keyfeel runs in fallback mode. Fill them from `analyze.py inspect`. */
+/* Switching the stream on (ADR-0011, amended 2026-10-24): while the sensor runs, Keyfeel writes
+ * the accelerometer driver's reporting settings, and it writes them back when it stops. The
+ * driver lists rates of 50 to 800 Hz ("sensor_rates"); intervals outside them are refused. */
+#define KF_SENSOR_WAKE_LEVEL         1u     /**< Mac17,3 M0: interval alone starts the stream. */
+#define KF_SENSOR_REPORT_INTERVAL_US 2500u  /**< Mac17,3 M0: measured 399.0 Hz. */
+#define KF_SENSOR_MIN_INTERVAL_US    1250u  /**< 800 Hz, the driver's fastest listed rate. */
+#define KF_SENSOR_MAX_INTERVAL_US    20000u /**< 50 Hz, its slowest. */
+
+/* Report layout, measured on Mac17,3 / macOS 27.0 (docs/SENSOR_NOTES.md). */
 #ifndef KF_SENSOR_LAYOUT_MEASURED /* `make analyze` also builds the sensor with it set. */
-#define KF_SENSOR_LAYOUT_MEASURED 0
+#define KF_SENSOR_LAYOUT_MEASURED 1
 #endif
-#define KF_SENSOR_SAMPLE_TYPE   0u          /**< TBD-M0: kf_sample_type. */
-#define KF_SENSOR_SAMPLE_OFFSET 0u          /**< TBD-M0: byte offset of the x, y, z triple. */
-#define KF_SENSOR_SCALE_G       1.0f        /**< TBD-M0: g per raw unit. */
+#define KF_SENSOR_SAMPLE_TYPE   1u          /**< kf_sample_type: little-endian int32. */
+#define KF_SENSOR_SAMPLE_OFFSET 6u          /**< First byte of the x, y, z triple. */
+#define KF_SENSOR_SCALE_G       0x1p-16f    /**< 1 / 65,536 g per raw unit. */
 #define KF_PENDING_MAX_AGE_NS   40000000ULL /**< M2 watchdog: default after 40 ms. */
+#define KF_NOISE_HISTORY        256u        /**< Rest probes retained for the noise percentile. */
+#define KF_NOISE_PERCENTILE     0.95f       /**< Ignore isolated bumps during rest capture. */
 
 /* Velocity --------------------------------------------------------------- */
 #define KF_WINDOW_PRE_NS       5000000ULL  /**< TBD-M0: window start before key-down. */

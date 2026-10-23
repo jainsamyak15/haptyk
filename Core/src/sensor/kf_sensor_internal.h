@@ -60,7 +60,8 @@ typedef struct kf_sensor_ctx {
     _Atomic(float) rolling_velocity;
     float recent[KF_ROLLING_KEYS];
     uint32_t recent_count;
-    float noise_peak; /* Sensor thread, while measuring. */
+    float noise_samples[KF_NOISE_HISTORY]; /* Sensor thread, while measuring. */
+    uint32_t noise_sample_count;
     uint64_t next_noise_probe_ns;
     kf_calibration calibration;
     kf_autoadapt autoadapt;
@@ -98,5 +99,24 @@ bool kf_sensor_decode_with(const kf_sensor_layout *layout, const uint8_t *report
  * the layout is unmeasured. Sensor thread; RT-safe. */
 bool kf_sensor_decode_report(const uint8_t *report, size_t length, uint64_t t_ns,
                              kf_accel_sample *out);
+
+/** One driver setting to write. */
+typedef struct kf_driver_write {
+    const char *key;
+    int32_t value;
+} kf_driver_write;
+
+#define KF_DRIVER_MAX_WRITES 3u
+
+/** The writes that switch reporting on at `level`, in order: reporting state, power state,
+ * interval. Returns how many; 0 for NONE or an invalid level or interval. */
+uint32_t kf_sensor_wake_plan(kf_sensor_wake level, uint32_t interval_us,
+                             kf_driver_write out[KF_DRIVER_MAX_WRITES]);
+
+/** The writes that put back the first `count` writes of `level`'s plan: each setting returns
+ * to its value in `saved`, or to 0 where the driver showed none. Same order as the plan. */
+uint32_t kf_sensor_restore_plan(kf_sensor_wake level, uint32_t count,
+                                const kf_sensor_driver_state *saved,
+                                kf_driver_write out[KF_DRIVER_MAX_WRITES]);
 
 #endif /* KF_SENSOR_INTERNAL_H */

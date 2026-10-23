@@ -2,8 +2,9 @@
 // Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
 
 /* Sensor lifecycle and state (main thread) and the sensor thread's setup. The hot path lives in
- * kf_sensor_rt.c. The device is opened read-only and never seized; no driver property is
- * written (ADR-0011). */
+ * kf_sensor_rt.c. The device is opened read-only and never seized. While it is open, the main
+ * thread starts the accelerometer stream and restores the driver's original settings at stop
+ * (ADR-0011). */
 
 #include <kf/kf_sensor.h>
 
@@ -54,7 +55,7 @@ void kf_sensor_reset(void) {
     atomic_store_explicit(&g_ctx.noise_until_ns, 0u, memory_order_relaxed);
     atomic_store_explicit(&g_ctx.noise_floor_g, -1.0f, memory_order_relaxed);
     g_ctx.recent_count = 0u;
-    g_ctx.noise_peak = 0.0f;
+    g_ctx.noise_sample_count = 0u;
     g_ctx.next_noise_probe_ns = 0u;
     kf_sensor_set_state(KF_SENSOR_STOPPED);
 }
@@ -97,7 +98,7 @@ bool kf_sensor_pop_peak(kf_sensor_peak *out) {
 
 void kf_sensor_begin_noise_measurement(uint64_t duration_ns) {
     atomic_store_explicit(&g_ctx.noise_floor_g, -1.0f, memory_order_relaxed);
-    g_ctx.noise_peak = 0.0f; /* Read by the sensor thread only after the release below. */
+    g_ctx.noise_sample_count = 0u; /* Read by the sensor thread only after the release below. */
     atomic_store_explicit(&g_ctx.noise_until_ns, kf_time_now_ns() + duration_ns,
                           memory_order_release);
 }
@@ -274,20 +275,35 @@ kf_status kf_sensor_start(void) {
         return KF_ERR_NOT_FOUND;
     }
     kf_sensor_reset(); /* STOPPED: keys play at once until the first sample. */
+    const kf_status wake =
+        kf_sensor_driver_wake((kf_sensor_wake)KF_SENSOR_WAKE_LEVEL, KF_SENSOR_REPORT_INTERVAL_US);
+    if (wake != KF_OK) {
+        kf_sensor_set_state(wake == KF_ERR_NO_PERMISSION ? KF_SENSOR_DENIED : KF_SENSOR_ABSENT);
+        return wake;
+    }
     atomic_store_explicit(&g_stop, false, memory_order_relaxed);
     g_ready = dispatch_semaphore_create(0);
+    if (g_ready == NULL) {
+        (void)kf_sensor_driver_restore();
+        return KF_ERR_NO_MEMORY;
+    }
     pthread_attr_t attr;
     (void)pthread_attr_init(&attr);
     (void)pthread_attr_set_qos_class_np(&attr, QOS_CLASS_USER_INTERACTIVE, 0);
     const int created = pthread_create(&g_thread, &attr, sensor_thread, NULL);
     (void)pthread_attr_destroy(&attr);
-    if (created != 0 || g_ready == NULL) {
+    if (created != 0) {
+        dispatch_release(g_ready);
+        g_ready = NULL;
+        (void)kf_sensor_driver_restore();
         return KF_ERR_NO_MEMORY;
     }
     (void)dispatch_semaphore_wait(g_ready, DISPATCH_TIME_FOREVER);
     dispatch_release(g_ready);
+    g_ready = NULL;
     if (g_start_status != KF_OK) {
         (void)pthread_join(g_thread, NULL);
+        (void)kf_sensor_driver_restore();
         kf_sensor_set_state(g_start_status == KF_ERR_NO_PERMISSION ? KF_SENSOR_DENIED
                                                                    : KF_SENSOR_ABSENT);
         return g_start_status;
@@ -298,6 +314,7 @@ kf_status kf_sensor_start(void) {
 
 void kf_sensor_stop(void) {
     if (!atomic_load_explicit(&g_thread_running, memory_order_acquire)) {
+        (void)kf_sensor_driver_restore();
         kf_sensor_flush_pending();
         return;
     }
@@ -311,6 +328,7 @@ void kf_sensor_stop(void) {
     (void)pthread_join(g_thread, NULL);
     CFRelease(timer);
     atomic_store_explicit(&g_thread_running, false, memory_order_release);
+    (void)kf_sensor_driver_restore();
     kf_sensor_flush_pending(); /* Anything pushed during the hand-off. */
     if (removed) {
         kf_sensor_set_state(KF_SENSOR_ABSENT);

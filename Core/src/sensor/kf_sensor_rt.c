@@ -13,6 +13,7 @@
 #include <kf/kf_velocity.h>
 
 #include "internal/kf_rt.h"
+#include "internal/kf_select.h"
 #include "sensor/kf_sensor_internal.h"
 
 /* Pseudo-keystrokes one window apart while measuring: windows tile, so no bump is missed. */
@@ -70,14 +71,17 @@ static KF_RT_SAFE void resolve_key(kf_sensor_ctx *ctx, const kf_key_event *key, 
 }
 
 /* While measuring the noise floor: the estimator at a pseudo-keystroke whose window has just
- * closed, so the floor is what the core itself would read with no key pressed. */
+ * closed, so the floor is what the core itself would read with no key pressed. A high percentile
+ * is retained instead of one maximum so one accidental bump cannot reject every soft tap. */
 static KF_RT_SAFE void probe_noise(kf_sensor_ctx *ctx, uint64_t now_ns) {
     const uint64_t until = atomic_load_explicit(&ctx->noise_until_ns, memory_order_acquire);
     if (until == 0u) {
         return;
     }
     if (now_ns >= until) {
-        atomic_store_explicit(&ctx->noise_floor_g, ctx->noise_peak, memory_order_release);
+        const float floor = kf_percentile_inplace(
+            ctx->noise_samples, (int32_t)ctx->noise_sample_count, KF_NOISE_PERCENTILE);
+        atomic_store_explicit(&ctx->noise_floor_g, floor, memory_order_release);
         atomic_store_explicit(&ctx->noise_until_ns, 0u, memory_order_release);
         return;
     }
@@ -89,7 +93,9 @@ static KF_RT_SAFE void probe_noise(kf_sensor_ctx *ctx, uint64_t now_ns) {
         kf_velocity_peak_g(&ctx->ring, now_ns - KF_WINDOW_POST_NS, KF_ROW_HOME, &ctx->calibration);
     if (peak >= 0.0f) {
         const float raw = peak / ctx->calibration.row_gain[KF_ROW_HOME];
-        ctx->noise_peak = raw > ctx->noise_peak ? raw : ctx->noise_peak;
+        if (ctx->noise_sample_count < KF_NOISE_HISTORY) {
+            ctx->noise_samples[ctx->noise_sample_count++] = raw;
+        }
     }
 }
 
@@ -188,7 +194,7 @@ KF_RT_SAFE bool kf_sensor_decode_report(const uint8_t *report, size_t length, ui
     (void)length;
     (void)t_ns;
     (void)out;
-    return false; /* TBD-M0: unmeasured layout; decoding would be a guess. */
+    return false; /* Layout is intentionally disabled until this Mac is measured. */
 #endif
 }
 
@@ -200,7 +206,8 @@ void kf_sensor_on_report(void *ref, IOReturn result, void *sender, IOHIDReportTy
                          uint32_t report_id, uint8_t *report, CFIndex length, uint64_t timestamp);
 void kf_sensor_on_timer(CFRunLoopTimerRef timer, void *info);
 
-/* Sensor thread: one report -> one sample. Stamped on arrival, like key events (ADR-0014). */
+/* Sensor thread: one report -> one sample.  M0 measured the HID timestamp as mach ticks on the
+ * core clock, so it keeps the 400 Hz sample cadence even when macOS batches callbacks. */
 KF_RT_SAFE void kf_sensor_on_report(void *ref, IOReturn result, void *sender, IOHIDReportType type,
                                     uint32_t report_id, uint8_t *report, CFIndex length,
                                     uint64_t timestamp) {
@@ -208,8 +215,7 @@ KF_RT_SAFE void kf_sensor_on_report(void *ref, IOReturn result, void *sender, IO
     (void)sender;
     (void)type;
     (void)report_id;
-    (void)timestamp;
-    const uint64_t now = kf_time_now_ns();
+    const uint64_t now = timestamp != 0u ? kf_time_ticks_to_ns(timestamp) : kf_time_now_ns();
     kf_sensor_ctx *ctx = kf_sensor_context();
     kf_sensor_apply_pending_calibration();
     kf_accel_sample sample;

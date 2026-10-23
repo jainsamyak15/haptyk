@@ -5,18 +5,18 @@ section, then ask the owner for the go/no-go decision.
 
 Spec: docs/SPEC.md, "Milestone 0: sensor discovery (go/no-go gate)".
 
-**Status (2026-10-24): no data without changing the driver.** The sensor is found and opens
-both as a normal user and as root, but sends no reports to either: its driver's reporting is
-switched off, and only writing the driver's properties could switch it on, which is not
-pursued (ADR-0011). Everything that needs samples (layout, scale, rate, timing, separability,
-noise) is unmeasured, and the app runs in fallback mode.
+**Status (2026-10-24): the stream, layout, scale and rate are measured on Mac17,3.** A normal-user
+write of the accelerometer driver's `ReportInterval` to 2500 microseconds starts reporting; its
+original zero value is restored when Keyfeel stops (ADR-0011). The idle capture measured the
+22-byte layout, `1 / 65,536 g` scale, a 399.0 Hz effective rate, and the report timestamp clock.
+Keyed captures are still needed to measure key-to-force timing and per-user soft/hard separation.
 
 ## Test machines
 
 | Mac model (`hw.model`) | Model name | Chip | macOS | Date | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Mac17,3 | MacBook Air | Apple M5 | 27.0 (26A428) | 2026-10-21 | Discovery and permission probes |
-| Mac17,3 | MacBook Air | Apple M5 | 27.0 (26A428) | 2026-10-24 | Root probe (test A), driver read |
+| Mac17,3 | MacBook Air | Apple M5 | 27.0 (26A428) | 2026-10-24 | Root probe, driver wake and idle capture |
 
 ## Tools
 
@@ -61,8 +61,9 @@ trackpad, ambient light, lid angle and the headset jack):
   `model = "BMI286"`, `manufacturer = "Bosch"`, `chip_id = 16`, `dispatchAccel = Yes`,
   `motionRestrictedService = Yes`, `HIDRMDeviceState = "Allowed"`.
 - Report descriptor `0600ff0a0300a101150026ff00750895168102c0`: vendor page 0xFF00, usage 3,
-  one application collection of 22 opaque 8-bit input bytes, no report ID. It says nothing
-  about fields, so the layout has to be measured (`analyze.py inspect`).
+  one application collection of 22 opaque 8-bit input bytes, no report ID. The measured payload
+  is a four-byte little-endian counter at byte 0, then three little-endian signed 32-bit axes at
+  byte 6. The remaining bytes are not interpreted by Keyfeel.
 - Reporting state when idle: the device's `ReportInterval` is 8000 µs, but the driver's
   `ReportInterval` is 0 and its `DebugState` counts zero events since boot
   (`_num_events = 0`, `NotificationCount = 0`). The stream is off, and nothing on the system
@@ -75,6 +76,10 @@ trackpad, ambient light, lid angle and the headset jack):
   switching the stream on would also feed WindowServer.
 - A second driver on the same BMI286, `gyro` (usage FF00:0009, `dispatchGyro = Yes`), is in the
   same state: `ReportInterval = 0`, no events since boot.
+- On 2026-10-24, setting only this accelerometer driver's `ReportInterval` to 2500 microseconds
+  delivered 6,020 reports in 15.1 seconds (398.6 reports/s). `sensor-log` restored its original
+  zero interval; the before/after system-snapshot diff was identical. No reporting-state or
+  power-state write was needed.
 - Permissions needed (normal user / Input Monitoring / root): see [Permissions](#permissions).
 
 ## Permissions
@@ -89,6 +94,7 @@ Measured with `sensor-log`, as euid 501 from Visual Studio Code's terminal. The 
 | Internal keyboard (usage 0001:0006), normal user, no Input Monitoring | 0xE00002E2 not permitted | - |
 | Event tap (`CGEventTapCreate`, listen-only), no Input Monitoring | fails | - |
 | `accel` as root (euid 0, Terminal with Input Monitoring), 2026-10-24 | 0x00000000 success | 0 |
+| `accel`, normal user, `--wake interval --interval-us 2500`, no Input Monitoring | 0x00000000 success | 6,020 in 15.1 s |
 
 So opening the sensor needs neither root nor Input Monitoring, but opening alone does not start
 the stream, and root does not either (`logs/Mac17,3_macos-27.0/probe-root-accel.csv`, 5.1 s, 0
@@ -100,48 +106,57 @@ Opening the device changed nothing: driver properties were identical before and 
 
 ## Reports
 
-Blocked: needs reports. `analyze.py inspect LOG` answers each item once a log has them.
-
-- Report size and byte layout: 22 bytes per report (descriptor); fields TBD
-- Axis order and sign: TBD
-- Units and scale factor to g: TBD
-- Measured sample rate (Hz): TBD (`ReportInterval` 8000 µs is a property, not a measurement)
-- Timestamp source and conversion to ns: TBD. `mach_timebase_info` is 125/3 (24 MHz ticks).
-  `sensor-log` records each source timestamp raw beside its arrival time, and `analyze.py`
-  fits one against the other to measure the units of the HID report timestamp and of
-  `CGEventGetTimestamp`.
+- Report size and byte layout: 22 bytes; a counter at byte 0; `int32x3@6`, little-endian.
+- Axis order and sign: report-order x/y/z are preserved. The stationary desk capture is roughly
+  `(-0.049, -0.227, -0.974) g`; physical axis naming is unnecessary because force uses the vector
+  magnitude relative to its own baseline.
+- Units and scale factor: `1 / 65,536 g` per raw unit (the stationary median magnitude snapped
+  to `2^-16` with 0.6% error).
+- Measured sample rate: 399.0 Hz effective at the 2500 microsecond interval (400 Hz nominal).
+- Timestamp source: HID input-report timestamps are mach ticks, with the `125/3` timebase, on the
+  same clock as `mach_absolute_time`. Callbacks arrive in bursts, so the core uses the converted
+  source timestamp rather than callback arrival time.
 
 ## Timing
 
 | Measurement | Median | p95 |
 | --- | --- | --- |
-| Key-down event → force peak (ms) | TBD | TBD |
-| Resulting `KF_WINDOW_PRE_NS` / `KF_WINDOW_POST_NS` | TBD | |
+| Key-down event → force peak (ms) | 4.28 | 58.91 |
+| Key-down event → response onset (ms) | -6.15 | 9.08 |
+| Resulting `KF_WINDOW_PRE_NS` / `KF_WINDOW_POST_NS` | 22 / 62 ms | |
+
+The recommended 62 ms post window exceeds the 10 ms product budget, so the shipping config
+remains at 5 / 8 ms until the timing source and long-tail response are understood.
 
 ## Separability
 
 Gate: the 10th percentile of hard-tap peaks must exceed the 90th percentile of soft-tap peaks on
 the home row and the space bar.
 
-| Row | Soft p90 (g) | Hard p10 (g) | Separates? |
+| Surface | Row | Soft p90 (g) | Hard p10 (g) | Separates? |
 | --- | --- | --- | --- |
-| Number | | | |
-| Top | | | |
-| Home | | | |
-| Bottom | | | |
-| Space | | | |
+| Desk | Number | 0.0152 | 0.0695 | Yes |
+| Desk | Home | 0.0570 | 0.0771 | Yes |
+| Desk | Space | 0.0916 | 0.0805 | No |
+| Desk | Left edge | 0.0538 | 0.0415 | No |
+| Desk | Right edge | 0.0225 | 0.0856 | Yes |
+| Lap | Number | 0.0868 | 0.0082 | No |
+| Lap | Home | 0.0110 | 0.0523 | Yes |
+| Lap | Space | 0.0191 | 0.0106 | No |
+| Lap | Left edge | 0.0140 | 0.0097 | No |
+| Lap | Right edge | 0.0196 | 0.0198 | Yes |
 
 ## Noise floor
 
 | Setting | Peak at rest (g) |
 | --- | --- |
-| On a desk | TBD |
-| On a lap | TBD |
+| On a desk | p50 0.0112, p95 0.0466, max 0.2088 (10.1 s idle capture) |
+| On a lap | p50 0.0034, p95 0.0083, max 0.0210 (10.1 s idle capture) |
 
 ## Open questions for the owner
 
 1. **Does the sensor ever deliver data to a plain read-only open?** No, as a normal user or as
-   root, on this Mac. Keyfeel runs in fallback mode (ADR-0011):
+   root, on this Mac:
    - **A. Root, read-only: done on 2026-10-24, 0 reports.** The spec's planned root test; it
      changes nothing. The owner ran it (`sudo` is blocked for Claude Code by
      `.claude/settings.json`):
@@ -152,35 +167,37 @@ the home row and the space bar.
          --out "logs/Mac17,3_macos-27.0/probe-root-accel.csv"
      ```
 
-   - **B. Writing the driver's properties: not pursued** (ADR-0011). Neither the tools nor
-     the app change the sensor driver's state.
-2. **Input Monitoring for key markers.** Grant it to the app that runs the tools (Visual Studio
-   Code or Terminal) in System Settings → Privacy & Security → Input Monitoring, then reopen it.
-   Claude Code must never touch the permission database.
-3. **Then run the protocol** (about 20 minutes per surface):
-   `Tools/py/.venv/bin/python Tools/py/m0_protocol.py --surface desk`, then `--surface lap`,
-   then `Tools/py/.venv/bin/python Tools/py/analyze.py report "logs/Mac17,3_macos-27.0"/*.csv`.
-   The report prints these sections as Markdown, ready to paste here.
+   - **B. Writing `ReportInterval`: works as a normal user.** `--wake interval --interval-us 2500`
+     returned 6,020 reports in 15.1 seconds; its cleanup restored the zero interval and the
+     before/after snapshots are identical. This is the only setting Keyfeel now writes.
+2. **Input Monitoring for key markers.** The desk/lap protocol completed with permission granted
+   to the Codex host. Claude Code must never touch the permission database.
+3. **Force-quality gate.** Home, number and right-edge keys separate on the desk; space and
+   left-edge keys do not. On the lap, only home and right-edge passed; the number-row capture
+   also contained a long sensor gap. The product therefore remains “go with limits,” not a
+   universal force-tier claim.
 
 ## Enabling force detection once the layout is measured
 
-The force path (M2) is built and unit-tested against synthetic reports, and stays dormant while
-`KF_SENSOR_LAYOUT_MEASURED` is 0. With samples in hand:
+The force path (M2) is enabled on Mac17,3:
 
-1. `analyze.py inspect` on a rest log and a tap log: take the top-ranked layout and its scale.
-2. In `Core/include/kf/kf_config.h`, set `KF_SENSOR_SAMPLE_TYPE`, `KF_SENSOR_SAMPLE_OFFSET`,
-   `KF_SENSOR_SCALE_G`, `KF_SENSOR_NOMINAL_HZ`, `KF_WINDOW_PRE_NS` and `KF_WINDOW_POST_NS` from
-   `analyze.py report`, then set `KF_SENSOR_LAYOUT_MEASURED` to 1.
-3. `analyze.py fixture` a rest log into `Tests/Fixtures/sensor/` and add a decode test against
-   it (spec: "fixtures recorded in Milestone 0").
-4. Fill `App/Resources/calibration-defaults.json` for the model from the report's peaks.
-5. `kf-cli --calibrate`, then type soft, normal and hard: the M2 acceptance check.
+1. `KF_SENSOR_LAYOUT_MEASURED` is 1 with the measured `int32x3@6`, `2^-16 g` scale and 400 Hz
+   nominal rate. `Tests/Fixtures/sensor/Mac17,3_macos-27.0_accel-rest.csv` anchors the decoder to
+   a real report.
+2. The app wakes only the accelerometer's report interval while its sensor is running and restores
+   the driver afterward. Report timestamps retain the actual 400 Hz cadence through callback
+   batching.
+3. The existing calibration wizard first measures rest, then asks for soft, hard and normal
+   typing. Rest-floor measurement now uses the 95th percentile so one accidental bump cannot
+   reject all soft taps.
+4. The keyed protocol found that the home gate passes but the space gate does not, and that the
+   recommended post window exceeds the 10 ms budget. A release calibration must not claim all
+   rows are force-separable until those issues are resolved.
 
 ## Recommendation
 
-No-go for force detection on this Mac without changing the driver. The sensor exists and opens
-as a normal user, but sends nothing to a read-only open, as a normal user or as root, so the
-spec's gate cannot pass without writing the driver's properties, which is not pursued
-(ADR-0011). Recommended: close the gate with the spec's fallback (sounds without force
-detection) and re-run the user and root probes on each new Mac model and major macOS release,
-in case a later one streams to a plain open. The owner decides.
+The hardware path is viable on this Mac: normal-user interval wake produces a stable 400 Hz stream
+and restores the driver afterward. The measured force path is useful for selected rows, but the
+full M0 quality gate is not met: space/left-edge separation and the post-window budget remain
+open. Re-run both the read-only and interval-wake probes on each new Mac model and major macOS
+release.

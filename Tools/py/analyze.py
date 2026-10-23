@@ -593,7 +593,10 @@ def sorted_rows(log: SensorLog) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     key_fit = fit_clock(log.keydown_src, log.keydown_arrival_ns, timebase)
     t_ns, report_base = event_times(log.report_src, log.report_arrival_ns, report_fit, timebase)
     keys, key_base = event_times(log.keydown_src, log.keydown_arrival_ns, key_fit, timebase)
-    if report_base != key_base:
+    # A rest capture has no key markers.  Its report source clock is still the most
+    # accurate time base; treating an empty key stream as an arrival-clock stream
+    # would turn the driver's batched callbacks into fictitious microsecond samples.
+    if log.keydown_src.size and report_base != key_base:
         t_ns, keys = log.report_arrival_ns, log.keydown_arrival_ns
     order = np.argsort(t_ns, kind="stable")
     return log.reports[order], t_ns[order], np.sort(keys)
@@ -624,7 +627,10 @@ def build_signal(log: SensorLog, layout: Layout, g_per_unit: float) -> Signal:
     t_ns, report_base = event_times(log.report_src, log.report_arrival_ns, report_clock, timebase)
     keydown, key_base = event_times(log.keydown_src, log.keydown_arrival_ns, key_clock, timebase)
     keyup, _ = event_times(log.keyup_src, log.keyup_arrival_ns, key_clock, timebase)
-    if report_base != key_base:
+    # No key markers means there is nothing to align with the reports.  Keep the
+    # source clock when it is known rather than falling back to callback arrival
+    # time, which may be batched by the SPU HID driver.
+    if log.keydown_src.size and report_base != key_base:
         # Mixing bases would skew every delay by the delivery latency: use arrival for both.
         t_ns, keydown, keyup = log.report_arrival_ns, log.keydown_arrival_ns, log.keyup_arrival_ns
         report_base = "arrival"

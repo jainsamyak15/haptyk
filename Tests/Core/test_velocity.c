@@ -12,7 +12,7 @@
 
 static kf_accel_ring g_ring;
 
-/** 1 kHz samples from from_ms to to_ms with constant gravity, plus one spike at spike_ms. */
+/** Dense synthetic samples from from_ms to to_ms with constant gravity, plus one spike. */
 static void fill(uint64_t from_ms, uint64_t to_ms, const float gravity[3], uint64_t spike_ms,
                  const float spike[3]) {
     kf_accel_ring_reset(&g_ring);
@@ -42,7 +42,7 @@ void test_velocity_needs_enough_data(void) {
     kf_accel_ring_reset(&g_ring);
     KF_EXPECT(kf_velocity_peak_g(&g_ring, KEY_MS * MS, KF_ROW_HOME, &cal) < 0.0f);
 
-    fill(0u, KEY_MS, k_flat, 0u, none); /* Window only half recorded. */
+    fill(0u, KEY_MS - 4u, k_flat, 0u, none); /* Only two of the five expected samples. */
     KF_EXPECT(kf_velocity_peak_g(&g_ring, KEY_MS * MS, KF_ROW_HOME, &cal) < 0.0f);
 
     fill(KEY_MS - 4u, KEY_MS + 20u, k_flat, 0u, none); /* No baseline before the window. */

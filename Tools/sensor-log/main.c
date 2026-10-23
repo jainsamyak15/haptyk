@@ -20,7 +20,10 @@
  *
  * Privacy: key rows never contain key codes or characters, and the tap is listen-only.
  * Auto-repeat events are dropped and counted. Safety: the device is opened without seizing
- * it and no device property is changed.
+ * it. Nothing is changed unless --wake is given: then the accelerometer driver's reporting
+ * settings are written after the open and written back before the close, on every way out
+ * but a crash (sleep or a restart resets them too), with the driver's settings before, during
+ * and after in the log (ADR-0011, amended 2026-10-24).
  *
  * Exit status: 0 ok, 1 error, 2 usage, 3 no single matching device, 4 permission denied.
  */
@@ -42,6 +45,8 @@
 #include <dispatch/dispatch.h>
 #include <mach/mach_time.h>
 
+#include <kf/kf_config.h>
+#include <kf/kf_sensor.h>
 #include <kf/kf_time.h>
 
 #include "kf_hid.h"
@@ -65,9 +70,14 @@ static const char k_usage[] =
     "\n"
     "Logs every input report of one HID device as CSV (t_ns,event,src_ts,data), with\n"
     "KEYDOWN/KEYUP rows from a listen-only event tap. Key rows hold no key codes.\n"
-    "Stops on Ctrl-C or after --seconds. Opens the device read-only; changes nothing.\n"
+    "Stops on Ctrl-C or after --seconds. Opens the device read-only; changes nothing\n"
+    "unless --wake is given.\n"
     "\n"
     "Options:\n"
+    "  --wake LEVEL         accelerometer only: switch its driver's reporting on with\n"
+    "                       interval, reporting (+ reporting state) or power (+ power\n"
+    "                       state), and write the settings back when done; default none\n"
+    "  --interval-us N      report interval for --wake (1250..20000; default 2500)\n"
     "  --out FILE           write here ('-' for stdout, the default); never overwrites\n"
     "  --force              overwrite an existing --out file\n"
     "  --seconds N          stop after N seconds (1..86400; default: until Ctrl-C)\n"
@@ -90,9 +100,13 @@ typedef struct options {
     uint64_t seconds;
     uint64_t stop_after_keys;
     tap_location tap;
+    kf_sensor_wake wake;
+    uint32_t interval_us;
     bool force;
     bool quiet;
 } options;
+
+static const char *const k_wake_names[] = {"none", "interval", "reporting", "power"};
 
 /* All state lives on the main thread: the device, the tap and every timer run on the main
  * run loop, so nothing here needs synchronization. */
@@ -132,12 +146,25 @@ static bool label_is_valid(const char *label) {
     return strlen(label) <= 512u;
 }
 
+static bool parse_wake(const char *value, kf_sensor_wake *out) {
+    for (size_t i = 0u; i < sizeof k_wake_names / sizeof k_wake_names[0]; ++i) {
+        if (strcmp(value, k_wake_names[i]) == 0) {
+            *out = (kf_sensor_wake)i;
+            return true;
+        }
+    }
+    return false;
+}
+
 static int parse_options(int argc, char **argv, options *out) {
     memset(out, 0, sizeof *out);
     kf_tool_match_init(&out->match);
     out->out_path = "-";
     out->tap = TAP_SESSION;
+    out->interval_us = KF_SENSOR_REPORT_INTERVAL_US;
     bool no_keys = false;
+    bool interval_given = false;
+    uint64_t interval = 0u;
     for (int i = 1; i < argc; ++i) {
         const kf_tool_arg arg = kf_tool_match_parse(&out->match, argc, argv, &i);
         if (arg == KF_TOOL_ARG_TAKEN) {
@@ -175,6 +202,14 @@ static int parse_options(int argc, char **argv, options *out) {
                    (strcmp(value, "session") == 0 || strcmp(value, "hid") == 0)) {
             out->tap = strcmp(value, "hid") == 0 ? TAP_HID : TAP_SESSION;
             i++;
+        } else if (strcmp(flag, "--wake") == 0 && value != NULL && parse_wake(value, &out->wake)) {
+            i++;
+        } else if (strcmp(flag, "--interval-us") == 0 && value != NULL &&
+                   kf_tool_parse_u64(value, KF_SENSOR_MAX_INTERVAL_US, &interval) &&
+                   interval >= KF_SENSOR_MIN_INTERVAL_US) {
+            out->interval_us = (uint32_t)interval;
+            interval_given = true;
+            i++;
         } else {
             fprintf(stderr, "sensor-log: unknown option or bad value: %s\n\n%s", flag, k_usage);
             return EXIT_USAGE;
@@ -191,7 +226,18 @@ static int parse_options(int argc, char **argv, options *out) {
         fputs("sensor-log: --stop-after-keys needs the event tap (drop --no-keys)\n", stderr);
         return EXIT_USAGE;
     }
+    if (interval_given && out->wake == KF_SENSOR_WAKE_NONE) {
+        fputs("sensor-log: --interval-us needs --wake\n", stderr);
+        return EXIT_USAGE;
+    }
     return -1; /* Continue. */
+}
+
+/* The accelerometer device, the only one --wake may switch on. */
+static bool is_accelerometer(const kf_hid_info *d) {
+    return d->vendor_id == (int64_t)KF_SENSOR_VENDOR_ID &&
+           d->usage_page == (int64_t)KF_SENSOR_USAGE_PAGE && d->usage == (int64_t)KF_SENSOR_USAGE &&
+           strcmp(d->transport, KF_SENSOR_TRANSPORT) == 0;
 }
 
 /* ------------------------------------------------------------------ rows */
@@ -327,8 +373,23 @@ static dispatch_source_t make_signal_source(int signo) {
 
 /* ------------------------------------------------------------------ header */
 
+/* --wake: the driver's settings before and after the switch. */
+typedef struct wake_report {
+    kf_status read_status;
+    kf_sensor_driver_state before;
+    kf_status wake_status;
+    kf_sensor_driver_state woken;
+} wake_report;
+
+static void write_driver_state(FILE *f, const char *prefix, const kf_sensor_driver_state *s) {
+    fprintf(f, "# %s.report_interval_us=%lld\n# %s.reporting_state=%lld\n", prefix,
+            (long long)s->report_interval_us, prefix, (long long)s->reporting_state);
+    fprintf(f, "# %s.power_state=%lld\n# %s.events=%lld\n", prefix, (long long)s->power_state,
+            prefix, (long long)s->events);
+}
+
 static void write_header(const options *opt, const kf_hid_info *d, IOReturn open_result,
-                         bool listen_access) {
+                         bool listen_access, const wake_report *wake) {
     FILE *f = g_log.out;
     char model[64];
     char os[128];
@@ -376,6 +437,14 @@ static void write_header(const options *opt, const kf_hid_info *d, IOReturn open
     fprintf(f, "# keys.listen_access=%s\n", listen_access ? "granted" : "not-granted");
     fprintf(f, "# keys.tap=%s\n",
             opt->tap == TAP_OFF ? "off" : (opt->tap == TAP_HID ? "hid" : "session"));
+    fprintf(f, "# driver.wake=%s\n", k_wake_names[opt->wake]);
+    if (wake != NULL) {
+        fprintf(f, "# driver.wake.interval_us=%u\n", opt->interval_us);
+        fprintf(f, "# driver.before.status=%s\n", kf_status_string(wake->read_status));
+        write_driver_state(f, "driver.before", &wake->before);
+        fprintf(f, "# driver.wake.status=%s\n", kf_status_string(wake->wake_status));
+        write_driver_state(f, "driver.woken", &wake->woken);
+    }
     fputs("t_ns,event,src_ts,data\n", f);
 }
 
@@ -480,6 +549,11 @@ static void print_summary(void) {
 /* ------------------------------------------------------------------ main */
 
 static int run(const options *opt, IOHIDDeviceRef device, const kf_hid_info *info) {
+    if (opt->wake != KF_SENSOR_WAKE_NONE && !is_accelerometer(info)) {
+        fprintf(stderr, "sensor-log: --wake works only on the accelerometer (%04x:%04x, %s)\n",
+                KF_SENSOR_USAGE_PAGE, KF_SENSOR_USAGE, KF_SENSOR_TRANSPORT);
+        return EXIT_USAGE;
+    }
     const int64_t max_report = info->max_input_report;
     g_log.report_cap =
         max_report > 0 && max_report <= (int64_t)MAX_REPORT_BYTES ? (size_t)max_report : 64u;
@@ -516,7 +590,22 @@ static int run(const options *opt, IOHIDDeviceRef device, const kf_hid_info *inf
         return EXIT_FAILURE;
     }
     (void)setvbuf(g_log.out, NULL, _IOFBF, OUTPUT_BUFFER);
-    write_header(opt, info, open_result, listen_access);
+    const kf_sensor_driver_state unknown = {-1, -1, -1, -1};
+    wake_report wake = {KF_OK, unknown, KF_OK, unknown};
+    if (opt->wake != KF_SENSOR_WAKE_NONE) {
+        wake.read_status = kf_sensor_driver_read(&wake.before);
+        wake.wake_status = kf_sensor_driver_wake(opt->wake, opt->interval_us);
+        (void)kf_sensor_driver_read(&wake.woken);
+        if (!opt->quiet || wake.wake_status != KF_OK) {
+            fprintf(stderr, "sensor-log: --wake %s, %u us: %s%s\n", k_wake_names[opt->wake],
+                    opt->interval_us, kf_status_string(wake.wake_status),
+                    kf_sensor_driver_woken() == KF_SENSOR_WAKE_NONE && wake.wake_status == KF_OK
+                        ? " (already reporting: nothing written)"
+                        : "");
+        }
+    }
+    write_header(opt, info, open_result, listen_access,
+                 opt->wake != KF_SENSOR_WAKE_NONE ? &wake : NULL);
 
     g_log.device = device;
     g_log.stop_after_keys = opt->stop_after_keys;
@@ -528,6 +617,7 @@ static int run(const options *opt, IOHIDDeviceRef device, const kf_hid_info *inf
 
     dispatch_source_t sigint = make_signal_source(SIGINT);
     dispatch_source_t sigterm = make_signal_source(SIGTERM);
+    dispatch_source_t sighup = make_signal_source(SIGHUP); /* A closed terminal still restores. */
     dispatch_source_t status = NULL;
     if (!opt->quiet) {
         status =
@@ -555,9 +645,14 @@ static int run(const options *opt, IOHIDDeviceRef device, const kf_hid_info *inf
     IOHIDDeviceRegisterInputReportWithTimeStampCallback(device, g_log.report_buf,
                                                         (CFIndex)g_log.report_cap, NULL, NULL);
     IOHIDDeviceUnscheduleFromRunLoop(device, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
+    const kf_status restored = kf_sensor_driver_restore(); /* KF_OK when nothing was written. */
+    kf_sensor_driver_state after = unknown;
+    if (opt->wake != KF_SENSOR_WAKE_NONE) {
+        (void)kf_sensor_driver_read(&after);
+    }
     IOHIDDeviceClose(device, kIOHIDOptionsTypeNone);
     destroy_tap();
-    dispatch_source_t sources[] = {status, sigint, sigterm};
+    dispatch_source_t sources[] = {status, sigint, sigterm, sighup};
     for (size_t i = 0u; i < sizeof sources / sizeof sources[0]; ++i) {
         if (sources[i] != NULL) {
             dispatch_source_cancel(sources[i]);
@@ -566,8 +661,18 @@ static int run(const options *opt, IOHIDDeviceRef device, const kf_hid_info *inf
     }
 
     write_footer();
+    if (opt->wake != KF_SENSOR_WAKE_NONE) {
+        fprintf(g_log.out, "# end.driver.restore.status=%s\n", kf_status_string(restored));
+        write_driver_state(g_log.out, "end.driver.after", &after);
+    }
     if (!opt->quiet) {
         print_summary();
+    }
+    if (restored != KF_OK) {
+        fprintf(stderr,
+                "sensor-log: writing the driver's settings back failed (%s). Sleep or a "
+                "restart resets them.\n",
+                kf_status_string(restored));
     }
     const bool write_failed = fflush(g_log.out) != 0 || ferror(g_log.out) != 0;
     if (g_log.out != stdout && fclose(g_log.out) != 0) {

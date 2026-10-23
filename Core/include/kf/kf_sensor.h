@@ -8,7 +8,9 @@
  * The sensor thread owns the sample ring and the calibration. Keys arrive from the keytap
  * thread through a lock-free pending queue; once a key's window has closed the sensor thread
  * measures its force and queues its voices. The device is opened read-only, without seizing
- * it, and no driver property is changed (ADR-0011).
+ * it. The accelerometer sends nothing until its driver's reporting is switched on, so
+ * kf_sensor_driver_wake() writes those settings while the sensor runs and
+ * kf_sensor_driver_restore() writes them back (ADR-0011, amended 2026-10-24).
  *
  * Until the report layout is measured (KF_SENSOR_LAYOUT_MEASURED in kf_config.h) the probe
  * reports no sensor and every key plays at the default velocity.
@@ -73,8 +75,8 @@ typedef struct kf_sensor_peak {
 /** Takes the oldest measured keystroke not yet read. Main thread. False when none. */
 bool kf_sensor_pop_peak(kf_sensor_peak *out);
 
-/** Starts measuring the noise floor: the largest pseudo-keystroke peak over `duration_ns`
- * with no key pressed (calibration step 1). Main thread. */
+/** Starts measuring the noise floor: a robust high percentile of pseudo-keystroke peaks over
+ * `duration_ns` with no key pressed (calibration step 1). Main thread. */
 void kf_sensor_begin_noise_measurement(uint64_t duration_ns);
 
 /** The measured noise floor in g, or -1 while measuring or never measured. Any thread. */
@@ -92,6 +94,45 @@ typedef struct kf_sensor_counters {
 
 /** Snapshot of the counters. Any thread. */
 void kf_sensor_get_counters(kf_sensor_counters *out);
+
+/* The accelerometer driver's reporting (ADR-0011, amended 2026-10-24) ----------------------
+ * Only the driver under the accelerometer device (KF_SENSOR_USAGE_PAGE:KF_SENSOR_USAGE, SPU)
+ * is ever written; any other match is refused. The settings live in the driver's memory, and
+ * sleep or a restart also resets them. Main thread only. */
+
+/** Which reporting settings are written to start the stream. Each level adds one. */
+typedef enum kf_sensor_wake {
+    KF_SENSOR_WAKE_NONE = 0,  /**< Write nothing: a plain read-only open. */
+    KF_SENSOR_WAKE_INTERVAL,  /**< ReportInterval. */
+    KF_SENSOR_WAKE_REPORTING, /**< ...and SensorPropertyReportingState = 1. */
+    KF_SENSOR_WAKE_POWER,     /**< ...and SensorPropertyPowerState = 1. */
+} kf_sensor_wake;
+
+/** The driver's reporting settings as it shows them; -1 where it shows none. */
+typedef struct kf_sensor_driver_state {
+    int64_t report_interval_us; /**< 0: reporting is off. */
+    int64_t reporting_state;
+    int64_t power_state;
+    int64_t events; /**< Reports the driver has sent since boot. */
+} kf_sensor_driver_state;
+
+/** Reads the accelerometer driver's settings. KF_ERR_NOT_FOUND unless exactly one matches. */
+kf_status kf_sensor_driver_read(kf_sensor_driver_state *out);
+
+/**
+ * Records the driver's settings, then writes those of `level` with `interval_us` between
+ * reports. Writes nothing, and returns KF_OK, for KF_SENSOR_WAKE_NONE or when the driver is
+ * already reporting for another app. A failed write undoes the earlier ones.
+ * KF_ERR_INVALID_ARGUMENT for a level or interval out of range, KF_ERR_STATE when already
+ * woken, KF_ERR_NO_PERMISSION when the driver refuses, KF_ERR_NOT_FOUND without the driver.
+ */
+kf_status kf_sensor_driver_wake(kf_sensor_wake level, uint32_t interval_us);
+
+/** Writes back what kf_sensor_driver_wake() changed. KF_OK when nothing was changed. */
+kf_status kf_sensor_driver_restore(void);
+
+/** The level kf_sensor_driver_wake() applied and not yet restored; NONE when none. */
+kf_sensor_wake kf_sensor_driver_woken(void);
 
 #ifdef __cplusplus
 }

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <kf/kf_engine.h>
@@ -123,6 +124,63 @@ static void put_i16(uint8_t *p, int16_t v) {
     memcpy(p, &v, sizeof v);
 }
 
+static int hex_nibble(char c) {
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    return -1;
+}
+
+static bool read_first_fixture_report(uint8_t out[KF_SENSOR_REPORT_BYTES]) {
+    FILE *file = fopen("Tests/Fixtures/sensor/Mac17,3_macos-27.0_accel-rest.csv", "r");
+    char line[256];
+    bool found = false;
+    if (file == NULL) {
+        return false;
+    }
+    while (fgets(line, sizeof line, file) != NULL) {
+        char *data = line;
+        for (int field = 0; field < 3; ++field) {
+            data = strchr(data, ',');
+            if (data == NULL) {
+                break;
+            }
+            data++;
+        }
+        if (data == NULL || strncmp(line, "#", 1u) == 0 || strstr(line, ",REPORT,") == NULL) {
+            continue;
+        }
+        for (size_t i = 0u; i < KF_SENSOR_REPORT_BYTES; ++i) {
+            const int hi = hex_nibble(data[2u * i]);
+            const int lo = hex_nibble(data[2u * i + 1u]);
+            if (hi < 0 || lo < 0) {
+                break;
+            }
+            out[i] = (uint8_t)((hi << 4) | lo);
+            found = i + 1u == KF_SENSOR_REPORT_BYTES;
+        }
+        if (found) {
+            break;
+        }
+    }
+    (void)fclose(file);
+    return found;
+}
+
+void test_sensor_decodes_measured_fixture(void) {
+    uint8_t report[KF_SENSOR_REPORT_BYTES];
+    kf_accel_sample sample;
+    KF_EXPECT(read_first_fixture_report(report));
+    KF_EXPECT(kf_sensor_decode_report(report, sizeof report, 99u, &sample));
+    KF_EXPECT(sample.t_ns == 99u);
+    KF_EXPECT_NEAR(sample.x, -3233.0 / 65536.0, 1e-6);
+    KF_EXPECT_NEAR(sample.y, -14859.0 / 65536.0, 1e-6);
+    KF_EXPECT_NEAR(sample.z, -63848.0 / 65536.0, 1e-6);
+}
+
 void test_sensor_decodes_each_layout(void) {
     uint8_t report[22];
     memset(report, 0xee, sizeof report);
@@ -241,14 +299,83 @@ void test_sensor_measures_noise_floor(void) {
     reset_all();
     KF_EXPECT(kf_sensor_noise_floor_g() < 0.0f);
     kf_sensor_context()->noise_until_ns = 0u;
-    /* Rest with one small bump, measured over 200 ms of samples. */
+    /* Rest with repeated small bumps and one accidental large bump. */
     kf_sensor_begin_noise_measurement(0u);
     atomic_store(&kf_sensor_context()->noise_until_ns, 300u * MS);
-    feed(1u, 299u, 150u, 0.004f);
+    for (uint64_t t = 1u; t < 300u; ++t) {
+        const float bump = t == 150u ? 0.2f : (t % 20u == 0u ? 0.004f : 0.0f);
+        const kf_accel_sample s = {t * MS, 0.0f, 0.0f, 1.0f + bump};
+        kf_sensor_process_sample(&s);
+    }
     KF_EXPECT(kf_sensor_noise_floor_g() < 0.0f); /* Still measuring. */
     feed(300u, 300u, 0u, 0.0f);
-    KF_EXPECT_NEAR(kf_sensor_noise_floor_g(), 0.004, 2e-4);
+    KF_EXPECT(kf_sensor_noise_floor_g() > 0.003f && kf_sensor_noise_floor_g() < 0.01f);
     kf_sensor_counters c;
     kf_sensor_get_counters(&c);
     KF_EXPECT_NEAR(c.sample_rate_hz, 1000.0, 1.0);
+}
+
+/* The driver's reporting settings. Only the plans and the argument checks run here: a valid
+ * wake would write to the real driver, which a unit test must never do. */
+
+static bool write_is(const kf_driver_write *w, const char *key, int32_t value) {
+    return strcmp(w->key, key) == 0 && w->value == value;
+}
+
+void test_sensor_wake_plan_orders_writes(void) {
+    kf_driver_write w[KF_DRIVER_MAX_WRITES];
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_INTERVAL, 2500u, w) == 1u);
+    KF_EXPECT(write_is(&w[0], "ReportInterval", 2500));
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_REPORTING, 5000u, w) == 2u);
+    KF_EXPECT(write_is(&w[0], "SensorPropertyReportingState", 1));
+    KF_EXPECT(write_is(&w[1], "ReportInterval", 5000));
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, KF_SENSOR_MIN_INTERVAL_US, w) == 3u);
+    KF_EXPECT(write_is(&w[0], "SensorPropertyReportingState", 1));
+    KF_EXPECT(write_is(&w[1], "SensorPropertyPowerState", 1));
+    KF_EXPECT(write_is(&w[2], "ReportInterval", (int32_t)KF_SENSOR_MIN_INTERVAL_US));
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, KF_SENSOR_MAX_INTERVAL_US, w) == 3u);
+}
+
+void test_sensor_wake_plan_rejects_bad_input(void) {
+    kf_driver_write w[KF_DRIVER_MAX_WRITES];
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_NONE, 2500u, w) == 0u);
+    KF_EXPECT(kf_sensor_wake_plan((kf_sensor_wake)4, 2500u, w) == 0u);
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, KF_SENSOR_MIN_INTERVAL_US - 1u, w) == 0u);
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, KF_SENSOR_MAX_INTERVAL_US + 1u, w) == 0u);
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, 0u, w) == 0u);
+    KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, 2500u, NULL) == 0u);
+}
+
+void test_sensor_restore_plan_puts_back(void) {
+    kf_driver_write w[KF_DRIVER_MAX_WRITES];
+    /* As measured on Mac17,3: interval 0, the two states not shown. */
+    const kf_sensor_driver_state off = {0, -1, -1, 0};
+    KF_EXPECT(kf_sensor_restore_plan(KF_SENSOR_WAKE_POWER, 3u, &off, w) == 3u);
+    KF_EXPECT(write_is(&w[0], "SensorPropertyReportingState", 0));
+    KF_EXPECT(write_is(&w[1], "SensorPropertyPowerState", 0));
+    KF_EXPECT(write_is(&w[2], "ReportInterval", 0));
+    /* Shown values come back as they were. */
+    const kf_sensor_driver_state shown = {8000, 0, 2, 41};
+    KF_EXPECT(kf_sensor_restore_plan(KF_SENSOR_WAKE_POWER, 3u, &shown, w) == 3u);
+    KF_EXPECT(write_is(&w[1], "SensorPropertyPowerState", 2));
+    KF_EXPECT(write_is(&w[2], "ReportInterval", 8000));
+    /* Undoing a partial wake: only the writes that were made. */
+    KF_EXPECT(kf_sensor_restore_plan(KF_SENSOR_WAKE_POWER, 1u, &off, w) == 1u);
+    KF_EXPECT(write_is(&w[0], "SensorPropertyReportingState", 0));
+    KF_EXPECT(kf_sensor_restore_plan(KF_SENSOR_WAKE_POWER, 0u, &off, w) == 0u);
+    KF_EXPECT(kf_sensor_restore_plan(KF_SENSOR_WAKE_INTERVAL, 3u, &shown, w) == 1u);
+    KF_EXPECT(write_is(&w[0], "ReportInterval", 8000));
+    KF_EXPECT(kf_sensor_restore_plan(KF_SENSOR_WAKE_NONE, 3u, &off, w) == 0u);
+    KF_EXPECT(kf_sensor_restore_plan(KF_SENSOR_WAKE_POWER, 3u, NULL, w) == 0u);
+}
+
+void test_sensor_driver_checks_before_touching_it(void) {
+    /* Each of these returns before looking for the driver. */
+    KF_EXPECT(kf_sensor_driver_woken() == KF_SENSOR_WAKE_NONE);
+    KF_EXPECT(kf_sensor_driver_wake(KF_SENSOR_WAKE_NONE, 0u) == KF_OK);
+    KF_EXPECT(kf_sensor_driver_wake(KF_SENSOR_WAKE_POWER, 1u) == KF_ERR_INVALID_ARGUMENT);
+    KF_EXPECT(kf_sensor_driver_wake((kf_sensor_wake)9, 2500u) == KF_ERR_INVALID_ARGUMENT);
+    KF_EXPECT(kf_sensor_driver_woken() == KF_SENSOR_WAKE_NONE);
+    KF_EXPECT(kf_sensor_driver_restore() == KF_OK); /* Nothing was changed. */
+    KF_EXPECT(kf_sensor_driver_read(NULL) == KF_ERR_INVALID_ARGUMENT);
 }

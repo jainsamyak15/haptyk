@@ -19,6 +19,11 @@ All notable changes are recorded here. The format follows
   `Tools/common/`, with C and Python unit tests (`make test-py`).
 - First Milestone 0 findings in `docs/SENSOR_NOTES.md`: the `accel` device (Bosch BMI286 behind
   the SPU) opens without root or Input Monitoring but sends nothing while idle (ADR-0011).
+- Mac17,3 force sensing: verified accelerometer `int32x3@6` reports at 399.0 Hz with a
+  `1 / 65,536 g` scale, a curated real-report decoder fixture, and a startup/stop path that wakes
+  only its report interval and restores the original driver state. The calibration wizard remains
+  the source of each user's soft, hard and normal force thresholds; rest-floor calibration now
+  uses a robust 95th percentile instead of one accidental maximum.
 - Milestone 1, core sound pipeline: CoreAudio output engine (default output unit, per-process
   128-frame buffer request, device and sample-rate change notices), lock-free voice pool with
   oldest-voice stealing, constant-power pan with stereo width, smoothed volume, mute, soft
@@ -30,8 +35,8 @@ All notable changes are recorded here. The format follows
 - Milestone 2, force detection: parameterized report decoder (int16, int32 or float32 triples,
   scaled to g), the sensor thread (read-only device open, report callback, pending-key watchdog,
   device removal), live calibration hand-over, measured peaks for the calibration UI, Shout
-  Mode's rolling force, noise-floor measurement, `kf-cli --calibrate`. Dormant until the report
-  layout is measured (ADR-0011): the probe reports no sensor and keys play at default velocity.
+  Mode's rolling force, noise-floor measurement, `kf-cli --calibrate`. The measured Mac17,3
+  layout is enabled; unknown or unmeasured layouts retain the default-velocity fallback.
 - Milestone 3, the menu bar app (`make app`): status item with on, off and needs-attention
   icons; menu with the on/off switch, volume, packs, force status, live stats while open, Labs,
   calibration, settings, updates, feedback; power state machine (idle costs nothing: audio and

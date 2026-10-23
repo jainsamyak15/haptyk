@@ -70,10 +70,15 @@
     X(keytap_shout_needs_live_builtin_force)   \
     X(keytap_shout_trips_after_timeouts)       \
     X(sensor_decodes_each_layout)              \
+    X(sensor_decodes_measured_fixture)         \
     X(sensor_falls_back_without_a_layout)      \
     X(sensor_expired_keys_play_at_default)     \
     X(sensor_reports_peaks_and_rolling_force)  \
     X(sensor_takes_calibration_while_running)  \
-    X(sensor_measures_noise_floor)
+    X(sensor_measures_noise_floor)             \
+    X(sensor_wake_plan_orders_writes)          \
+    X(sensor_wake_plan_rejects_bad_input)      \
+    X(sensor_restore_plan_puts_back)           \
+    X(sensor_driver_checks_before_touching_it)
 
 #endif /* KF_TEST_LIST_H */

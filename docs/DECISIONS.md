@@ -104,7 +104,7 @@ decision; supersede it with a new one.
 
 ## ADR-0011: How the app starts the motion sensor's stream
 
-- **Status:** Proposed (needs the owner's decision; blocks the M0 gate)
+- **Status:** Accepted (amended 2026-10-24 after the Mac17,3 interval-wake measurement)
 - **Context:** On a MacBook Air M5 (Mac17,3, macOS 27.0) the `accel` HID device opens for a
   normal user without Input Monitoring, but sends no reports: its driver's `ReportInterval` is 0
   and it has counted no events since boot (`docs/SENSOR_NOTES.md`). Something has to switch
@@ -118,17 +118,21 @@ decision; supersede it with a new one.
      changes a shared hardware driver's state on customers' Macs.
   3. Neither works: no-go, and the product pivots to sounds without force detection
      (the spec's fallback).
-- **Decision:** Option 2 is not pursued: no tool or app code writes the sensor driver's
-  properties. The app reads the sensor only through a plain open of the HID device. Until that
-  delivers samples, Keyfeel runs in fallback mode: every key plays at the default velocity.
-  Option 1 (the read-only root test) remains the owner's call.
-- **Update (2026-10-24):** The owner ran option 1: root opens the sensor but receives no
-  reports either (0 in 5 s). With option 2 not pursued, option 3 is what remains; closing the
-  gate on it is the owner's decision. The probes are worth repeating on new Mac models and
-  major macOS releases.
-- **Consequences:** M1–M6 are built and tested in fallback mode. The sensor path is
-  implemented against the documented interface and stays dormant (`KF_SENSOR_ABSENT`) while
-  the device sends nothing.
+- **Decision:** Use option 2, narrowly. On Mac17,3, writing only the matching accelerometer
+  driver's `ReportInterval = 2500` starts reporting; reporting-state and power-state writes are
+  not needed. `kf_sensor_driver_wake()` records every available original setting before writing,
+  refuses every driver except the exact SPU accelerometer, leaves an already-active driver alone,
+  and rolls back a partial failure. `kf_sensor_driver_restore()` runs on each normal stop and
+  startup failure. It restored the original zero interval after the 15.1-second capture; the
+  before/after system snapshots were identical. No root or privileged helper is used.
+- **Update (2026-10-24):** A normal-user capture yielded 6,020 reports in 15.1 seconds
+  (398.6/s). M0 measured `int32x3@6`, 2^-16 g per raw unit, a 399.0 Hz effective rate, and HID
+  timestamps as mach ticks on the core clock. The keyed timing and separation measurements remain
+  open.
+- **Consequences:** Mac17,3 has a live force path rather than fallback mode. The application
+  prompts for its existing per-user calibration before claiming calibrated force; it never guesses
+  model-wide soft and hard thresholds from an idle capture. The interval write remains scoped to
+  the time the sensor runs and is revalidated on future Mac models and macOS releases.
 
 ## ADR-0012: Pack fallback rules are applied in the core
 

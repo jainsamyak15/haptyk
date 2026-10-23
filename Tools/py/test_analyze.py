@@ -210,6 +210,27 @@ class ClockTests(TempDirTest):
 
 
 class RateTests(TempDirTest):
+    def test_rest_log_uses_the_sensor_source_clock(self) -> None:
+        """A driver may batch callbacks even though its report timestamps are regular."""
+        path = synth_log(self.dir / "rest.csv", "force=rest", seconds=1.0, rate_hz=400.0)
+        lines = path.read_text(encoding="utf-8").splitlines()
+        rows = [line.split(",") for line in lines if ",REPORT," in line]
+        # Deliver reports in four-report bursts, 10 ms apart.  Their source times
+        # retain the true 2.5 ms sample cadence.
+        for i, row in enumerate(rows):
+            burst = i // 4
+            row[0] = str(T0_NS + burst * 10 * MS + (i % 4) * 1_000)
+        reports = iter(rows)
+        rewritten = []
+        for line in lines:
+            rewritten.append(",".join(next(reports)) if ",REPORT," in line else line)
+        path.write_text("\n".join(rewritten) + "\n", encoding="utf-8")
+
+        signal = az.build_signal(az.read_log(path), az.Layout("int32", 6), 2.0**-16)
+        self.assertEqual(signal.time_base, "source")
+        assert signal.rate is not None
+        self.assertAlmostEqual(signal.rate.hz, 400.0, delta=1.0)
+
     def test_rate_and_drops(self) -> None:
         log = az.read_log(synth_log(self.dir / "r.csv", "force=rest", seconds=3.0, drop_every=100))
         signal = az.build_signal(log, az.Layout("int32", 6), 2.0**-16)
