@@ -548,6 +548,24 @@
       }
     },
     {
+      "id": "kailh-box-white",
+      "name": "Kailh Box White",
+      "switch_type": "clicky",
+      "kind": "mechvibes-community",
+      "recording": "Kailh Box White switches (Mechvibes community pack “Kalih Box White” by edy., individual sounds per key)",
+      "source": {
+        "site": "mechvibes.com",
+        "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000053/",
+        "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000053/dist/kalih-box-white.zip",
+        "sha256": "2b0b0a127694b32af390cd34f1ad1231e6f613247544bc957b002fff2e25fe41",
+        "title": "Kalih Box White",
+        "author": "edy.",
+        "licence": "Permission from the author",
+        "permission": "The owner asked edy. and reports, on 2026-10-23, that the author said the pack is open for anyone to use. Keep the author's written reply (a screenshot is fine) in Packs/sources/kailh-box-white/permission/.",
+        "downloaded": "2026-10-23"
+      }
+    },
+    {
       "id": "nk-cream",
       "name": "NK Cream",
       "switch_type": "linear",

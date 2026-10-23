@@ -201,6 +201,45 @@ class RepositoryPackTests(unittest.TestCase):
             self.assertEqual(sum(1 for t in collected if t.group == "alpha" and t.direction == "down"), 5)
 
 
+class CommunityPackTests(unittest.TestCase):
+    def community_pack(self, archive: Path) -> dict:
+        return {"id": "test-community", "name": "Test Community", "switch_type": "clicky",
+                "kind": "mechvibes-community", "recording": "Test switches",
+                "source": {"site": "mechvibes.com", "url": "https://mechvibes.com/sound-packs/x/",
+                           "zip": "https://mechvibes.com/sound-packs/x/dist/" + archive.name,
+                           "sha256": bps.sha256(archive), "title": "x", "author": "someone",
+                           "licence": bps.PERMISSION, "permission": "The author said yes.",
+                           "downloaded": "2026-10-23"}}
+
+    def test_zip_is_pinned_and_read_like_a_mechvibes_pack(self) -> None:
+        import zipfile
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "src"
+            (src / "raw").mkdir(parents=True)
+            archive = src / "raw" / "test.zip"
+            key = Path(tmp) / "k.wav"
+            sf.write(str(key), tone(80), 44100)
+            with zipfile.ZipFile(archive, "w") as z:
+                z.writestr("pack/config.json", json.dumps({"key_define_type": "multi", "defines": {
+                    "30": "k.wav", "31": "gone.wav", "57": "k.wav"}}))
+                z.write(key, "pack/k.wav")
+            pack = self.community_pack(archive)
+            result = bps.build_community(pack, src, False)
+            self.assertEqual(result["takes"], {"alpha down": 1, "space down": 1})
+            text = (src / "SOURCES.md").read_text(encoding="utf-8")
+            self.assertIn("The author said yes.", text)
+            sources = build_pack.read_sources(src)
+            self.assertEqual(sources.licence, bps.PERMISSION)
+            self.assertIn("sounds by someone", sources.attribution)
+            self.assertEqual(sf.info(str(src / "alpha" / "medium" / "01.wav")).samplerate, bps.RATE)
+            archive.write_bytes(archive.read_bytes() + b"tampered")
+            with self.assertRaises(SystemExit):
+                bps.build_community(pack, src, False)
+            pack["source"]["zip"] = "https://example.com/test.zip"
+            with self.assertRaises(SystemExit):
+                bps.build_community(pack, src, False)
+
+
 class ManifestTests(unittest.TestCase):
     """The committed Packs/packs.json and the packs built from it."""
 
@@ -225,6 +264,11 @@ class ManifestTests(unittest.TestCase):
                 e = p["extract"]
                 self.assertTrue(45 <= e["merge_ms"] <= 75 and e["max_hold_ms"] <= 400
                                 and e["quiet_ms"] >= 60)
+            elif p["kind"] == "mechvibes-community":
+                self.assertEqual(s["licence"], bps.PERMISSION)
+                self.assertTrue(s["zip"].startswith(bps.COMMUNITY_URL))
+                self.assertTrue(bps.SHA256.fullmatch(s["sha256"]), p["id"])
+                self.assertIn("reports", s["permission"])
             else:
                 self.assertIn(p["kind"], ("mechvibes", "kbsim"))
                 self.assertEqual(s["licence"], "MIT")
@@ -247,6 +291,9 @@ class ManifestTests(unittest.TestCase):
             self.assertIn("| Commercial use in an app allowed | Yes |", sources)
             if p["source"]["licence"].startswith("CC0"):
                 self.assertEqual(built["attribution"], "")
+            elif p["source"]["licence"] == bps.PERMISSION:
+                self.assertIn(p["source"]["author"], built["attribution"])
+                self.assertIn("## Permission", sources)
             elif p["source"]["licence"] == "MIT":
                 self.assertIn(p["source"]["copyright"], built["attribution"])
                 self.assertIn("Permission is hereby granted", sources)

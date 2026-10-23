@@ -3,17 +3,20 @@
 # Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
 """Build every bundled pack listed in Packs/packs.json, from its licensed source.
 
-Three kinds of source:
+Four kinds of source:
 
-  freesound  a typing recording: an original you downloaded from the source page into
-             Packs/sources/<id>/raw/ wins over the public preview; extract_keystrokes.py cuts
-             it into keystrokes.
-  mechvibes  a Mechvibes default pack (MIT): a sprite or per-key files mapped by key code;
-             each key's own sample goes to its key group.
-  kbsim      a kbsim switch (MIT): press and release files per key group.
+  freesound            a typing recording: an original you downloaded from the source page into
+                       Packs/sources/<id>/raw/ wins over the public preview; extract_keystrokes.py
+                       cuts it into keystrokes.
+  mechvibes            a Mechvibes default pack (MIT): a sprite or per-key files mapped by key
+                       code; each key's own sample goes to its key group.
+  kbsim                a kbsim switch (MIT): press and release files per key group.
+  mechvibes-community  a community pack's zip from mechvibes.com, used with its author's
+                       permission, pinned by SHA-256; read like a Mechvibes pack.
 
-Repository files are fetched at the pinned commit, Freesound previews from Freesound's CDN, both
-only with --download and only into Packs/sources/<id>/raw/. Then it writes
+Repository files are fetched at the pinned commit, Freesound previews from Freesound's CDN and
+community zips from mechvibes.com, all only with --download and only into
+Packs/sources/<id>/raw/. Then it writes
 Packs/sources/<id>/SOURCES.md (source, licence, the full licence text from Packs/licenses/),
 builds the pack with build_pack.py (--derive-tiers fills the tiers a source lacks) into
 App/Resources/Packs/, and validates it with kf-cli when that is built.
@@ -24,18 +27,23 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import io
 import json
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import urllib.parse
 import urllib.request
+import zipfile
+from math import gcd
 from pathlib import Path
 
 import numpy as np
 import soundfile as sf
+from scipy.signal import resample_poly
 
 import build_pack
 import extract_keystrokes
@@ -51,6 +59,12 @@ MAX_TAKES = 10  # Alpha keys: most of what is typed.
 MAX_OTHER_TAKES = 4  # Other groups are pressed far less; this keeps the DMG small.
 CLIP_RUN = 3  # This many consecutive samples at full scale is real clipping, not a decoder over.
 COMMIT = re.compile(r"[0-9a-f]{40}")
+SHA256 = re.compile(r"[0-9a-f]{64}")
+COMMUNITY_URL = "https://mechvibes.com/sound-packs/"
+PERMISSION = "Permission from the author"
+RATE = 48000  # Community packs mix files of several rates: everything is brought to this one.
+MAX_ZIP_BYTES = 100 * 1024 * 1024
+MAX_ZIP_FILES = 2000
 
 # kbsim: one file per key group and direction (GENERIC_R0..R4 are the five keyboard rows).
 KBSIM_FILES = {
@@ -95,18 +109,20 @@ def source_file(raw: Path, sound_id: int) -> Path | None:
 
 
 def allowed(url: str) -> bool:
-    if url.startswith("https://cdn.freesound.org/previews/"):
+    if url.startswith(("https://cdn.freesound.org/previews/", COMMUNITY_URL)):
         return True
     m = re.fullmatch(r"https://raw\.githubusercontent\.com/([^/]+/[^/]+)/([0-9a-f]{40})/[^?#]+", url)
     return m is not None and m.group(1) in REPOSITORIES
 
 
 def download(url: str, dest: Path) -> None:
-    """Freesound previews and pinned files of the two repositories only; never outside raw/."""
+    """Freesound previews, community zips from mechvibes.com and pinned files of the two
+    repositories only; never outside raw/."""
     if not allowed(url) or ".." in url:
         raise SystemExit(f"build_packs: refusing to download from {url}")
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with urllib.request.urlopen(url, timeout=60) as response:
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Keyfeel build_packs)"})
+    with urllib.request.urlopen(request, timeout=120) as response:
         data = response.read()
     if url.endswith(".ogg") and not data.startswith(b"OggS"):
         raise SystemExit(f"build_packs: {url} is not an Ogg file")
@@ -132,12 +148,48 @@ def fetch_repo(source: dict, raw: Path, names: list[str], fetch: bool) -> None:
         download(repo_url(source, name), dest)
 
 
+def safe_unzip(archive: Path, dest: Path) -> list[Path]:
+    """Extracts regular files only, never outside `dest`, within size and count limits."""
+    dest.mkdir(parents=True, exist_ok=True)
+    root = dest.resolve()
+    written = []
+    with zipfile.ZipFile(archive) as z:
+        members = [m for m in z.infolist() if not m.is_dir()]
+        if len(members) > MAX_ZIP_FILES or sum(m.file_size for m in members) > MAX_ZIP_BYTES:
+            raise SystemExit(f"build_packs: {archive.name} is too large")
+        for m in members:
+            if stat.S_ISLNK(m.external_attr >> 16):
+                raise SystemExit(f"build_packs: {archive.name} holds a symbolic link")
+            name = Path(m.filename.replace("\\", "/"))
+            if name.is_absolute() or ".." in name.parts or name.parts[0].startswith("__MACOSX"):
+                continue
+            target = (dest / name).resolve()
+            if root not in target.parents:
+                raise SystemExit(f"build_packs: {m.filename} escapes the folder")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with z.open(m) as src, open(target, "wb") as out:
+                shutil.copyfileobj(src, out)
+            written.append(target)
+    return written
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 # ---------------------------------------------------------------------------- repository packs
 
 
 def load(path: Path) -> tuple[np.ndarray, int]:
     data, rate = sf.read(str(path), dtype="float64", always_2d=True)
     return data.mean(axis=1), int(rate)
+
+
+def to_rate(x: np.ndarray, rate: int) -> np.ndarray:
+    if rate == RATE:
+        return x
+    g = gcd(rate, RATE)
+    return resample_poly(x, RATE // g, rate // g)
 
 
 def clipped(x: np.ndarray) -> bool:
@@ -201,6 +253,45 @@ def kbsim_takes(source: dict, raw: Path, fetch: bool) -> tuple[dict, str, int]:
     return takes, f"{sum(len(v) for v in present.values())} MP3 files", rate
 
 
+def community_takes(folder: Path) -> dict[tuple[str, str], list[np.ndarray]]:
+    """Each key's own sound from a Mechvibes v1 pack in `folder` (sprite or per-key files), at
+    RATE. Duplicates, missing files (packs copied from others sometimes name files they lack)
+    and clipped sounds are skipped; at most MAX_TAKES alpha and MAX_OTHER_TAKES other takes."""
+    configs = sorted(folder.rglob("config.json"))
+    if not configs:
+        return {}
+    base = configs[0].parent
+    config = json.loads(configs[0].read_text(encoding="utf-8-sig"))
+    defines = {int(k): v for k, v in (config.get("defines") or {}).items() if v and str(k).isdigit()}
+    takes: dict[tuple[str, str], list[np.ndarray]] = {}
+    seen: dict[str, set] = {}
+    sprite = None
+    if config.get("key_define_type") == "single":
+        path = base / str(config.get("sound", ""))
+        if not path.is_file():
+            return {}
+        sprite = load(path)
+    for code in sorted(defines):
+        group, value = mechvibes_group(code), defines[code]
+        key = tuple(value) if isinstance(value, list) else value
+        if group is None or key in seen.setdefault(group, set()):
+            continue
+        seen[group].add(key)
+        if sprite is not None and isinstance(value, list) and len(value) == 2:
+            x, rate = sprite
+            x = x[int(value[0] * rate / 1000):int((value[0] + value[1]) * rate / 1000)]
+        elif isinstance(value, str) and (base / value).is_file() and ".." not in Path(value).parts:
+            try:
+                x, rate = load(base / value)
+            except (RuntimeError, sf.LibsndfileError):
+                continue
+        else:
+            continue
+        if len(x) > 32 and not clipped(x):
+            takes.setdefault((group, "down"), []).append(to_rate(x, rate))
+    return {k: spread(v, MAX_TAKES if k[0] == "alpha" else MAX_OTHER_TAKES) for k, v in takes.items()}
+
+
 def write_takes(takes: dict, src: Path, rate: int) -> dict[str, int]:
     """src/<group>/medium/NN.wav and src/<group>/up/NN.wav, as build_pack.py reads them."""
     for group in build_pack.GROUPS:
@@ -224,6 +315,9 @@ def attribution(pack: dict) -> str:
     s = pack["source"]
     if s["licence"].startswith("CC0"):
         return "None"
+    if s["licence"] == PERMISSION:
+        return (f"{pack['name']}: sounds by {s['author']} (Mechvibes community pack, {s['url']}), "
+                f"used with the author's permission")
     if s["licence"] == "MIT":
         return (f"{pack['name']}: sounds from {s['site']} ({s['project_url']}), {s['copyright']}, "
                 f"MIT License")
@@ -343,6 +437,48 @@ The {s['site']} repository's licence, which covers its files. Keep this notice w
 """
 
 
+def community_sources_md(pack: dict, counts: dict[str, int]) -> str:
+    """SOURCES.md for a community pack used with its author's permission."""
+    s = pack["source"]
+    rows = [
+        ("Pack id", f"`com.keyfeel.{pack['id']}`"),
+        ("Switch / recording", pack["recording"]),
+        ("Source", "Mechvibes community pack (mechvibes.com)"),
+        ("URL or contract", s["url"]),
+        ("Title", s["title"]),
+        ("Author", s["author"]),
+        ("Licence", PERMISSION),
+        ("Permission", s["permission"]),
+        ("Commercial use in an app allowed", "Yes"),
+        ("Attribution required (shown in About)", attribution(pack)),
+        ("Downloaded or delivered on", s["downloaded"]),
+        ("Original file", f"{Path(s['zip']).name} from {s['zip']}, SHA-256 {s['sha256']}"),
+        ("Derived tiers", "soft, hard, slam (from the single recorded force, build_pack.py --derive-tiers)"),
+    ]
+    takes = ", ".join(f"{k} {v}" for k, v in counts.items())
+    return f"""# Sources: {pack['name']}
+
+Generated by `Tools/py/build_packs.py` from `Packs/packs.json`; edit those, not this file.
+
+| Field | Value |
+| --- | --- |
+{table(rows)}
+
+## Processing
+
+Each key's own sound was taken from the published zip ({takes} takes; at most {MAX_TAKES} for
+alpha keys and {MAX_OTHER_TAKES} for each other group; sounds the pack's config names but does
+not contain, and any sound with real clipping, were left out). A zero-phase 30 Hz high-pass
+removed DC offset and rumble. `Tools/py/build_pack.py` then trimmed, faded, resampled to 48 kHz,
+normalised per tier, generated the soft, hard and slam tiers from the one recorded force, and
+encoded CAF/ALAC.
+
+## Permission
+
+The pack carries no licence file. {s['permission']}
+"""
+
+
 # ---------------------------------------------------------------------------- build
 
 
@@ -384,10 +520,39 @@ def build_repo(pack: dict, src: Path, fetch: bool) -> dict:
     return {"takes": counts}
 
 
+def build_community(pack: dict, src: Path, fetch: bool) -> dict:
+    source = pack["source"]
+    if not source["zip"].startswith(COMMUNITY_URL) or not SHA256.fullmatch(source["sha256"]):
+        raise SystemExit(f"build_packs: {pack['id']}: zip not on mechvibes.com or not pinned")
+    raw = src / "raw"
+    archive = raw / re.sub(r"[^A-Za-z0-9._-]+", "-", Path(source["zip"]).name)
+    if not archive.is_file():
+        if not fetch:
+            raise SystemExit(f"build_packs: {archive} is missing (use --download)")
+        download(source["zip"], archive)
+    if sha256(archive) != source["sha256"]:
+        raise SystemExit(f"build_packs: {archive.name} changed (SHA-256 {sha256(archive)}); refusing")
+    unpacked = raw / "pack"
+    if unpacked.exists():
+        shutil.rmtree(unpacked)  # Only the folder this script unpacks.
+    safe_unzip(archive, unpacked)
+    takes = community_takes(unpacked)
+    if not takes.get(("alpha", "down")):
+        raise SystemExit(f"build_packs: {pack['id']}: no alpha key sounds")
+    counts = write_takes(takes, src, RATE)
+    (src / "SOURCES.md").write_text(community_sources_md(pack, counts), encoding="utf-8")
+    return {"takes": counts}
+
+
 def build_one(pack: dict, out: Path, fetch: bool) -> dict:
     src = REPO / "Packs" / "sources" / pack["id"]
     kind = pack.get("kind", "freesound")
-    summary = build_freesound(pack, src, fetch) if kind == "freesound" else build_repo(pack, src, fetch)
+    if kind == "freesound":
+        summary = build_freesound(pack, src, fetch)
+    elif kind == "mechvibes-community":
+        summary = build_community(pack, src, fetch)
+    else:
+        summary = build_repo(pack, src, fetch)
     author = pack["source"]["author"]
     status = build_pack.main(["--src", str(src), "--id", f"com.keyfeel.{pack['id']}",
                               "--name", pack["name"], "--switch-type", pack["switch_type"],

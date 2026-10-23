@@ -82,28 +82,8 @@ def fetch(url: str, dest: Path) -> Path:
 
 
 def safe_unzip(archive: Path, dest: Path) -> list[Path]:
-    """Extracts regular files only, never outside `dest`, within size and count limits."""
-    dest.mkdir(parents=True, exist_ok=True)
-    root = dest.resolve()
-    written = []
-    with zipfile.ZipFile(archive) as z:
-        members = [m for m in z.infolist() if not m.is_dir()]
-        if len(members) > MAX_ZIP_FILES or sum(m.file_size for m in members) > MAX_ZIP_BYTES:
-            raise SystemExit(f"build_review: {archive.name} is too large")
-        for m in members:
-            if stat.S_ISLNK(m.external_attr >> 16):
-                raise SystemExit(f"build_review: {archive.name} holds a symbolic link")
-            name = Path(m.filename.replace("\\", "/"))
-            if name.is_absolute() or ".." in name.parts or name.parts[0].startswith("__MACOSX"):
-                continue
-            target = (dest / name).resolve()
-            if root not in target.parents:
-                raise SystemExit(f"build_review: {m.filename} escapes the folder")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with z.open(m) as src, open(target, "wb") as out:
-                shutil.copyfileobj(src, out)
-            written.append(target)
-    return written
+    """Extracts regular files only, never outside `dest` (build_packs.safe_unzip)."""
+    return bps.safe_unzip(archive, dest)
 
 
 def slug(name: str) -> str:
@@ -125,39 +105,9 @@ def playable(src: Path, dest: Path) -> bool:
 
 
 def community_takes(folder: Path) -> rd.Takes:
-    """Each key's own sound from a Mechvibes v1 pack (sprite or per-key files); missing or
-    clipped sounds are skipped. One recorded force, so everything is medium."""
-    configs = sorted(folder.rglob("config.json"))
-    if not configs:
-        return {}
-    base = configs[0].parent
-    config = json.loads(configs[0].read_text(encoding="utf-8-sig"))
-    defines = {int(k): v for k, v in (config.get("defines") or {}).items() if v and str(k).isdigit()}
-    takes: dict[tuple[str, str], list[np.ndarray]] = {}
-    seen: dict[str, set] = {}
-    sprite = None
-    if config.get("key_define_type") == "single":
-        path = base / str(config.get("sound", ""))
-        if not path.is_file():
-            return {}
-        sprite = rd.decode(path)
-    for code in sorted(defines):
-        group, value = bps.mechvibes_group(code), defines[code]
-        key = tuple(value) if isinstance(value, list) else value
-        if group is None or key in seen.setdefault(group, set()):
-            continue
-        seen[group].add(key)
-        if sprite is not None and isinstance(value, list) and len(value) == 2:
-            x, rate = sprite
-            x = x[int(value[0] * rate / 1000):int((value[0] + value[1]) * rate / 1000)]
-        elif isinstance(value, str) and (base / value).is_file():
-            x, rate = rd.decode(base / value)
-        else:
-            continue
-        if len(x) > 32 and not bps.clipped(x):
-            takes.setdefault((group, "medium"), []).append(rd.to_rate(x, rate))
-    limit = {g: bps.MAX_TAKES if g == "alpha" else bps.MAX_OTHER_TAKES for g, _ in takes}
-    return {k: bps.spread(v, limit[k[0]]) for k, v in takes.items()}
+    """Each key's own sound from a Mechvibes v1 pack (build_packs.community_takes), as the
+    renderer's medium tier: these packs record one force."""
+    return {(group, "medium"): sounds for (group, _), sounds in bps.community_takes(folder).items()}
 
 
 def recording_takes(recording: Path) -> rd.Takes:

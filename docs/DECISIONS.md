@@ -296,3 +296,20 @@ decision; supersede it with a new one.
     24 kHz) from a CC0 lavalier one (33.5 dB, 20.4 kHz), credited in About.
 - **Consequences:** The weakest packs remain the seven from kbsim (lossy MP3, 13.6-18 kHz). Their
   quality can only rise through permission from community authors or new recordings.
+
+## ADR-0022: Community packs with their author's permission
+
+- **Status:** Accepted (owner's decision, 2026-10-23)
+- **Context:** Kailh Box White, a high-quality Mechvibes community pack (ADR-0021), carries no
+  licence. The owner asked its author, edy., who said the pack is open for anyone to use. The
+  owner also reports the same for Razer Green by Akira, but that pack's zip ships a GNU GPL v3
+  licence file, which mechvibes.com does not show.
+- **Decision:** A new pack kind, `mechvibes-community`: the published zip, pinned by SHA-256, read
+  like a Mechvibes pack (missing files and clipped sounds skipped), with the permission recorded in
+  `SOURCES.md`, the author credited in About, and the author's written reply kept in
+  `Packs/sources/<id>/permission/`. Kailh Box White is bundled this way. Razer Green waits for the
+  owner's decision on its GPL v3 licence.
+- **Consequences:** The permission rests on the author's reply, which must be saved. A GPL v3 pack
+  would bring conditions (its licence text and original files shipped with it, recipients'
+  freedoms kept) and some risk for a closed-source app, unless its author grants use without
+  them.
