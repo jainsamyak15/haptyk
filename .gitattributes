@@ -11,3 +11,6 @@
 
 # Proposed (ADR-0007): store bundled packs in Git LFS once the owner installs git-lfs.
 # *.caf filter=lfs diff=lfs merge=lfs -text
+
+# Authors' original files shipped with a pack (GPL corresponding source): byte for byte.
+App/Resources/Packs/**/original/** binary
