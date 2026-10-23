@@ -23,6 +23,7 @@ void TestPackManifestValid(void);
 void TestPackManifestRejectsBadInput(void);
 void TestPackLibraryOrderAndDefault(void);
 void TestLabsBoomAndMeter(void);
+void TestStatusPanelPieces(void);
 void TestPreferencesDefaultsAndClamping(void);
 void TestStatsBucketsFlushAndReset(void);
 void TestBadgeMath(void);

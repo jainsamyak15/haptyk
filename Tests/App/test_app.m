@@ -11,11 +11,15 @@
 #include <kf/kf_types.h>
 
 #import "Labs/KFForceMeterController.h"
+#import "Menu/KFFeelView.h"
+#import "Menu/KFPackListView.h"
+#import "Menu/KFPanelControls.h"
 #import "Packs/KFPackLibrary.h"
 #import "Packs/KFPackManifest.h"
 #import "Power/KFPowerStateMachine.h"
 #import "Preferences/KFPreferences.h"
 #import "Stats/KFStatsController.h"
+#import "Support/KFTheme.h"
 
 #pragma mark - Power
 
@@ -338,6 +342,75 @@ void TestLabsBoomAndMeter(void) {
     KFExpect([library loadPackNow:manifest rate:48000.0 error:&error]);
     KFExpect(library.boomURL == nil && ![library needsLoad:manifest rate:48000.0]);
     kf_engine_set_pack(NULL);
+}
+
+#pragma mark - Status panel
+
+static NSColor *Resolved(NSColor *color, NSAppearanceName name) {
+    __block NSColor *out = nil;
+    [[NSAppearance appearanceNamed:name] performAsCurrentDrawingAppearance:^{
+        out = [color colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+    }];
+    return out ?: NSColor.clearColor;
+}
+
+void TestStatusPanelPieces(void) {
+    /* Activity: one count per second, oldest first, only the last `count` seconds. */
+    kf_live_stats live;
+    memset(&live, 0, sizeof live);
+    const uint64_t s = 1000000000ull;
+    for (int i = 0; i < 3; ++i) {
+        kf_live_stats_note_key(&live, 100 * s + 1);
+    }
+    kf_live_stats_note_key(&live, 98 * s);
+    kf_live_stats_note_key(&live, 20 * s); // Older than a minute: not shown.
+    uint32_t seconds[60];
+    kf_live_stats_seconds(&live, 100 * s + 5, seconds, 60);
+    KFExpect(seconds[59] == 3 && seconds[57] == 1 && seconds[58] == 0);
+    uint32_t total = 0;
+    for (int i = 0; i < 60; ++i) {
+        total += seconds[i];
+    }
+    KFExpect(total == 4);
+    uint32_t few[5];
+    kf_live_stats_seconds(&live, 100 * s + 5, few, 5);
+    KFExpect(few[4] == 3 && few[2] == 1);
+    uint32_t big[60];
+    kf_live_stats_seconds(&live, 100 * s, big, 200); // Clamped to 60.
+    KFExpect(big[59] == 3);
+
+    /* Pack filters. */
+    KFExpect([KFPackListView typesForFilter:@"All"] == nil);
+    KFExpect([[KFPackListView typesForFilter:@"Clicky"] isEqualToArray:@[ @"clicky" ]]);
+    KFExpect([[KFPackListView typesForFilter:@"Other"] containsObject:@"topre"]);
+    KFExpect([[KFPackListView typesForFilter:@"Other"] containsObject:@"buckling"]);
+
+    /* Theme: light and dark differ; each switch type has its own colour. */
+    NSColor *light = Resolved(KFTheme.background, NSAppearanceNameAqua);
+    NSColor *dark = Resolved(KFTheme.background, NSAppearanceNameDarkAqua);
+    KFExpect(light.brightnessComponent > 0.9 && dark.brightnessComponent < 0.15);
+    NSColor *accent = Resolved(KFTheme.accent, NSAppearanceNameDarkAqua);
+    KFExpect(accent.redComponent > 0.9 && accent.blueComponent < 0.3); // Orange, never purple.
+    NSMutableSet<NSString *> *colours = [NSMutableSet set];
+    for (NSString *type in KFPackManifest.switchTypes) {
+        NSColor *c = Resolved([KFTheme colorForSwitchType:type], NSAppearanceNameDarkAqua);
+        [colours addObject:[NSString stringWithFormat:@"%.2f%.2f%.2f", c.redComponent,
+                                                      c.greenComponent, c.blueComponent]];
+    }
+    KFExpect(colours.count == KFPackManifest.switchTypes.count);
+
+    /* Feel card and tiles speak to VoiceOver. */
+    KFFeelView *feel = [KFFeelView new];
+    [feel setVelocity:0.72f status:@"Force: Live"];
+    KFExpect([feel.accessibilityLabel containsString:@"Hard"]);
+    [feel setVelocity:-1.0f status:@"Force: Not on this Mac"];
+    KFExpect([feel.accessibilityLabel containsString:@"not measured"]);
+    KFStatTile *tile = [[KFStatTile alloc] initWithLabel:@"Keys today"];
+    tile.value = @"42";
+    KFExpect([tile.accessibilityLabel isEqualToString:@"Keys today: 42"]);
+    KFPillSwitch *pill = [KFPillSwitch new];
+    pill.on = YES;
+    KFExpect([pill.accessibilityValue isEqual:@1] && pill.state == NSControlStateValueOn);
 }
 
 #pragma mark - Preferences and stats

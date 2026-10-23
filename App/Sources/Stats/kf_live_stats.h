@@ -36,6 +36,11 @@ void kf_live_stats_note_key(kf_live_stats *stats, uint64_t t_ns);
 /** Key-downs in the 60 s before `now_ns`. Any thread. */
 uint32_t kf_live_stats_last_minute(const kf_live_stats *stats, uint64_t now_ns);
 
+/** Key-downs in each of the `count` seconds up to and including now, oldest first, into `out`;
+ * `count` is at most 60. Counts only. Any thread. */
+void kf_live_stats_seconds(const kf_live_stats *stats, uint64_t now_ns, uint32_t *out,
+                           uint32_t count);
+
 /** Per-minute totals for complete minutes in (from_minute, until_minute): calls `visit` with
  * each non-empty minute's count. Minutes are t_ns / 60 s. Any thread. */
 void kf_live_stats_minutes(const kf_live_stats *stats, uint64_t from_minute, uint64_t until_minute,

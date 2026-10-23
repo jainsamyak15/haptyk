@@ -41,6 +41,24 @@ uint32_t kf_live_stats_last_minute(const kf_live_stats *stats, uint64_t now_ns) 
     return total;
 }
 
+void kf_live_stats_seconds(const kf_live_stats *stats, uint64_t now_ns, uint32_t *out,
+                           uint32_t count) {
+    if (count > 60u) {
+        count = 60u;
+    }
+    for (uint32_t i = 0u; i < count; ++i) {
+        out[i] = 0u;
+    }
+    const uint64_t now = now_ns / NS_PER_S + 1u;
+    for (uint32_t i = 0u; i < KF_LIVE_SECONDS; ++i) {
+        const uint64_t id = atomic_load_explicit(&stats->second_id[i], memory_order_acquire);
+        if (id != 0u && id <= now && now - id < count) {
+            out[count - 1u - (uint32_t)(now - id)] =
+                atomic_load_explicit(&stats->second_count[i], memory_order_relaxed);
+        }
+    }
+}
+
 void kf_live_stats_minutes(const kf_live_stats *stats, uint64_t from_minute, uint64_t until_minute,
                            void (*visit)(uint32_t count, void *ctx), void *ctx) {
     for (uint32_t i = 0u; i < KF_LIVE_MINUTES; ++i) {

@@ -316,3 +316,26 @@ decision; supersede it with a new one.
   Green's sounds stay under the GPL v3 for anyone who receives them; treating a data file as
   separate from a closed-source program is common practice but not tested in court, so a
   written grant from Akira for use without the GPL terms would remove the remaining risk.
+
+## ADR-0023: A status panel in the "Graphite & Signal" theme; the menu stays on right-click
+
+- **Status:** Accepted (owner's request, 2026-10-23)
+- **Context:** The spec's status item opens an NSMenu. The owner asked for a better interface
+  than competitors' panels, in a current colour theme with no gradients, purple or pink.
+- **Decision:**
+  - A left click opens a borderless, non-activating panel under the status item
+    (`KFStatusPanelController`): header with the power switch, an attention banner only when
+    needed, a Feel card (the last keystroke's tier as four rising bars and one bar per second of
+    the last minute's typing, which works without force detection), volume, the pack chooser
+    with switch-type filters, three stat tiles, the Labs toggles and the menu's commands. It
+    never steals focus from the app being typed in, closes on Escape or any click elsewhere, and
+    refreshes every 0.5 s only while open. A right click or Control-click still opens the
+    spec's menu, unchanged.
+  - The theme (`KFTheme`): warm graphite neutrals (dark #121211 / light #F5F3EF) with one
+    signal-orange accent (#FF6B1F dark, #EC560C light), the colour of an enthusiast keyboard's
+    Escape keycap; muted, non-purple tags per switch type; flat fills only; Increase Contrast
+    variants; text on the accent in near-black for contrast. Every control is a native control
+    underneath, so keyboard use, focus rings and VoiceOver work as standard.
+- **Consequences:** The panel is built on first open and kept (a few hundred KB); nothing runs
+  while it is closed. `-KFRenderPanel DIR` (debug builds) draws it in light and dark for design
+  review without screen capture.

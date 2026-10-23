@@ -40,6 +40,7 @@ int main(void) {
             {"pack_manifest_rejects_bad_input", TestPackManifestRejectsBadInput},
             {"pack_library_order_and_default", TestPackLibraryOrderAndDefault},
             {"labs_boom_and_meter", TestLabsBoomAndMeter},
+            {"status_panel_pieces", TestStatusPanelPieces},
             {"preferences_defaults_and_clamping", TestPreferencesDefaultsAndClamping},
             {"stats_buckets_flush_and_reset", TestStatsBucketsFlushAndReset},
             {"badge_math", TestBadgeMath},

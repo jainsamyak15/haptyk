@@ -70,6 +70,11 @@ All notable changes are recorded here. The format follows
   pack from `Packs/packs.json`, with repository files pinned to a commit, and writes each
   `SOURCES.md` with its licence text.
 
+- The status panel (ADR-0023): a left click on the menu bar icon opens a panel in the new
+  "Graphite & Signal" theme (warm graphite, one signal-orange accent, light and dark) with the
+  power switch, a Feel card (last keystroke's force tier and the last minute's typing), volume,
+  a pack chooser with switch-type filters, stats, Labs and every menu command. A right click
+  still opens the classic menu.
 - Kailh Box White (by edy., with the author's permission) and Razer Green (by Akira, under the
   GNU GPL v3 its zip ships with, original files in the pack), two Mechvibes community packs
   (ADR-0022); `build_packs.py` reads community zips pinned by SHA-256.

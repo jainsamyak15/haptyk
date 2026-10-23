@@ -74,6 +74,19 @@
 #else
     const BOOL skipOnboarding = NO;
 #endif
+#if defined(KF_DEBUG) && KF_DEBUG
+    /* Debug builds only: `-KFRenderPanel DIR` draws the status panel to PNGs and quits. */
+    NSString *render = [NSUserDefaults.standardUserDefaults stringForKey:@"KFRenderPanel"];
+    if (render.length > 0) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            const BOOL ok =
+                [self->_menu renderPanelPreviewToDirectory:[NSURL fileURLWithPath:render]];
+            fprintf(stderr, "KFRenderPanel: %s\n", ok ? "written" : "failed");
+            [NSApp terminate:nil];
+        });
+        return;
+    }
+#endif
     if (!skipOnboarding && (!_context.preferences.onboardingDone ||
                             _context.power.state == KFPowerStateNoPermission)) {
         [self showOnboarding];

@@ -6,6 +6,7 @@
 #include <kf/kf.h>
 
 #import "Menu/KFStatusIcon.h"
+#import "Menu/KFStatusPanel.h"
 #import "Menu/KFVolumeMenuView.h"
 #import "Packs/KFPackLibrary.h"
 #import "Power/KFPowerController.h"
@@ -67,6 +68,7 @@ static const NSTimeInterval kLiveRefresh = 0.5;
     NSMenuItem *_meterItem;
     NSMenuItem *_shoutStatusItem;
     NSTimer *_liveTimer;
+    KFStatusPanelController *_panel;
 }
 
 - (instancetype)initWithContext:(KFAppContext *)context {
@@ -76,7 +78,12 @@ static const NSTimeInterval kLiveRefresh = 0.5;
         _item = [NSStatusBar.systemStatusBar statusItemWithLength:NSSquareStatusItemLength];
         _item.button.toolTip = @"Keyfeel";
         [self buildMenu];
-        _item.menu = _menu;
+        _panel = [[KFStatusPanelController alloc] initWithContext:context];
+        // Left click: the panel. Right click or Control-click: the classic menu, with every
+        // command (spec: Menu), for people who prefer a menu.
+        _item.button.target = self;
+        _item.button.action = @selector(statusItemClicked:);
+        [_item.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(stateChanged:)
                                                    name:KFPowerStateDidChangeNotification
@@ -332,6 +339,27 @@ static NSMenuItem *Info(NSString *title) {
 - (void)packsChanged:(NSNotification *)note {
     (void)note;
     [self rebuildPacks];
+}
+
+#pragma mark - Status item
+
+- (void)statusItemClicked:(NSStatusBarButton *)sender {
+    NSEvent *event = NSApp.currentEvent;
+    const BOOL menu = event.type == NSEventTypeRightMouseUp ||
+                      (event.modifierFlags & NSEventModifierFlagControl) != 0;
+    if (menu) {
+        [_panel close];
+        _item.menu =
+            _menu; // Shown at once by this click, then detached so left clicks open the panel.
+        [sender performClick:nil];
+        _item.menu = nil;
+    } else {
+        [_panel toggleBelowButton:sender];
+    }
+}
+
+- (BOOL)renderPanelPreviewToDirectory:(NSURL *)directory {
+    return [_panel renderPreviewToDirectory:directory];
 }
 
 #pragma mark - NSMenuDelegate

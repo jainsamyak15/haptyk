@@ -53,6 +53,17 @@ changes on every build, so grant it again after rebuilding (System Settings > Pr
 - [ ] 1,000 keys a minute bursts and a held key: no dropped or late sounds; repeats only with
       "Play sounds for repeating keys".
 
+## Status panel (ADR-0023)
+
+- [ ] A left click on the icon opens the panel under it; Escape, a click on the icon again or any
+      click elsewhere closes it; typing in another app keeps going while it is open.
+- [ ] A right click or Control-click opens the classic menu with every command.
+- [ ] Tab moves through the switch, slider, chips, pack list and links; arrow keys in the list
+      change the pack (each plays a sample); ⌘Q quits and ⌘, opens Settings.
+- [ ] VoiceOver reads every control with a name and value, and the Feel card as a summary.
+- [ ] Light and dark appearance, and Increase Contrast, all look right; no purple or pink.
+- [ ] Activity Monitor shows no extra CPU while the panel is closed.
+
 ## Packs (M4)
 
 - [ ] Each of the 25 bundled packs, previewed in Settings > Packs and typed with for a minute:
