@@ -9,8 +9,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+import soundfile as sf
+
 import build_pack
 import build_packs as bps
+
+RATE = 48000
+COMMIT = "0" * 40
 
 REPORT = {"events": 120, "seconds": 30.5, "presses_kept": 20, "settings_ms": {"merge": 45.0, "max_hold": 200.0, "quiet": 60.0},
           "tiered_by": "single tier (derive the rest)", "tiers": {"medium": 10},
@@ -77,6 +83,112 @@ class BuildPacksTests(unittest.TestCase):
             self.assertIn("Attribution 4.0 International", text)
 
 
+def tone(ms: float, freq: float = 2000.0) -> np.ndarray:
+    t = np.arange(int(RATE * ms / 1000)) / RATE
+    return 0.5 * np.sin(2 * np.pi * freq * t) * np.exp(-t / 0.02)
+
+
+def repo_pack(kind: str) -> dict:
+    return {
+        "id": "test-repo", "name": "Test Repo", "switch_type": "linear", "kind": kind,
+        "recording": "Test switches",
+        "source": {"site": "Mechvibes", "project_url": "https://github.com/hainguyents13/mechvibes",
+                   "repo": "hainguyents13/mechvibes", "commit": COMMIT, "path": "src/audio/x",
+                   "url": "https://github.com/hainguyents13/mechvibes/tree/x", "title": "x",
+                   "author": "Hai Nguyen and Mechvibes contributors", "recordist": "Not credited",
+                   "licence": "MIT", "licence_file": "MIT-mechvibes.txt",
+                   "copyright": "Copyright (c) 2021 Hai Nguyen",
+                   "licence_url": "https://github.com/hainguyents13/mechvibes/blob/x/LICENSE",
+                   "downloaded": "2026-10-23",
+                   "files": sorted(f for files in bps.KBSIM_FILES.values() for f in files)},
+    }
+
+
+class RepositoryPackTests(unittest.TestCase):
+    def test_key_groups(self) -> None:
+        self.assertEqual(bps.mechvibes_group(57), "space")
+        self.assertEqual(bps.mechvibes_group(28), "enter")
+        self.assertEqual(bps.mechvibes_group(14), "backspace")
+        self.assertEqual(bps.mechvibes_group(15), "tab")
+        for code in (29, 42, 54, 56, 3675):
+            self.assertEqual(bps.mechvibes_group(code), "modifier")
+        for code in (2, 16, 30, 44, 53, 57416):
+            self.assertEqual(bps.mechvibes_group(code), "alpha")
+        for code in (1, 59, 88, 99999):  # Escape and F-keys: no group.
+            self.assertIsNone(bps.mechvibes_group(code))
+
+    def test_spread_keeps_ends_and_count(self) -> None:
+        self.assertEqual(bps.spread([1, 2, 3], 10), [1, 2, 3])
+        picked = bps.spread(list(range(100)), 10)
+        self.assertEqual(len(picked), 10)
+        self.assertEqual((picked[0], picked[-1]), (0, 99))
+
+    def test_downloads_are_pinned_and_allow_listed(self) -> None:
+        self.assertTrue(bps.allowed(f"https://raw.githubusercontent.com/tplai/kbsim/{COMMIT}/a/b.mp3"))
+        self.assertTrue(bps.allowed("https://cdn.freesound.org/previews/1/1_2-hq.ogg"))
+        self.assertFalse(bps.allowed("https://raw.githubusercontent.com/tplai/kbsim/master/a.mp3"))
+        self.assertFalse(bps.allowed(f"https://raw.githubusercontent.com/evil/repo/{COMMIT}/a.mp3"))
+        self.assertFalse(bps.allowed("https://example.com/a.ogg"))
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaises(SystemExit):
+            bps.fetch_repo(repo_pack("kbsim")["source"], Path(tmp), ["../escape.mp3"], False)
+        pack = repo_pack("kbsim")
+        pack["source"]["commit"] = "main"
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaises(SystemExit):
+            bps.build_repo(pack, Path(tmp), False)
+
+    def test_mechvibes_sprite_and_multi(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            raw = Path(tmp)
+            sprite = np.concatenate([tone(100, f) for f in (1000, 2000, 3000, 4000)])
+            sf.write(str(raw / "sound.ogg"), sprite, RATE)
+            config = {"key_define_type": "single", "sound": "sound.ogg",
+                      "defines": {"30": [0, 100], "31": [100, 100], "32": [0, 100],  # Duplicate.
+                                  "57": [200, 100], "59": [300, 100], "x": [0, 1]}}
+            (raw / "config.json").write_text(json.dumps(config), encoding="utf-8")
+            takes, kind, rate = bps.mechvibes_takes({}, raw, False)
+            self.assertEqual(rate, RATE)
+            self.assertEqual(len(takes[("alpha", "down")]), 2)  # The duplicate is used once.
+            self.assertEqual(len(takes[("space", "down")]), 1)
+            self.assertNotIn(("modifier", "down"), takes)  # F1 has no group.
+            self.assertIn("3 distinct key sounds", kind)
+            for name in ("q.wav", "space.wav"):
+                sf.write(str(raw / name), tone(80), RATE)
+            config = {"key_define_type": "multi", "sound": "x",
+                      "defines": {"16": "q.wav", "17": "q.wav", "57": "space.wav"}}
+            (raw / "config.json").write_text(json.dumps(config), encoding="utf-8")
+            takes, kind, _ = bps.mechvibes_takes({}, raw, False)
+            self.assertEqual(len(takes[("alpha", "down")]), 1)
+            self.assertEqual(kind, "2 per-key files")
+
+    def test_kbsim_layout_and_sources(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp)
+            raw = src / "raw"
+            for files in bps.KBSIM_FILES.values():
+                for name in files:
+                    (raw / name).parent.mkdir(parents=True, exist_ok=True)
+                    sf.write(str(raw / name), tone(60), RATE, format="MP3")
+            pack = repo_pack("kbsim")
+            takes, kind, rate = bps.kbsim_takes(pack["source"], raw, False)
+            self.assertEqual(len(takes[("alpha", "down")]), 5)
+            self.assertEqual(len(takes[("space", "up")]), 1)
+            counts = bps.write_takes(takes, src, rate)
+            self.assertEqual(counts["alpha down"], 5)
+            self.assertEqual(len(list((src / "alpha" / "medium").glob("*.wav"))), 5)
+            self.assertEqual(len(list((src / "enter" / "up").glob("*.wav"))), 1)
+            text = bps.repo_sources_md(pack, kind, counts)
+            (src / "SOURCES.md").write_text(text, encoding="utf-8")
+            sources = build_pack.read_sources(src)
+            self.assertTrue(sources.licence.startswith("MIT") and sources.commercial)
+            self.assertIn("Copyright (c) 2021 Hai Nguyen", sources.attribution)
+            self.assertIn("Permission is hereby granted", text)
+            # build_pack reads the takes and never the downloads in raw/.
+            sf.write(str(raw / "alpha_down_slam_9.wav"), tone(60), RATE)
+            collected = build_pack.collect(src, RATE, 10)
+            self.assertFalse(any(t.source == "alpha_down_slam_9.wav" for t in collected))
+            self.assertEqual(sum(1 for t in collected if t.group == "alpha" and t.direction == "down"), 5)
+
+
 class ManifestTests(unittest.TestCase):
     """The committed Packs/packs.json and the packs built from it."""
 
@@ -87,18 +199,28 @@ class ManifestTests(unittest.TestCase):
         ids = set()
         for p in self.manifest["packs"]:
             s = p["source"]
-            self.assertIn(s["licence"], bps.LICENCES, p["id"])
             self.assertNotRegex(s["licence"], r"\bNC\b")
             self.assertTrue(re.fullmatch(r"[a-z0-9-]+", p["id"]), p["id"])
             self.assertNotIn(p["id"], ids)
             ids.add(p["id"])
             self.assertIn(p["switch_type"], build_pack.SWITCH_TYPES)
-            self.assertIn(f"/sounds/{s['sound_id']}/", s["url"])
-            self.assertTrue(s["preview"].startswith(f"https://cdn.freesound.org/previews/"
-                                                    f"{s['sound_id'] // 1000}/{s['sound_id']}_"))
             self.assertTrue(1 <= len(p["name"]) <= 64)
-            e = p["extract"]
-            self.assertTrue(45 <= e["merge_ms"] <= 75 and e["max_hold_ms"] <= 400 and e["quiet_ms"] >= 60)
+            if p.get("kind", "freesound") == "freesound":
+                self.assertIn(s["licence"], bps.LICENCES, p["id"])
+                self.assertIn(f"/sounds/{s['sound_id']}/", s["url"])
+                self.assertTrue(s["preview"].startswith(f"https://cdn.freesound.org/previews/"
+                                                        f"{s['sound_id'] // 1000}/{s['sound_id']}_"))
+                e = p["extract"]
+                self.assertTrue(45 <= e["merge_ms"] <= 75 and e["max_hold_ms"] <= 400
+                                and e["quiet_ms"] >= 60)
+            else:
+                self.assertIn(p["kind"], ("mechvibes", "kbsim"))
+                self.assertEqual(s["licence"], "MIT")
+                self.assertIn(s["repo"], bps.REPOSITORIES)
+                self.assertTrue(bps.COMMIT.fullmatch(s["commit"]), p["id"])
+                self.assertIn(s["commit"], s["url"])
+                licence = (bps.REPO / "Packs" / "licenses" / s["licence_file"]).read_text(encoding="utf-8")
+                self.assertIn(s["copyright"], licence)
 
     def test_built_packs_match_the_manifest(self) -> None:
         packs_dir = bps.REPO / "App" / "Resources" / "Packs"
@@ -107,14 +229,17 @@ class ManifestTests(unittest.TestCase):
             self.assertTrue(folder.is_dir(), f"{folder.name}: run Tools/py/build_packs.py")
             built = json.loads((folder / "pack.json").read_text(encoding="utf-8"))
             self.assertEqual(built["id"], f"com.keyfeel.{p['id']}")
-            self.assertEqual(built["license"], p["source"]["licence"])
+            self.assertTrue(built["license"].startswith(p["source"]["licence"]))
             self.assertEqual(built["source_url"], p["source"]["url"])
             sources = (folder / "SOURCES.md").read_text(encoding="utf-8")
             self.assertIn("| Commercial use in an app allowed | Yes |", sources)
-            if p["source"]["licence"].startswith("CC BY"):
-                self.assertIn(p["source"]["author"], built["attribution"])
-            else:
+            if p["source"]["licence"].startswith("CC0"):
                 self.assertEqual(built["attribution"], "")
+            elif p["source"]["licence"] == "MIT":
+                self.assertIn(p["source"]["copyright"], built["attribution"])
+                self.assertIn("Permission is hereby granted", sources)
+            else:
+                self.assertIn(p["source"]["author"], built["attribution"])
 
 
 if __name__ == "__main__":

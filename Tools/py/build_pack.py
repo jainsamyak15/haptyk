@@ -215,7 +215,8 @@ def derive(source: list[Take], tier: str, rate: int) -> list[Take]:
 
 def collect(src: Path, rate: int, max_takes: int) -> list[Take]:
     takes: list[Take] = []
-    files = sorted(p for p in src.rglob("*") if p.suffix.lower() in AUDIO_SUFFIXES and p.is_file())
+    files = sorted(p for p in src.rglob("*") if p.suffix.lower() in AUDIO_SUFFIXES and p.is_file()
+                   and "raw" not in p.relative_to(src).parts)  # raw/ holds downloads, never takes.
     if not files:
         raise BuildError(f"{src}: no recordings (.wav, .aif, .flac, .caf)")
     for path in files:
