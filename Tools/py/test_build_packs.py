@@ -117,6 +117,16 @@ class RepositoryPackTests(unittest.TestCase):
         for code in (1, 59, 88, 99999):  # Escape and F-keys: no group.
             self.assertIsNone(bps.mechvibes_group(code))
 
+    def test_clipping_detection(self) -> None:
+        clean = tone(50)
+        self.assertFalse(bps.clipped(clean))
+        over = clean.copy()
+        over[100] = 1.0  # One over: decoder noise, kept.
+        self.assertFalse(bps.clipped(over))
+        hard = clean.copy()
+        hard[200:204] = -1.0
+        self.assertTrue(bps.clipped(hard))
+
     def test_spread_keeps_ends_and_count(self) -> None:
         self.assertEqual(bps.spread([1, 2, 3], 10), [1, 2, 3])
         picked = bps.spread(list(range(100)), 10)
@@ -139,18 +149,20 @@ class RepositoryPackTests(unittest.TestCase):
     def test_mechvibes_sprite_and_multi(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             raw = Path(tmp)
-            sprite = np.concatenate([tone(100, f) for f in (1000, 2000, 3000, 4000)])
-            sf.write(str(raw / "sound.ogg"), sprite, RATE)
-            config = {"key_define_type": "single", "sound": "sound.ogg",
+            sprite = np.concatenate([tone(100, f) for f in (1000, 2000, 3000, 4000, 5000)])
+            sprite[int(0.42 * RATE):int(0.42 * RATE) + 8] = 1.0  # Key 60's sound clips.
+            sf.write(str(raw / "sound.wav"), sprite, RATE, subtype="FLOAT")
+            config = {"key_define_type": "single", "sound": "sound.wav",
                       "defines": {"30": [0, 100], "31": [100, 100], "32": [0, 100],  # Duplicate.
-                                  "57": [200, 100], "59": [300, 100], "x": [0, 1]}}
+                                  "57": [200, 100], "59": [300, 100], "33": [400, 100],
+                                  "x": [0, 1]}}
             (raw / "config.json").write_text(json.dumps(config), encoding="utf-8")
             takes, kind, rate = bps.mechvibes_takes({}, raw, False)
             self.assertEqual(rate, RATE)
-            self.assertEqual(len(takes[("alpha", "down")]), 2)  # The duplicate is used once.
+            self.assertEqual(len(takes[("alpha", "down")]), 2)  # Duplicate once; clipped key out.
             self.assertEqual(len(takes[("space", "down")]), 1)
             self.assertNotIn(("modifier", "down"), takes)  # F1 has no group.
-            self.assertIn("3 distinct key sounds", kind)
+            self.assertIn("4 distinct key sounds", kind)
             for name in ("q.wav", "space.wav"):
                 sf.write(str(raw / name), tone(80), RATE)
             config = {"key_define_type": "multi", "sound": "x",
