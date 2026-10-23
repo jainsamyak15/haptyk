@@ -48,3 +48,6 @@ sparkle_private_key*
 # Local scratch
 /.tmp/
 .DS_Store
+
+# Archives dropped at the top of the repository (downloads, packs handed over) are never committed.
+/*.zip
