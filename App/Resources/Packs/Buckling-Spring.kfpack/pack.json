@@ -3,11 +3,11 @@
   "id": "com.keyfeel.buckling-spring",
   "name": "Buckling Spring",
   "switch_type": "buckling",
-  "author": "SamsterBirdies (Freesound)",
-  "license": "CC0 1.0 Universal",
+  "author": "fastson (Freesound)",
+  "license": "CC BY 3.0",
   "version": "1.0.0",
-  "source_url": "https://freesound.org/people/SamsterBirdies/sounds/489423/",
-  "attribution": "",
+  "source_url": "https://freesound.org/people/fastson/sounds/99696/",
+  "attribution": "Buckling Spring: \u201cbuckling-spring.WAV\u201d by fastson (https://freesound.org/people/fastson/sounds/99696/), CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/); cut into single keystrokes and level-normalised",
   "derived": [],
   "groups": {
     "alpha": {
@@ -17,9 +17,7 @@
           "samples/alpha_down_soft_2.caf",
           "samples/alpha_down_soft_3.caf",
           "samples/alpha_down_soft_4.caf",
-          "samples/alpha_down_soft_5.caf",
-          "samples/alpha_down_soft_6.caf",
-          "samples/alpha_down_soft_7.caf"
+          "samples/alpha_down_soft_5.caf"
         ],
         "medium": [
           "samples/alpha_down_medium_1.caf",
@@ -27,18 +25,14 @@
           "samples/alpha_down_medium_3.caf",
           "samples/alpha_down_medium_4.caf",
           "samples/alpha_down_medium_5.caf",
-          "samples/alpha_down_medium_6.caf",
-          "samples/alpha_down_medium_7.caf",
-          "samples/alpha_down_medium_8.caf"
+          "samples/alpha_down_medium_6.caf"
         ],
         "hard": [
           "samples/alpha_down_hard_1.caf",
           "samples/alpha_down_hard_2.caf",
           "samples/alpha_down_hard_3.caf",
           "samples/alpha_down_hard_4.caf",
-          "samples/alpha_down_hard_5.caf",
-          "samples/alpha_down_hard_6.caf",
-          "samples/alpha_down_hard_7.caf"
+          "samples/alpha_down_hard_5.caf"
         ],
         "slam": [
           "samples/alpha_down_slam_1.caf",
@@ -46,9 +40,7 @@
           "samples/alpha_down_slam_3.caf",
           "samples/alpha_down_slam_4.caf",
           "samples/alpha_down_slam_5.caf",
-          "samples/alpha_down_slam_6.caf",
-          "samples/alpha_down_slam_7.caf",
-          "samples/alpha_down_slam_8.caf"
+          "samples/alpha_down_slam_6.caf"
         ]
       },
       "up": [

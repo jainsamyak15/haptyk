@@ -291,5 +291,8 @@ decision; supersede it with a new one.
     single overs from Ogg decoding are kept.
   - Keep at most 4 takes for each non-alpha group (10 for alpha), since modifiers are pressed far
     less: the 23 packs fit in a 20.7 MB DMG (limit 30 MB).
+  - Where a switch has several licensed recordings, keep the cleanest, not the most permissive:
+    Buckling Spring moves to fastson's CC BY 3.0 PCM-M10 recording (43.5 dB keystroke SNR,
+    24 kHz) from a CC0 lavalier one (33.5 dB, 20.4 kHz), credited in About.
 - **Consequences:** The weakest packs remain the seven from kbsim (lossy MP3, 13.6-18 kHz). Their
   quality can only rise through permission from community authors or new recordings.

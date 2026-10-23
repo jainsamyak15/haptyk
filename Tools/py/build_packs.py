@@ -42,7 +42,8 @@ import extract_keystrokes
 
 REPO = Path(__file__).resolve().parents[2]
 MANIFEST = REPO / "Packs" / "packs.json"
-LICENCES = {"CC0 1.0 Universal": "CC0-1.0.txt", "CC BY 4.0": "CC-BY-4.0.txt"}
+LICENCES = {"CC0 1.0 Universal": "CC0-1.0.txt", "CC BY 4.0": "CC-BY-4.0.txt",
+            "CC BY 3.0": "CC-BY-3.0.txt"}
 ORIGINAL_SUFFIXES = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg"}
 KF_CLI = REPO / "build" / "debug" / "bin" / "kf-cli"
 REPOSITORIES = {"hainguyents13/mechvibes", "tplai/kbsim"}

@@ -94,7 +94,7 @@ codecs cut the top end; 20 kHz and up means no audible loss).
 | Topre PBT | topre | Mechvibes (Topre Purple Hybrid) | MIT | 21.8 kHz, 67 dB | as above |
 | NK Cream | linear | Mechvibes ("original by Ryan") | MIT | 22.1 kHz, 56 dB | as above |
 | EG Crystal Purple | tactile | Mechvibes | MIT | 12.5 kHz, 66 dB | as above |
-| Buckling Spring | buckling | Freesound, SamsterBirdies (Unicomp) | CC0 1.0 | 20.8 kHz | 30 alpha in 4 tiers; releases |
+| Buckling Spring | buckling | Freesound, fastson (Unicomp, Sony PCM-M10) | CC BY 3.0 (credited in About) | 24 kHz, keystrokes 43.5 dB above the noise | 22 alpha in 4 tiers; releases |
 | IBM Model F | buckling | Freesound, nakkivene66 (1981 Model F) | CC0 1.0 | 23 kHz | 7 alpha; releases |
 | Gateron Blue | clicky | Freesound, forfii (Anne Pro 2) | CC0 1.0 | 22.4 kHz | 40 alpha in 4 tiers; releases |
 | Alps SKCM Orange | tactile | Freesound, robni7 (Apple M0118) | CC0 1.0 | 18.9 kHz | 10 alpha; releases |
@@ -115,7 +115,11 @@ no better free recording of the kbsim switches exists: the community "Full Trave
 kbsim copies, Tealios V2 by Akira measures lower (13.8 kHz, 38 dB), Glorious Panda has a single
 sample, and Model F XT clips. Two community packs measure high but carry no licence, so they are
 not bundled: **Razer Green by Akira** (21.7 kHz, 72 dB) and **Kailh Box White** (18.5 kHz,
-72 dB). Ask their authors for written permission to add them. GPL and AGPL projects (KeyTone,
+72 dB). Ask their authors for written permission to add them. Where one switch had several
+licensed recordings, the cleanest was kept: Buckling Spring uses fastson's PCM-M10 recording
+(43.5 dB keystroke SNR, 24 kHz) over a lavalier recording (33.5 dB, 20.4 kHz); IBM Model F uses
+nakkivene66's (50.5 dB) over Fractal_'s (30.9 dB). keesound's WAVs are conversions of the same
+kbsim and Mechvibes MP3s, so they add nothing. GPL and AGPL projects (KeyTone,
 Neptune) are not used, since their terms would reach a closed-source app.
 
 Free upgrades left:

@@ -104,23 +104,23 @@
       "id": "buckling-spring",
       "name": "Buckling Spring",
       "switch_type": "buckling",
-      "recording": "Unicomp buckling spring keyboard, BOYA BY-M1 microphone",
+      "recording": "Unicomp buckling spring keyboard, recorded with a Sony PCM-M10 and SP-TFB-2 microphones",
       "source": {
         "site": "Freesound",
-        "sound_id": 489423,
-        "url": "https://freesound.org/people/SamsterBirdies/sounds/489423/",
-        "title": "Typing on a keyboard",
-        "author": "SamsterBirdies",
-        "licence": "CC0 1.0 Universal",
-        "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-        "preview": "https://cdn.freesound.org/previews/489/489423_5487341-hq.ogg",
-        "original": "Flac (.flac), 44.1 kHz, 24 bit, Stereo, 2:16.463",
+        "sound_id": 99696,
+        "url": "https://freesound.org/people/fastson/sounds/99696/",
+        "title": "buckling-spring.WAV",
+        "author": "fastson",
+        "licence": "CC BY 3.0",
+        "licence_url": "https://creativecommons.org/licenses/by/3.0/",
+        "preview": "https://cdn.freesound.org/previews/99/99696_586391-hq.ogg",
+        "original": "Wave (.wav), 48 kHz, 24 bit, Stereo, 0:18.341",
         "downloaded": "2026-10-23"
       },
       "extract": {
         "merge_ms": 45,
         "max_hold_ms": 200,
-        "quiet_ms": 80
+        "quiet_ms": 60
       }
     },
     {

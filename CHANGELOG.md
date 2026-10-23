@@ -63,8 +63,9 @@ All notable changes are recorded here. The format follows
 - Twenty-three bundled sound packs: fifteen of the spec's sixteen (all but Biscuit), Cherry MX
   Black, Blue, Brown and Red with ABS keycaps, and Alps SKCM Orange, Gateron Baby Kangaroo,
   Gateron Blue and IBM Model F. Eleven come from Mechvibes and seven from kbsim under their MIT
-  licences, credited in About (ADR-0020); five from CC0 Freesound recordings (ADR-0019). A
-  quality survey of every free source chose them (ADR-0021); clipped samples are left out. `Tools/py/extract_keystrokes.py` cuts clean presses and
+  licences, credited in About (ADR-0020); five from Freesound recordings, four CC0 and one CC BY
+  3.0 (ADR-0019). A quality survey of every free source chose them, keeping the cleanest
+  recording of each switch (ADR-0021); clipped samples are left out. `Tools/py/extract_keystrokes.py` cuts clean presses and
   releases out of typing recordings; `Tools/py/build_packs.py` (`make packs`) rebuilds every
   pack from `Packs/packs.json`, with repository files pinned to a commit, and writes each
   `SOURCES.md` with its licence text.
