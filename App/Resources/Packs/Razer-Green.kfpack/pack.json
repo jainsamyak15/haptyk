@@ -68,16 +68,20 @@
     "space": {
       "down": {
         "soft": [
-          "samples/space_down_soft_1.caf"
+          "samples/space_down_soft_1.caf",
+          "samples/space_down_soft_2.caf"
         ],
         "medium": [
-          "samples/space_down_medium_1.caf"
+          "samples/space_down_medium_1.caf",
+          "samples/space_down_medium_2.caf"
         ],
         "hard": [
-          "samples/space_down_hard_1.caf"
+          "samples/space_down_hard_1.caf",
+          "samples/space_down_hard_2.caf"
         ],
         "slam": [
-          "samples/space_down_slam_1.caf"
+          "samples/space_down_slam_1.caf",
+          "samples/space_down_slam_2.caf"
         ]
       }
     },

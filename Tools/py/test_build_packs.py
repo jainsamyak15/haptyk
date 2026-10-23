@@ -256,9 +256,15 @@ class CommunityPackTests(unittest.TestCase):
             pack = self.community_pack(archive)
             pack["source"].update({"licence": bps.GPL3, "licence_file": "GPL-3.0.txt",
                                    "permission": "Used under the GPL v3."})
+            pack["extra_files"] = {"space": ["Full recording.wav"]}  # A file the config omits.
             result = bps.build_community(pack, src, False)
+            self.assertEqual(result["takes"], {"alpha down": 1, "space down": 1})
             self.assertEqual(sorted(p.name for p in result["originals"]),
-                             ["LICENSE.txt", "config.json", "k.wav"])
+                             ["Full recording.wav", "LICENSE.txt", "config.json", "k.wav"])
+            pack["extra_files"] = {"space": ["nope.wav"]}
+            with self.assertRaises(SystemExit):
+                bps.build_community(pack, src, False)
+            pack["extra_files"] = {"space": ["Full recording.wav"]}
             text = (src / "SOURCES.md").read_text(encoding="utf-8")
             self.assertIn("## Corresponding source", text)
             self.assertIn("GNU GENERAL PUBLIC LICENSE", text.split("## Licence text", 1)[1])

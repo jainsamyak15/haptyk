@@ -603,8 +603,16 @@
         "author": "Akira",
         "licence": "GNU GPL v3",
         "licence_file": "GPL-3.0.txt",
-        "permission": "The pack's zip ships the GNU GPL v3, under which it is used here. The owner also asked Akira and reports, on 2026-10-23, that the author said the pack is open for anyone to use; keep that reply in Packs/sources/razer-green/permission/.",
+        "permission": "The pack's zip ships the GNU GPL v3, under which it is used here. The owner also asked Akira and reports, on 2026-10-23, that the author said the pack is open for anyone to use; keep that reply in Packs/sources/razer-green/permission/. The owner later supplied a copy of the zip; it is byte-identical to this one (same SHA-256).",
         "downloaded": "2026-10-23"
+      },
+      "extra_files": {
+        "space": [
+          "space2.wav"
+        ],
+        "modifier": [
+          "caps.wav"
+        ]
       }
     },
     {
