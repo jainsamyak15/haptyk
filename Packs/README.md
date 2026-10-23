@@ -131,6 +131,15 @@ Free upgrades left:
 - **Your own recordings**: any mechanical keyboard and a phone in a quiet room, recorded to the
   spec below, beat every kbsim pack, and you own them outright.
 
+## Reviewing packs by ear (`make review`)
+
+`Tools/py/build_review.py` builds the git-ignored `Packs/review/` folder: every bundled pack, every
+licensed alternative and every unlicensed community pack considered
+(`Packs/review-candidates.json`), each with a `demo.wav` rendered the way the engine plays it
+(`Tools/py/render_demo.py`: a typed sentence, then one key at each force), the files as published
+and a `SOURCE.txt`. `REVIEW.md` there is the sheet for verdicts. Community packs without a
+licence are for listening only: they go into Keyfeel only with the author's written permission.
+
 ## From a typing recording (`build_packs.py`)
 
 Free libraries mostly hold continuous typing, not take-by-take sessions.

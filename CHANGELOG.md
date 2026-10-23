@@ -70,6 +70,11 @@ All notable changes are recorded here. The format follows
   pack from `Packs/packs.json`, with repository files pinned to a commit, and writes each
   `SOURCES.md` with its licence text.
 
+- `make review` (`Tools/py/build_review.py`): a git-ignored `Packs/review/` folder with every
+  bundled pack, every licensed alternative and every unlicensed community pack considered, each
+  with a demo rendered as the engine plays it (`Tools/py/render_demo.py`), its files and its
+  source, plus a review sheet for the owner's verdicts.
+
 ### Fixed
 - The diagnostics object no longer ends its MetricKit subscription from `dealloc`, where
   MetricKit's asynchronous removal could touch the freed object (an intermittent crash at the

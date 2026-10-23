@@ -1,0 +1,558 @@
+{
+  "comment": "Packs considered for Keyfeel but not bundled, for the owner's listening review (Tools/py/build_review.py). Licensed ones could be added; unlicensed ones need the author's written permission first. Links, authors and licences only: no audio is committed.",
+  "contact": {
+    "mechvibes_discord": "https://discord.gg/MMVrhWxa4w",
+    "mechvibes_github": "https://github.com/hainguyents13/mechvibes"
+  },
+  "licensed": [
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Black (Leopold FC980M PD)",
+      "sound_id": 628325,
+      "url": "https://freesound.org/people/ujonathan/sounds/628325/",
+      "title": "leopold fc980m pd cherry mx black.flac",
+      "author": "ujonathan",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/628/628325_13894315-hq.ogg",
+      "original": "Flac (.flac), 44.1 kHz, 16 bit, 0:35.354"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Blue (BOYA lavalier)",
+      "sound_id": 489424,
+      "url": "https://freesound.org/people/SamsterBirdies/sounds/489424/",
+      "title": "Typing on a keyboard",
+      "author": "SamsterBirdies",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/489/489424_5487341-hq.ogg",
+      "original": "Flac (.flac), 44.1 kHz, 24 bit, 1:34.992"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Blue (Pok3r, Zoom recorder)",
+      "sound_id": 400699,
+      "url": "https://freesound.org/people/jameslovescode/sounds/400699/",
+      "title": "Typing (Cherry MX Blue Switches)",
+      "author": "jameslovescode",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/400/400699_6081465-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:15.076"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Blue (HyperX FPS, phone)",
+      "sound_id": 638035,
+      "url": "https://freesound.org/people/simeonradivoev/sounds/638035/",
+      "title": "Mechanical Keyboard Typing Cherry Blue Switches",
+      "author": "simeonradivoev",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/638/638035_2278166-hq.ogg",
+      "original": "Wave (.wav), 48 kHz, 16 bit, 0:37.397"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Brown (majod)",
+      "sound_id": 400167,
+      "url": "https://freesound.org/people/majod/sounds/400167/",
+      "title": "Mechanical Keyboard Cherry MX Brown",
+      "author": "majod",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/400/400167_7690632-hq.ogg",
+      "original": "Flac (.flac), 48 kHz, 16 bit, 1:03.761"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Brown (AT2035 condenser)",
+      "sound_id": 618064,
+      "url": "https://freesound.org/people/Seth_Makes_Sounds/sounds/618064/",
+      "title": "Typing On Keyboard (cherry mx browns)",
+      "author": "Seth_Makes_Sounds",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/618/618064_13228046-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 24 bit, 1:10.345"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Brown (Kinesis Advantage, Rode Procaster)",
+      "sound_id": 249889,
+      "url": "https://freesound.org/people/DarcyConroy/sounds/249889/",
+      "title": "Kinesis Cherry MX Brown Typing.wav",
+      "author": "DarcyConroy",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/249/249889_4581956-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:34.757"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Brown single press (Foxfire-)",
+      "sound_id": 570754,
+      "url": "https://freesound.org/people/Foxfire-/sounds/570754/",
+      "title": "Keyboard - Press down",
+      "author": "Foxfire-",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/570/570754_12873144-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:00.359"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Brown single release (Foxfire-)",
+      "sound_id": 570755,
+      "url": "https://freesound.org/people/Foxfire-/sounds/570755/",
+      "title": "Keyboard - Key release",
+      "author": "Foxfire-",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/570/570755_12873144-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:00.348"
+    },
+    {
+      "kind": "freesound",
+      "name": "Cherry MX Red (Corsair K95, 96 kHz)",
+      "sound_id": 499773,
+      "url": "https://freesound.org/people/handygaber/sounds/499773/",
+      "title": "Keyboard clicking typing Cherry Red Mechanical",
+      "author": "handygaber",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/499/499773_3236898-hq.ogg",
+      "original": "Wave (.wav), 96 kHz, 24 bit, 1:50.905"
+    },
+    {
+      "kind": "freesound",
+      "name": "Topre (HHKB, label unverified)",
+      "sound_id": 546165,
+      "url": "https://freesound.org/people/grcekh/sounds/546165/",
+      "title": "Keyboard Typing 8 (HHKB, Topre)",
+      "author": "grcekh",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/546/546165_12206738-hq.ogg",
+      "original": "Mp3 (.mp3), 44.1 kHz, 2:29.502"
+    },
+    {
+      "kind": "freesound",
+      "name": "Hako Violet (WhiteFox)",
+      "sound_id": 546167,
+      "url": "https://freesound.org/people/grcekh/sounds/546167/",
+      "title": "Keyboard Typing 10 (WhiteFox, Mechanical)",
+      "author": "grcekh",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/546/546167_12206738-hq.ogg",
+      "original": "Mp3 (.mp3), 44.1 kHz, 2:49.585"
+    },
+    {
+      "kind": "freesound",
+      "name": "Holy Panda (iPhone)",
+      "sound_id": 680830,
+      "url": "https://freesound.org/people/leakwok/sounds/680830/",
+      "title": "typing on my keyboard.m4a",
+      "author": "leakwok",
+      "licence": "CC BY 4.0",
+      "preview": "https://cdn.freesound.org/previews/680/680830_14834395-hq.ogg",
+      "original": "M4a (.m4a), 48 kHz, 1:33.525"
+    },
+    {
+      "kind": "freesound",
+      "name": "Buckling Spring (Unicomp, BOYA lavalier)",
+      "sound_id": 489423,
+      "url": "https://freesound.org/people/SamsterBirdies/sounds/489423/",
+      "title": "Typing on a keyboard",
+      "author": "SamsterBirdies",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/489/489423_5487341-hq.ogg",
+      "original": "Flac (.flac), 44.1 kHz, 24 bit, 2:16.463"
+    },
+    {
+      "kind": "freesound",
+      "name": "IBM Model F XT (Fractal_)",
+      "sound_id": 500430,
+      "url": "https://freesound.org/people/Fractal_/sounds/500430/",
+      "title": "IBM Model F keyboard typing",
+      "author": "Fractal_",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/500/500430_5800121-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:15.689"
+    },
+    {
+      "kind": "freesound",
+      "name": "Kailh Box Jade",
+      "sound_id": 643558,
+      "url": "https://freesound.org/people/el_boss/sounds/643558/",
+      "title": "Kailh Box Jade Switches Sound",
+      "author": "el_boss",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/643/643558_9129912-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:10.295"
+    },
+    {
+      "kind": "freesound",
+      "name": "Gateron Black",
+      "sound_id": 643559,
+      "url": "https://freesound.org/people/el_boss/sounds/643559/",
+      "title": "Gateron Black Switches Sound",
+      "author": "el_boss",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/643/643559_9129912-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:10.801"
+    },
+    {
+      "kind": "freesound",
+      "name": "Alps SKCM Cream, dampened (Omnikey 101)",
+      "sound_id": 685984,
+      "url": "https://freesound.org/people/zrrion/sounds/685984/",
+      "title": "Keyboard typing sounds: modded Omnikey 101",
+      "author": "zrrion",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/685/685984_2686637-hq.ogg",
+      "original": "Mp3 (.mp3), 44.1 kHz, 0:09.504"
+    },
+    {
+      "kind": "freesound",
+      "name": "Gateron Yellow (Technics board, modded)",
+      "sound_id": 665075,
+      "url": "https://freesound.org/people/zrrion/sounds/665075/",
+      "title": "Keyboard typing sounds: Unidentified Technics keyboard",
+      "author": "zrrion",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/665/665075_2686637-hq.ogg",
+      "original": "Ogg Vorbis (.ogg), 44.1 kHz, 0:51.153"
+    },
+    {
+      "kind": "freesound",
+      "name": "Yellow switches (brand not stated)",
+      "sound_id": 744993,
+      "url": "https://freesound.org/people/aalorv/sounds/744993/",
+      "title": "keyboard-typing-yellow-switches",
+      "author": "aalorv",
+      "licence": "CC BY 4.0",
+      "preview": "https://cdn.freesound.org/previews/744/744993_15865291-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:27.516"
+    },
+    {
+      "kind": "freesound",
+      "name": "Blue switches (Genesis Thor 300)",
+      "sound_id": 583926,
+      "url": "https://freesound.org/people/piotrkier/sounds/583926/",
+      "title": "Mechanical Keyboard sound blue switches",
+      "author": "piotrkier",
+      "licence": "CC0 1.0 Universal",
+      "preview": "https://cdn.freesound.org/previews/583/583926_8457339-hq.ogg",
+      "original": "Wave (.wav), 44.1 kHz, 16 bit, 0:35.294"
+    },
+    {
+      "kind": "mechvibes",
+      "name": "EG Oreo",
+      "url": "https://github.com/hainguyents13/mechvibes/tree/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/src/audio/eg-oreo",
+      "repo": "hainguyents13/mechvibes",
+      "commit": "326252a13e7bef4f1c35d08ef0189b5af6f8ba02",
+      "path": "src/audio/eg-oreo",
+      "author": "Hai Nguyen and Mechvibes contributors",
+      "licence": "MIT"
+    },
+    {
+      "kind": "zip",
+      "name": "Office keyboard (Unicae Games)",
+      "url": "https://opengameart.org/content/keyboard-soundpack-1-typing-and-single-keystrokes",
+      "zip": "https://opengameart.org/sites/default/files/unicae_games_keyboard_soundpack_1_0.zip",
+      "author": "Unicae Games (OpenGameArt)",
+      "licence": "CC0 1.0 Universal"
+    }
+  ],
+  "unlicensed": [
+    {
+      "kind": "mechvibes-community",
+      "name": "Model_F_XT",
+      "author": "Rezenee",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000016/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000016/dist/Model+F+XT.zip",
+      "tags": [
+        "keyboard",
+        "retro"
+      ],
+      "description": "I like ti ."
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "HyperX Aqua",
+      "author": "TheRealOXY",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000019/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000019/dist/HyperX+Alloy+Origins+Aqua+Switches.zip",
+      "tags": [
+        "keyboard",
+        "tactile"
+      ],
+      "description": "Enjoy sounds of HyperX Alloy Origins Aqua Switches :D"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Glroious panda",
+      "author": "prpetar17",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000021/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000021/dist/Glorious+panda.zip",
+      "tags": [
+        "keyboard",
+        "tactile"
+      ],
+      "description": "this sounds like holy pandas"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Banana Split Lubed by Akira",
+      "author": "Akira",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000030/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000030/dist/banana+split+lubed.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "Banana split switches both lubes and switch."
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Banana Split Stock by Akira",
+      "author": "Akira",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000031/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000031/dist/banana+split+stock.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "Banana split switches both lubes and switch."
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "unicompclassic",
+      "author": "Thànhh the Xignature",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000033/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000033/dist/unicompclassic.zip",
+      "tags": [
+        "keyboard"
+      ],
+      "description": ""
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Creams",
+      "author": "Aksh Aggarwal",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000038/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000038/dist/Creams.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "How the creams sound like"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "The hit",
+      "author": "Flickson J",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000043/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000043/dist/Flickson_J_HIT.zip",
+      "tags": [
+        "keyboard",
+        "typewriter"
+      ],
+      "description": "It is a different sound pack which will give a typerwrite sound effect. I really wanted a software like Mechvibe. It's easy to configure and learn. I created this sound pack the first day of the softw"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Gateron Blacks - Revolt",
+      "author": "Revolt",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000044/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000044/dist/Gateron+Black+Ink+-+Revolt.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "Gateron Black Inks"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Gateron Browns - Revolt",
+      "author": "Revolt",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000045/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000045/dist/Gateron+Browns+-+Revolt.zip",
+      "tags": [
+        "keyboard",
+        "tactile"
+      ],
+      "description": "Gateron Browns"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Gateron Red - Revolt",
+      "author": "Revolt",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000046/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000046/dist/Gateron+Reds+-+Revolt.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "Gateron Reds"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "boxjade",
+      "author": "Thànhh the Xignature",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000052/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000052/dist/boxjade.zip",
+      "tags": [
+        "keyboard",
+        "tactile"
+      ],
+      "description": ""
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Kalih Box White",
+      "author": "edy.",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000053/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000053/dist/kalih-box-white.zip",
+      "tags": [
+        "keyboard",
+        "clicky"
+      ],
+      "description": "Kailh Box White switches with individual sounds per keypress and no background noises."
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Cherry MX Speed Silver by Akira",
+      "author": "Akira",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000058/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000058/dist/mx-speed-silver.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "MX Speed Silver Switches"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Regina",
+      "author": "iheart_wheein",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000062/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000062/dist/Olympia+Regina+De+Luxe.zip",
+      "tags": [
+        "keyboard",
+        "typewriter"
+      ],
+      "description": "Old typewriter sounds"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "opera-gx",
+      "author": "kusugu",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000066/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000066/dist/Opera+GX+SFX.zip",
+      "tags": [
+        "keyboard"
+      ],
+      "description": "Opera-GX typing SFX"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Razor Green by Akira (Blackwidow Elite)",
+      "author": "Akira",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000076/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000076/dist/Razer+Green+%28Blackwidow+Elite%29+-+Akira.zip",
+      "tags": [
+        "keyboard",
+        "clicky"
+      ],
+      "description": "Razer Green Switches from the BlackWidow Elite keyboard"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Razer Huntman TE - Revolt",
+      "author": "Revolt",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000077/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000077/dist/Razer+Huntman+TE+-+Revolt.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "Razer Huntman TE"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Typewriter 1.0 Beta",
+      "author": "thonkadonk",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000080/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000080/dist/Typewriter+1.0+Beta.zip",
+      "tags": [
+        "keyboard",
+        "typewriter"
+      ],
+      "description": "I did a custom typewriter sound pack back then because there wasn't any typewriter sounds. I do hope this is good enough."
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Steelseries Apex Pro V2 by Akira",
+      "author": "Akira",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000083/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000083/dist/apex-pro-tkl-v2_Akira.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "Steel Series Apex Pro. (V2)"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Apex Pro TKL by Akira",
+      "author": "Akira",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000084/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000084/dist/steelseries+apex+pro+tkl.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "Go for the V2 soundpack this kinda sucks"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Untitled",
+      "author": "kosttak",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000085/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000085/dist/apex+pro.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "steelseries apex pro tkl/the best sound"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Tealios V2 on PBT by Akira",
+      "author": "Akira",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000088/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000088/dist/tealios-v2_Akira.zip",
+      "tags": [
+        "keyboard",
+        "linear"
+      ],
+      "description": "Tealios V2 switches"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Teleprinter",
+      "author": "iheart_wheein",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000089/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000089/dist/Teleprinter.zip",
+      "tags": [
+        "keyboard",
+        "typewriter"
+      ],
+      "description": "Old teleprinter (the ones they use at the bank, I think.)"
+    },
+    {
+      "kind": "mechvibes-community",
+      "name": "Lincoln Typewriter",
+      "author": "AnneSophie",
+      "url": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000091/",
+      "zip": "https://mechvibes.com/sound-packs/custom-sound-pack-1203000000091/dist/Lincoln+Typewriter.zip",
+      "tags": [
+        "keyboard",
+        "typewriter"
+      ],
+      "description": "A mechanical typewriter from the early 20th century. Fabricated by TODDS of Lincoln."
+    }
+  ]
+}

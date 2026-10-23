@@ -32,6 +32,7 @@ Packs/sources/**/*.ogg
 Packs/sources/**/*.m4a
 Packs/sources/**/extract-report.json
 Packs/sources/*/raw/
+Packs/review/
 
 # Sensor logs from Milestone 0 (can be large). Small, curated fixtures go in Tests/Fixtures/.
 /logs/
