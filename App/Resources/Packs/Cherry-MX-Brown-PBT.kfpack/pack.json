@@ -135,45 +135,25 @@
           "samples/modifier_down_soft_1.caf",
           "samples/modifier_down_soft_2.caf",
           "samples/modifier_down_soft_3.caf",
-          "samples/modifier_down_soft_4.caf",
-          "samples/modifier_down_soft_5.caf",
-          "samples/modifier_down_soft_6.caf",
-          "samples/modifier_down_soft_7.caf",
-          "samples/modifier_down_soft_8.caf",
-          "samples/modifier_down_soft_9.caf"
+          "samples/modifier_down_soft_4.caf"
         ],
         "medium": [
           "samples/modifier_down_medium_1.caf",
           "samples/modifier_down_medium_2.caf",
           "samples/modifier_down_medium_3.caf",
-          "samples/modifier_down_medium_4.caf",
-          "samples/modifier_down_medium_5.caf",
-          "samples/modifier_down_medium_6.caf",
-          "samples/modifier_down_medium_7.caf",
-          "samples/modifier_down_medium_8.caf",
-          "samples/modifier_down_medium_9.caf"
+          "samples/modifier_down_medium_4.caf"
         ],
         "hard": [
           "samples/modifier_down_hard_1.caf",
           "samples/modifier_down_hard_2.caf",
           "samples/modifier_down_hard_3.caf",
-          "samples/modifier_down_hard_4.caf",
-          "samples/modifier_down_hard_5.caf",
-          "samples/modifier_down_hard_6.caf",
-          "samples/modifier_down_hard_7.caf",
-          "samples/modifier_down_hard_8.caf",
-          "samples/modifier_down_hard_9.caf"
+          "samples/modifier_down_hard_4.caf"
         ],
         "slam": [
           "samples/modifier_down_slam_1.caf",
           "samples/modifier_down_slam_2.caf",
           "samples/modifier_down_slam_3.caf",
-          "samples/modifier_down_slam_4.caf",
-          "samples/modifier_down_slam_5.caf",
-          "samples/modifier_down_slam_6.caf",
-          "samples/modifier_down_slam_7.caf",
-          "samples/modifier_down_slam_8.caf",
-          "samples/modifier_down_slam_9.caf"
+          "samples/modifier_down_slam_4.caf"
         ]
       }
     },

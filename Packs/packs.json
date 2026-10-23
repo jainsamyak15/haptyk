@@ -124,6 +124,29 @@
       }
     },
     {
+      "id": "cherry-mx-black-abs",
+      "name": "Cherry MX Black ABS",
+      "switch_type": "linear",
+      "kind": "mechvibes",
+      "recording": "Cherry MX Black switches with ABS keycaps (Mechvibes pack “CherryMX Black - ABS keycaps”)",
+      "source": {
+        "site": "Mechvibes",
+        "project_url": "https://github.com/hainguyents13/mechvibes",
+        "repo": "hainguyents13/mechvibes",
+        "commit": "326252a13e7bef4f1c35d08ef0189b5af6f8ba02",
+        "path": "src/audio/cherrymx-black-abs",
+        "url": "https://github.com/hainguyents13/mechvibes/tree/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/src/audio/cherrymx-black-abs",
+        "title": "CherryMX Black - ABS keycaps",
+        "author": "Hai Nguyen and Mechvibes contributors",
+        "recordist": "Not credited in the repository",
+        "licence": "MIT",
+        "licence_file": "MIT-mechvibes.txt",
+        "copyright": "Copyright (c) 2021 Hai Nguyen",
+        "licence_url": "https://github.com/hainguyents13/mechvibes/blob/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/LICENSE",
+        "downloaded": "2026-10-23"
+      }
+    },
+    {
       "id": "cherry-mx-black-pbt",
       "name": "Cherry MX Black PBT",
       "switch_type": "linear",
@@ -137,6 +160,29 @@
         "path": "src/audio/cherrymx-black-pbt",
         "url": "https://github.com/hainguyents13/mechvibes/tree/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/src/audio/cherrymx-black-pbt",
         "title": "CherryMX Black - PBT keycaps",
+        "author": "Hai Nguyen and Mechvibes contributors",
+        "recordist": "Not credited in the repository",
+        "licence": "MIT",
+        "licence_file": "MIT-mechvibes.txt",
+        "copyright": "Copyright (c) 2021 Hai Nguyen",
+        "licence_url": "https://github.com/hainguyents13/mechvibes/blob/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/LICENSE",
+        "downloaded": "2026-10-23"
+      }
+    },
+    {
+      "id": "cherry-mx-blue-abs",
+      "name": "Cherry MX Blue ABS",
+      "switch_type": "clicky",
+      "kind": "mechvibes",
+      "recording": "Cherry MX Blue switches with ABS keycaps (Mechvibes pack “CherryMX Blue - ABS keycaps”)",
+      "source": {
+        "site": "Mechvibes",
+        "project_url": "https://github.com/hainguyents13/mechvibes",
+        "repo": "hainguyents13/mechvibes",
+        "commit": "326252a13e7bef4f1c35d08ef0189b5af6f8ba02",
+        "path": "src/audio/cherrymx-blue-abs",
+        "url": "https://github.com/hainguyents13/mechvibes/tree/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/src/audio/cherrymx-blue-abs",
+        "title": "CherryMX Blue - ABS keycaps",
         "author": "Hai Nguyen and Mechvibes contributors",
         "recordist": "Not credited in the repository",
         "licence": "MIT",
@@ -170,6 +216,29 @@
       }
     },
     {
+      "id": "cherry-mx-brown-abs",
+      "name": "Cherry MX Brown ABS",
+      "switch_type": "tactile",
+      "kind": "mechvibes",
+      "recording": "Cherry MX Brown switches with ABS keycaps (Mechvibes pack “CherryMX Brown - ABS keycaps”)",
+      "source": {
+        "site": "Mechvibes",
+        "project_url": "https://github.com/hainguyents13/mechvibes",
+        "repo": "hainguyents13/mechvibes",
+        "commit": "326252a13e7bef4f1c35d08ef0189b5af6f8ba02",
+        "path": "src/audio/cherrymx-brown-abs",
+        "url": "https://github.com/hainguyents13/mechvibes/tree/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/src/audio/cherrymx-brown-abs",
+        "title": "CherryMX Brown - ABS keycaps",
+        "author": "Hai Nguyen and Mechvibes contributors",
+        "recordist": "Not credited in the repository",
+        "licence": "MIT",
+        "licence_file": "MIT-mechvibes.txt",
+        "copyright": "Copyright (c) 2021 Hai Nguyen",
+        "licence_url": "https://github.com/hainguyents13/mechvibes/blob/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/LICENSE",
+        "downloaded": "2026-10-23"
+      }
+    },
+    {
       "id": "cherry-mx-brown-pbt",
       "name": "Cherry MX Brown PBT",
       "switch_type": "tactile",
@@ -183,6 +252,29 @@
         "path": "src/audio/cherrymx-brown-pbt",
         "url": "https://github.com/hainguyents13/mechvibes/tree/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/src/audio/cherrymx-brown-pbt",
         "title": "CherryMX Brown - PBT keycaps",
+        "author": "Hai Nguyen and Mechvibes contributors",
+        "recordist": "Not credited in the repository",
+        "licence": "MIT",
+        "licence_file": "MIT-mechvibes.txt",
+        "copyright": "Copyright (c) 2021 Hai Nguyen",
+        "licence_url": "https://github.com/hainguyents13/mechvibes/blob/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/LICENSE",
+        "downloaded": "2026-10-23"
+      }
+    },
+    {
+      "id": "cherry-mx-red-abs",
+      "name": "Cherry MX Red ABS",
+      "switch_type": "linear",
+      "kind": "mechvibes",
+      "recording": "Cherry MX Red switches with ABS keycaps (Mechvibes pack “CherryMX Red - ABS keycaps”)",
+      "source": {
+        "site": "Mechvibes",
+        "project_url": "https://github.com/hainguyents13/mechvibes",
+        "repo": "hainguyents13/mechvibes",
+        "commit": "326252a13e7bef4f1c35d08ef0189b5af6f8ba02",
+        "path": "src/audio/cherrymx-red-abs",
+        "url": "https://github.com/hainguyents13/mechvibes/tree/326252a13e7bef4f1c35d08ef0189b5af6f8ba02/src/audio/cherrymx-red-abs",
+        "title": "CherryMX Red - ABS keycaps",
         "author": "Hai Nguyen and Mechvibes contributors",
         "recordist": "Not credited in the repository",
         "licence": "MIT",

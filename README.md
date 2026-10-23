@@ -91,7 +91,7 @@ Findings and the commands still to run are in [docs/SENSOR_NOTES.md](docs/SENSOR
 | M1 | Core sound pipeline (command line) | Done: engine, packs, key tap, `kf-cli` |
 | M2 | Force detection (command line) | Built and tested; dormant until the sensor layout is measured |
 | M3 | Menu bar app | Done: `make run-app`; manual rows in docs/TEST_MATRIX.md |
-| M4 | Sound packs | 19 packs (15 of the spec's 16; Biscuit unavailable), awaiting the owner's listening approval (Packs/README.md) |
+| M4 | Sound packs | 23 packs (15 of the spec's 16; Biscuit unavailable), awaiting the owner's listening approval (Packs/README.md) |
 | M5 | Shipping pipeline | Built; needs the owner's backend, Sparkle keys and Developer ID (docs/RELEASING.md) |
 | M6 | Labs and polish | Built: Big Enter, Shout Mode, Force Meter, accessibility; Labs react only to measured force; beta on several Macs pending |
 

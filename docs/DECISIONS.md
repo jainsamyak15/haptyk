@@ -272,3 +272,24 @@ decision; supersede it with a new one.
   repositories' authors having had the right to grant it; if a recordist objects, that pack
   must be replaced, ideally by a commissioned recording. Packs total 18 MB (DMG budget 30 MB);
   the largest decodes to 1.8 MB (budget 8 MB).
+
+## ADR-0021: Pack quality survey; ABS variants added, clipped samples and extra takes trimmed
+
+- **Status:** Accepted
+- **Context:** The owner asked for the best free sound packs, licensed or not. Every free source
+  was measured for bandwidth (where lossy coding cut the top end), noise and clipping: Mechvibes'
+  default and 94 community packs, kbsim, seven open-source apps that bundle them, Freesound and
+  OpenGameArt.
+- **Decision:**
+  - Add Mechvibes' four Cherry MX ABS-keycap packs (MIT; 17-22 kHz, 79-85 dB SNR), the best
+    free recordings found.
+  - Keep the kbsim packs: no free recording of those switches measures better (community copies
+    are the same files; Tealios V2 by Akira measures lower).
+  - Do not bundle community packs without a licence, however good (Razer Green by Akira, Kailh
+    Box White): ask their authors for written permission first. Do not use GPL or AGPL audio.
+  - Skip any Mechvibes sample with real clipping (three or more samples in a row at full scale);
+    single overs from Ogg decoding are kept.
+  - Keep at most 4 takes for each non-alpha group (10 for alpha), since modifiers are pressed far
+    less: the 23 packs fit in a 20.7 MB DMG (limit 30 MB).
+- **Consequences:** The weakest packs remain the seven from kbsim (lossy MP3, 13.6-18 kHz). Their
+  quality can only rise through permission from community authors or new recordings.

@@ -55,7 +55,7 @@ changes on every build, so grant it again after rebuilding (System Settings > Pr
 
 ## Packs (M4)
 
-- [ ] Each of the 19 bundled packs, previewed in Settings > Packs and typed with for a minute:
+- [ ] Each of the 23 bundled packs, previewed in Settings > Packs and typed with for a minute:
       approve it, or note what to fix (a take that sounds like a different key, a noise, a
       release that sounds like a press). Owner's sign-off per pack (spec M4).
 - [ ] About lists an attribution line for each Mechvibes and kbsim pack (MIT).
