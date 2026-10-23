@@ -10,7 +10,9 @@
 
 Each pack folder holds demo.wav (rendered as the engine plays it: render_demo.py), the files as
 published (converted to WAV where macOS can't play them), and SOURCE.txt (link, author, licence,
-measured bandwidth). README.md says how to listen; REVIEW.md is a sheet for your verdicts.
+measured bandwidth). Each section also gets compare-<section>.wav: every pack's name spoken (the
+built-in `say`, written to a file), then its close-up keys, one pack after another, with a
+.txt of the times. README.md says how to listen; REVIEW.md is a sheet for your verdicts.
 Downloads come only from Freesound's CDN, mechvibes.com, OpenGameArt and the pinned Mechvibes
 commit, and land only inside Packs/review/ (git-ignored). Never shipped.
 
@@ -25,6 +27,7 @@ import json
 import re
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import time
@@ -341,13 +344,17 @@ Every sound pack Keyfeel bundles or considered, to judge by ear. Built by
 
 ## How to listen
 
-- Open a pack folder and play **demo.wav**: select it in Finder and press Space, or open it in
-  QuickTime. Use headphones or the MacBook speakers you will use Keyfeel with, at one volume for
-  every pack.
-- Each demo types a sentence the way Keyfeel plays it (every key panned to its place, a different
-  take each time, press and release sounds), then hits one key twice at each force: soft, medium,
-  hard, slam. Packs in 1-in-the-app have generated soft, hard and slam tiers where the source
-  recorded one force; the others only get louder.
+- Start with **compare-1-in-the-app.wav** (and the other two compare files): one file per
+  folder, each pack's name spoken, then its keys one at a time. The .txt beside it gives the time
+  each pack starts. Every pack is at the same level, so leave the volume alone.
+- Then open a pack folder and play **demo.wav**: select it in Finder and press Space, or open it
+  in QuickTime. Headphones show the differences best; also try the MacBook speakers you will use.
+- Each demo has three parts with a pause between them: **close up** (six letters, then Space,
+  Enter and Backspace, slowly: the pack's character), **typing** (a sentence as Keyfeel plays
+  it: each key panned to its place, a different take each time, press and release sounds), and
+  **force** (one key twice at each force: soft, medium, hard, slam). Every demo uses the same
+  sentence and rhythm on purpose, so only the sound differs. Packs in 1-in-the-app have generated
+  soft, hard and slam tiers where the source recorded one force; the others only get louder.
 - `pack/samples` (bundled packs) and `original/` (community packs) hold the individual sounds.
   2-licensed-not-in-the-app also has `recording.wav`, the whole source recording.
 
@@ -370,6 +377,47 @@ May I include your <pack name> pack from mechvibes.com in it, free or paid versi
 to you in the app? A written yes here is enough." Keep their reply (a screenshot is fine) with
 the pack's SOURCES.md.
 """
+
+
+def speech(text: str) -> np.ndarray | None:
+    """`text` spoken by macOS's built-in voice, as stereo at RATE; None where `say` is missing."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "name.aiff"
+        if subprocess.run(["/usr/bin/say", "-o", str(out), text], capture_output=True).returncode:
+            return None
+        x, rate = rd.decode(out)
+    x = rd.to_rate(x, rate)
+    x = 0.3 * x / max(1e-9, float(np.max(np.abs(x))))
+    return np.stack([x, x], axis=1)
+
+
+def close_up_seconds() -> float:
+    """Where a demo's close-up part ends: the nine single keys and their releases."""
+    events, _ = rd.plan()
+    return events[17][0] + 0.45
+
+
+def compare_file(section: Path) -> int:
+    """compare-<section>.wav: each pack's spoken name, then its close-up, in folder order."""
+    pieces, lines, t = [], [], 0.0
+    clip = int(close_up_seconds() * rd.RATE)
+    n = 0
+    for folder in sorted(p for p in section.iterdir() if (p / "demo.wav").is_file()):
+        n += 1
+        demo, _ = sf.read(str(folder / "demo.wav"), always_2d=True)
+        name = re.sub(r"^\d+ ", "", folder.name)
+        voice = speech(f"{n}. {name}")
+        lines.append(f"{int(t // 60)}:{t % 60:04.1f}  {n:2d}. {folder.name}")
+        for part in ((voice if voice is not None else np.zeros((0, 2))), np.zeros((int(0.3 * rd.RATE), 2)),
+                     demo[:clip], np.zeros((int(0.8 * rd.RATE), 2))):
+            pieces.append(part)
+            t += len(part) / rd.RATE
+    if not pieces:
+        return 0
+    out = section.parent / f"compare-{section.name}.wav"
+    sf.write(str(out), np.concatenate(pieces), rd.RATE, subtype=SUBTYPE)
+    out.with_suffix(".txt").write_text("Start  Pack\n" + "\n".join(lines) + "\n", encoding="utf-8")
+    return n
 
 
 def review_md(rows: list[dict]) -> str:
@@ -408,6 +456,9 @@ def main(argv: list[str] | None = None) -> int:
         rows += section_licensed(args.out, candidates["licensed"])
     if args.only_section in (None, "3"):
         rows += section_unlicensed(args.out, candidates["unlicensed"])
+    for key, name in SECTIONS.items():
+        if args.only_section in (None, key) and (args.out / name).is_dir():
+            compare_file(args.out / name)
     (args.out / "README.md").write_text(README, encoding="utf-8")
     if args.only_section is None:
         (args.out / "REVIEW.md").write_text(review_md(rows), encoding="utf-8")

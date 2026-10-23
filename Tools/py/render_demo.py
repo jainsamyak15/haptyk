@@ -3,11 +3,14 @@
 # Copyright (c) 2026 The Keyfeel Authors. All rights reserved.
 """Render a listening demo of a sound pack, played the way Keyfeel's engine plays it.
 
-Types a sentence at a natural pace (with Backspace, Shift and Enter), each key at its own pan,
-a different take each time and never the same one twice in a row, press and release sounds at
-the engine's levels (release 0.6, level 0.7 + 0.3 x force), then hits one key twice at each
-force tier from soft to slam. Mixed with the engine's soft clipper, written as 48 kHz stereo
-24-bit WAV. For people to judge packs by ear; never shipped.
+Three parts, with a pause between them: close up (six letter keys, then Space, Enter and
+Backspace, slowly, so each sound can be heard on its own), typing (a sentence at a natural pace
+with Shift and Backspace, each key at its own pan, a different take each time and never the
+same one twice in a row, press and release sounds at the engine's levels: release 0.6, level
+0.7 + 0.3 x force), and force (one key twice at each tier, soft to slam). Every pack is brought
+to the same level first (its typical key-down peaks at TARGET_PEAK, as build_pack.py does for
+bundled packs), so packs can be compared at one volume. Mixed with the engine's soft clipper,
+written as 48 kHz stereo WAV. For people to judge packs by ear; never shipped.
 
 Usage: render_demo.py PACK.kfpack --out demo.wav [--seed 1]
 """
@@ -30,6 +33,8 @@ TIER_FORCE = {"soft": 0.0, "medium": 1 / 3, "hard": 2 / 3, "slam": 1.0}
 RELEASE_GAIN = 0.6  # KF_RELEASE_GAIN
 SOFT_CLIP = 0.8  # KF_SOFT_CLIP_THRESHOLD
 TEXT = "The quick brown fox jumps over the lazy dog. Typing feels good."
+TARGET_PEAK = 0.45  # build_pack.py's medium tier: every pack plays at the same level.
+CLOSE_UP_LETTERS = "asdfjk"
 ROWS = ("1234567890-=", "qwertyuiop[]", "asdfghjkl;'", "zxcvbnm,./")  # For the pan by column.
 
 Takes = dict[tuple[str, str], list[np.ndarray]]  # (group, tier or "up") -> mono takes
@@ -65,6 +70,17 @@ def load_kfpack(pack: Path) -> Takes:
         if entry.get("up"):
             takes[(group, "up")] = [to_rate(*decode(pack / f)) for f in entry["up"]]
     return takes
+
+
+def normalize(takes: Takes) -> Takes:
+    """All of a pack's sounds scaled together so its median key-down peak is TARGET_PEAK: the
+    pack's own balance between keys, tiers and releases is kept, its overall level matched."""
+    peaks = [float(np.max(np.abs(x))) for (_, tier), sounds in takes.items() if tier != "up"
+             for x in sounds if len(x)]
+    if not peaks or np.median(peaks) <= 0.0:
+        return takes
+    scale = TARGET_PEAK / float(np.median(peaks))
+    return {k: [x * scale for x in v] for k, v in takes.items()}
 
 
 def resolve(takes: Takes, group: str, tier: str) -> list[np.ndarray]:
@@ -139,6 +155,13 @@ def plan(seed: int = 1) -> tuple[list[Event], float]:
     script = "\x0e" + TEXT[:30] + "\b\b" + TEXT[28:] + "\n"
     events: list[Event] = []
     t = 0.4
+    for ch in CLOSE_UP_LETTERS + " \n\b":  # Close up: one key at a time.
+        group, pan = key_of(ch)
+        gain = 0.7 + 0.3 * TIER_FORCE["medium"]
+        events.append((t, group, "medium", gain, pan))
+        events.append((t + 0.12, group, "up", RELEASE_GAIN, pan))
+        t += 0.55 if group == "alpha" else 0.8
+    t += 1.0
     for ch in script:
         group, pan = key_of(ch)
         force = TIER_FORCE["medium"] + rng.uniform(-0.08, 0.08)
@@ -157,6 +180,7 @@ def plan(seed: int = 1) -> tuple[list[Event], float]:
 
 
 def render(takes: Takes, seed: int = 1) -> np.ndarray:
+    takes = normalize(takes)
     events, length = plan(seed)
     mix = Mixer(length + 1.0, seed)
     for t, group, tier, gain, pan in events:
@@ -175,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"render_demo: {args.pack} has no alpha key-down sound", file=sys.stderr)
         return 1
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    sf.write(str(args.out), render(takes, args.seed), RATE, subtype="PCM_24")
+    sf.write(str(args.out), render(takes, args.seed), RATE, subtype="PCM_16")
     return 0
 
 

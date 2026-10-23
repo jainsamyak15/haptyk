@@ -37,6 +37,26 @@ class RenderDemoTests(unittest.TestCase):
         self.assertLess(rd.key_of("q")[1], rd.key_of("p")[1])
         self.assertEqual(rd.key_of("A"), rd.key_of("a"))
 
+    def test_normalize_matches_levels_and_keeps_balance(self) -> None:
+        quiet = {("alpha", "medium"): [click(1000, 0.01), click(1100, 0.02)],
+                 ("alpha", "up"): [click(3000, 0.005)]}
+        loud = {("alpha", "medium"): [click(1000, 0.9)]}
+        q, l_ = rd.normalize(quiet), rd.normalize(loud)
+        median = np.median([np.max(np.abs(x)) for x in q[("alpha", "medium")]])
+        self.assertAlmostEqual(float(median), rd.TARGET_PEAK, places=6)
+        self.assertAlmostEqual(float(np.max(np.abs(l_[("alpha", "medium")][0]))), rd.TARGET_PEAK, places=6)
+        def ratio(t: dict) -> float:
+            return float(np.max(np.abs(t[("alpha", "up")][0])) / np.max(np.abs(t[("alpha", "medium")][0])))
+        self.assertAlmostEqual(ratio(q), ratio(quiet), places=9)  # The pack's own balance is kept.
+        self.assertEqual(rd.normalize({}), {})
+
+    def test_close_up_comes_first(self) -> None:
+        events, _ = rd.plan(seed=2)
+        downs = [(t, g) for t, g, tier, _, _ in events if tier != "up"]
+        self.assertEqual([g for _, g in downs[:9]], ["alpha"] * 6 + ["space", "enter", "backspace"])
+        gaps = np.diff([t for t, _ in downs[:9]])
+        self.assertTrue(np.all(gaps >= 0.5))  # Slow enough to hear each key alone.
+
     def test_plan_types_the_sentence_then_sweeps_the_tiers(self) -> None:
         events, length = rd.plan(seed=2)
         groups = {g for _, g, _, _, _ in events}
@@ -74,7 +94,7 @@ class RenderDemoTests(unittest.TestCase):
             out = Path(tmp) / "demo.wav"
             self.assertEqual(rd.main([str(pack), "--out", str(out)]), 0)
             info = sf.info(str(out))
-            self.assertEqual((info.channels, info.samplerate, info.subtype), (2, rd.RATE, "PCM_24"))
+            self.assertEqual((info.channels, info.samplerate, info.subtype), (2, rd.RATE, "PCM_16"))
 
 
 if __name__ == "__main__":
