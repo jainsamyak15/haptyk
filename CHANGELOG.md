@@ -90,6 +90,9 @@ All notable changes are recorded here. The format follows
 - The diagnostics object no longer ends its MetricKit subscription from `dealloc`, where
   MetricKit's asynchronous removal could touch the freed object (an intermittent crash at the
   end of `make test-app`).
+- Glass panel on macOS 26: every tile showed only blurred glass, because the glass was drawn
+  over its controls, and a dark outline traced the tiles. The controls now sit inside each
+  glass tile, tiles no longer merge, and the window shadow is off in Glass.
 
 ### Changed
 - Bundled packs are listed by name, which is the spec's order and also covers renamed packs.

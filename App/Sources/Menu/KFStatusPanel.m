@@ -375,9 +375,8 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
         glass.backdrop = _backdropBlur;
         tile = glass;
     } else if (@available(macOS 26.0, *)) {
-        // The glass is the tile's background, with the content above it rather than inside:
-        // Liquid Glass sizes its own content view to a preferred height, which would squeeze
-        // ours. It still renders and blends with its neighbours the same way.
+        // The content goes inside the glass: only a glass view's content view is drawn above
+        // it. A container lifts its glass above everything else, which it would blur.
         NSGlassEffectView *glass = [NSGlassEffectView new];
         glass.cornerRadius = radius;
         glass.style = NSGlassEffectViewStyleRegular;
@@ -392,18 +391,8 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
                                                 ? [NSColor colorWithWhite:0.0 alpha:0.22]
                                                 : [NSColor colorWithWhite:1.0 alpha:0.30];
                                  }];
-        tile = [NSView new];
-        glass.translatesAutoresizingMaskIntoConstraints = NO;
-        [tile addSubview:glass];
-        [NSLayoutConstraint activateConstraints:@[
-            [glass.topAnchor constraintEqualToAnchor:tile.topAnchor],
-            [glass.bottomAnchor constraintEqualToAnchor:tile.bottomAnchor],
-            [glass.leadingAnchor constraintEqualToAnchor:tile.leadingAnchor],
-            [glass.trailingAnchor constraintEqualToAnchor:tile.trailingAnchor],
-        ]];
-        [glass setContentHuggingPriority:1 forOrientation:NSLayoutConstraintOrientationVertical];
-        [glass setContentCompressionResistancePriority:1
-                                        forOrientation:NSLayoutConstraintOrientationVertical];
+        glass.contentView = inner;
+        tile = glass;
     } else {
         NSVisualEffectView *blur = [NSVisualEffectView new];
         blur.material = NSVisualEffectMaterialPopover;
@@ -423,9 +412,9 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
         tile = blur;
     }
     inner.translatesAutoresizingMaskIntoConstraints = NO;
-    // Above the live glass; below the fallback's bright edge, which never takes clicks.
-    const BOOL edgeOnTop = [tile isKindOfClass:NSVisualEffectView.class];
-    [tile addSubview:inner positioned:edgeOnTop ? NSWindowBelow : NSWindowAbove relativeTo:nil];
+    if (inner.superview == nil) { // Below the fallback's bright edge, which never takes clicks.
+        [tile addSubview:inner positioned:NSWindowBelow relativeTo:nil];
+    }
     [NSLayoutConstraint activateConstraints:@[
         [inner.topAnchor constraintEqualToAnchor:tile.topAnchor],
         [inner.bottomAnchor constraintEqualToAnchor:tile.bottomAnchor],
@@ -622,11 +611,13 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
         [[KFPanelBackground alloc] initWithFrame:NSMakeRect(0, 0, kWidth, 600)];
     _background = background;
     NSView *holder = _stack;
+    BOOL liveGlass = NO;
     if (glass && !_simulateGlass) {
         if (@available(macOS 26.0, *)) {
-            // Groups the tiles so neighbouring glass renders and blends together.
+            liveGlass = YES;
+            // Renders the tiles' glass as one batch. Spacing 0: separate tiles, never merged.
             NSGlassEffectContainerView *group = [NSGlassEffectContainerView new];
-            group.spacing = kGlassGap;
+            group.spacing = 0.0;
             NSView *content = [NSView new];
             [content addSubview:_stack];
             [NSLayoutConstraint activateConstraints:@[
@@ -667,7 +658,8 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
     _panel.contentView = background;
     _panel.opaque = NO;
     _panel.backgroundColor = NSColor.clearColor;
-    _panel.hasShadow = YES; // Glass tiles' window shadow follows each tile's shape.
+    // Liquid Glass draws its own depth; a window shadow would trace its halo as a dark outline.
+    _panel.hasShadow = !liveGlass;
     _panel.level = NSPopUpMenuWindowLevel;
     _panel.hidesOnDeactivate = NO;
     _panel.releasedWhenClosed = NO;
@@ -960,6 +952,34 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
 
 #pragma mark - Preview
 
+/// Live glass: whether every visible glass view under `view` holds its content (the only part
+/// drawn above the glass) and the content fills it. Counts the glass views in `count`.
+static BOOL GlassHoldsContent(NSView *view, NSUInteger *count) {
+    if (view.hidden) {
+        return YES;
+    }
+    if (@available(macOS 26.0, *)) {
+        if ([view isKindOfClass:NSGlassEffectView.class]) {
+            ++*count;
+            NSView *content = ((NSGlassEffectView *)view).contentView;
+            if (content == nil) {
+                return NO;
+            }
+            const NSRect r = [content convertRect:content.bounds toView:view];
+            if (fabs(NSWidth(r) - NSWidth(view.bounds)) > 0.5 ||
+                fabs(NSHeight(r) - NSHeight(view.bounds)) > 0.5) {
+                return NO;
+            }
+        }
+    }
+    for (NSView *sub in view.subviews) {
+        if (!GlassHoldsContent(sub, count)) {
+            return NO;
+        }
+    }
+    return YES;
+}
+
 /// Example values for the "in use" preview: a measured hard keystroke, a minute of typing.
 - (void)fillDemo {
     [_feel setVelocity:0.72f status:@"Force: Live"];
@@ -1020,8 +1040,12 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
             ok = ok && row.frame.size.height >= 20.0 && row.frame.size.width > 300.0;
         }
     }
-    fprintf(stderr, "KFRenderPanel: live glass %.0fx%.0f: %s\n", size.width, size.height,
-            [rows componentsJoinedByString:@", "].UTF8String);
+    NSUInteger tiles = 0;
+    const BOOL held = GlassHoldsContent(_stack, &tiles);
+    ok = ok && held;
+    fprintf(stderr, "KFRenderPanel: live glass %.0fx%.0f: %s; %lu glass tiles %s\n", size.width,
+            size.height, [rows componentsJoinedByString:@", "].UTF8String, (unsigned long)tiles,
+            held ? "hold their content" : "DO NOT hold their content");
     KFTheme.style = saved;
     _panel = nil; // Rebuilt, live, at the next open.
     return ok;

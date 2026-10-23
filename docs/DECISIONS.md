@@ -347,13 +347,16 @@ decision; supersede it with a new one.
   Control Center) instead of Graphite (ADR-0023).
 - **Decision:** A `panelStyle` preference ("graphite", the default, or "glass") in Settings >
   General. In Glass the panel has no background: each section is its own translucent tile over
-  the desktop, grouped in an `NSGlassEffectContainerView`. On macOS 26 and later each tile's
-  background is a real `NSGlassEffectView` (Liquid Glass) with a light tint for legibility; the
-  tile's content sits above it, since Liquid Glass sizes its own content view to a preferred
-  height. Before macOS 26 the tiles use the system blur (`NSVisualEffectView`, popover material)
+  the desktop, batched in an `NSGlassEffectContainerView` with spacing 0, so tiles never merge.
+  On macOS 26 and later each tile is a real `NSGlassEffectView` (Liquid Glass) with a light
+  tint for legibility, and the tile's content is its `contentView`: only that is drawn above
+  the glass, because the container lifts glass above everything else it holds. Liquid Glass has
+  its own depth, so the window has no shadow, which would trace the glass's halo as a dark
+  outline. Before macOS 26 the tiles use the system blur (`NSVisualEffectView`, popover material)
   with rounded masks and a bright edge. Active controls turn white (near-black in light
   appearance), as Apple's do; signal orange stays only in the wordmark. Corner radii grow (x1.6).
   All colours stay theme tokens, so a style change is a rebuild at the next open.
 - **Consequences:** Two layouts share one set of controls and tests. Previews (`-KFRenderPanel`)
   draw the glass from a blurred copy of the desktop picture, since an offscreen drawing cannot
-  see behind a window; the same run builds the live glass offscreen and checks every tile's size.
+  see behind a window; the same run builds the live glass offscreen and checks every tile's size
+  and that every glass tile holds its content.
