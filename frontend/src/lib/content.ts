@@ -171,6 +171,61 @@ export const cta = {
   title: { before: "Ready to hear yourself ", mark: "type?" } satisfies Heading,
 };
 
+export type InstallStep = {
+  title: string;
+  body: string;
+  /** Which macOS screen the step shows (components/MacMocks.tsx). */
+  mock: "blocked" | "settings" | "drag" | "allow";
+};
+
+/** The page every Download button leads to: it starts the download and shows how to open it. */
+export const install = {
+  eyebrow: "Download",
+  title: { before: "Keyfeel is ", mark: "downloading." } satisfies Heading,
+  body: "Here’s how to open it. It takes about a minute.",
+  retry: "Download didn’t start?",
+  retryLink: "Try again",
+  back: "Back to Keyfeel",
+  /** Shown while builds aren't notarized by Apple (site.notarized is false). */
+  why: "Why the extra steps? Early builds aren’t notarized by Apple yet, so macOS asks you to confirm before it opens them. You only do this the first time.",
+  /** Not notarized: macOS blocks the disk image, and may block the app once more. */
+  unverified: [
+    {
+      title: "Open the download",
+      body: "Open Keyfeel.dmg from your Downloads. macOS says it can’t verify it: click Done, not Move to Bin.",
+      mock: "blocked",
+    },
+    {
+      title: "Allow it in System Settings",
+      body: "Open System Settings, then Privacy & Security, and scroll down to Security. Click Open Anyway, confirm with Touch ID or your password, then click Open.",
+      mock: "settings",
+    },
+    {
+      title: "Drag Keyfeel to Applications",
+      body: "In the Keyfeel window that opens, drag the app onto the Applications folder.",
+      mock: "drag",
+    },
+    {
+      title: "Open Keyfeel",
+      body: "Open it from Applications. If macOS blocks it again, repeat step 2 for Keyfeel. Then allow Input Monitoring when it asks, and start typing.",
+      mock: "allow",
+    },
+  ] satisfies InstallStep[],
+  /** Notarized: macOS opens it after one ordinary "downloaded from the internet" question. */
+  verified: [
+    {
+      title: "Drag Keyfeel to Applications",
+      body: "Open Keyfeel.dmg from your Downloads and drag the app onto the Applications folder.",
+      mock: "drag",
+    },
+    {
+      title: "Open Keyfeel",
+      body: "Open it from Applications, allow Input Monitoring when it asks, and start typing.",
+      mock: "allow",
+    },
+  ] satisfies InstallStep[],
+};
+
 export const footer: { copyright: string; label: string; links: Link[] } = {
   copyright: "© 2026 The Keyfeel Authors.",
   label: "Footer",

@@ -107,7 +107,8 @@ function DownloadIcon({ size }: { size: number }) {
   );
 }
 
-/** The DMG download. `tone` picks ink-on-sun or paper-on-ink; `size` the hero or nav scale. */
+/** The Download button, leading to /download (which starts the DMG and shows how to open it).
+ * `tone` picks ink-on-sun or paper-on-ink; `size` the hero or nav scale. */
 export function DownloadButton({
   tone = "ink",
   size = "lg",
@@ -127,8 +128,7 @@ export function DownloadButton({
   };
   return (
     <a
-      href={site.dmgUrl}
-      download
+      href={site.downloadPage}
       className={`group inline-flex items-center rounded-full font-bold transition-[transform,background-color] duration-150 hover:-translate-y-0.5 active:translate-y-0 ${tones[tone]} ${sizes[size]}`}
     >
       {label}

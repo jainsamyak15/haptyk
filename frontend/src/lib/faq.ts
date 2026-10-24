@@ -23,7 +23,7 @@ export const FAQ = [
   },
   {
     q: "macOS says it can't verify Keyfeel. What do I do?",
-    a: "Early builds aren't notarized by Apple yet. Open System Settings, go to Privacy & Security, scroll down and click Open Anyway. You only need to do it once.",
+    a: "Early builds aren't notarized by Apple yet. Click Done, then open System Settings, go to Privacy & Security, scroll down and click Open Anyway. You may need to do this twice, once for the disk image and once for the app, and only the first time.",
   },
   {
     q: "Does it start when I log in?",

@@ -5,10 +5,15 @@
 export const site = {
   name: "Keyfeel",
   version: "0.1.0",
-  /** Where "Download" points. Set NEXT_PUBLIC_DMG_URL to override (for example a CDN). The
-   * default is the DMG committed at public/downloads/Keyfeel.dmg and served by this site, so a
-   * release replaces that file under exactly this name (docs/RELEASING.md). */
+  /** The DMG itself. Every Download button leads to /download, which starts this download and
+   * shows how to open it. Set NEXT_PUBLIC_DMG_URL to override (for example a CDN). The default is
+   * the DMG committed at public/downloads/Keyfeel.dmg and served by this site, so a release
+   * replaces that file under exactly this name (docs/RELEASING.md). */
   dmgUrl: process.env.NEXT_PUBLIC_DMG_URL ?? "/downloads/Keyfeel.dmg",
+  downloadPage: "/download",
+  /** True once the published DMG is Developer ID–signed and notarized: /download then drops the
+   * Gatekeeper steps. */
+  notarized: false,
   dmgSize: "25 MB",
   requirements: "macOS 13 or later · Apple Silicon",
   packCount: 25,

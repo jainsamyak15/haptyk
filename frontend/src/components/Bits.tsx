@@ -104,15 +104,15 @@ function DownloadIcon({ size }: { size: number }) {
 }
 
 /**
- * The DMG download, shaped like the orange Escape keycap: it presses down while held.
+ * The Download button, shaped like the orange Escape keycap: it presses down while held. It leads
+ * to /download, which starts the DMG and shows how to open it.
  * `size` picks the hero or the nav scale.
  */
 export function DownloadButton({ size = "lg", label = download.label }: { size?: "sm" | "lg"; label?: string }) {
   const big = size === "lg";
   return (
     <a
-      href={site.dmgUrl}
-      download
+      href={site.downloadPage}
       className={`cap cap-signal group inline-block font-bold active:[&>.cap-top]:[transform:translateY(calc(var(--depth)-3px))] ${
         big ? "h-[78px] [--depth:10px] [--r:20px]" : "h-[46px] [--depth:6px] [--r:13px]"
       }`}
