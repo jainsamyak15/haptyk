@@ -19,6 +19,7 @@ static NSString *const kMuteExternalKeyboard = @"muteExternalKeyboard";
 static NSString *const kIdleTimeout = @"idleTimeoutS";
 static NSString *const kSensitivity = @"sensitivity";
 static NSString *const kAutoAdapt = @"autoAdapt";
+static NSString *const kForceSensing = @"forceSensingEnabled";
 static NSString *const kCalibration = @"calibration.v1";
 static NSString *const kBigEnter = @"labs.bigEnter";
 static NSString *const kShoutMode = @"labs.shoutMode";
@@ -62,6 +63,7 @@ static float Clamp(float value, float lo, float hi) {
             kIdleTimeout : @30,
             kSensitivity : @0.0f,
             kAutoAdapt : @YES,
+            kForceSensing : @NO,
             kBigEnter : @NO,
             kShoutMode : @NO,
             kForceMeter : @NO,
@@ -256,6 +258,13 @@ static float Clamp(float value, float lo, float hi) {
     [self setBool:value key:kTelemetry];
 }
 
+- (BOOL)forceSensingEnabled {
+    return [_defaults boolForKey:kForceSensing];
+}
+- (void)setForceSensingEnabled:(BOOL)value {
+    [self setBool:value key:kForceSensing];
+}
+
 - (BOOL)onboardingDone {
     return [_defaults boolForKey:kOnboarding];
 }
@@ -282,7 +291,8 @@ static float Clamp(float value, float lo, float hi) {
     for (NSString *key in @[
              kEnabled, kVolume, kPackId, kReleaseSounds, kStereoWidth, kRepeatSounds,
              kMuteWhenMicActive, kMuteExternalKeyboard, kIdleTimeout, kSensitivity, kAutoAdapt,
-             kCalibration, kBigEnter, kShoutMode, kForceMeter, kTelemetry, kOnboarding, kInstallId
+             kForceSensing, kCalibration, kBigEnter, kShoutMode, kForceMeter, kTelemetry,
+             kOnboarding, kInstallId
          ]) {
         [_defaults removeObjectForKey:key];
     }

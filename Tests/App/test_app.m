@@ -440,6 +440,7 @@ void TestPreferencesDefaultsAndClamping(void) {
     KFPreferences *prefs = [[KFPreferences alloc] initWithDefaults:defaults];
     KFExpect(prefs.enabled && prefs.releaseSounds && prefs.muteWhenMicActive && prefs.autoAdapt);
     KFExpect(!prefs.repeatSounds && !prefs.muteExternalKeyboard && !prefs.telemetryOptIn);
+    KFExpect(!prefs.forceSensingEnabled);
     KFExpect(!prefs.labsBigEnter && !prefs.labsShoutMode && !prefs.labsForceMeter);
     KFExpect(prefs.idleTimeoutS == 30 && prefs.packId == nil && prefs.calibration == nil);
     KFExpect([prefs.panelStyle isEqualToString:@"graphite"]);
@@ -451,6 +452,8 @@ void TestPreferencesDefaultsAndClamping(void) {
     KFExpect(prefs.volume == 1.0f);
     prefs.sensitivity = -9.0f;
     KFExpect(prefs.sensitivity == -1.0f);
+    prefs.forceSensingEnabled = YES;
+    KFExpect(prefs.forceSensingEnabled);
     prefs.idleTimeoutS = 1;
     KFExpect(prefs.idleTimeoutS == 5);
     prefs.calibration = @{@"soft_g" : @0.01, @"slam_g" : @0.2};

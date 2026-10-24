@@ -190,6 +190,12 @@ static void stop_timer_fired(CFRunLoopTimerRef timer, void *info) {
     CFRunLoopStop(CFRunLoopGetCurrent());
 }
 
+/* CF collections expose opaque values as const void pointers; IOHID's API uses the non-const
+ * opaque reference type. The uintptr_t bridge preserves that ABI exactly. */
+static IOHIDDeviceRef hid_ref(const void *value) {
+    return (IOHIDDeviceRef)(uintptr_t)value; // NOLINT(performance-no-int-to-ptr): opaque CF bridge.
+}
+
 static IOHIDDeviceRef open_device(void) {
     IOHIDManagerRef manager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
     CFMutableDictionaryRef dict = CFDictionaryCreateMutable(
@@ -202,7 +208,7 @@ static IOHIDDeviceRef open_device(void) {
         if (set != NULL && CFSetGetCount(set) == 1) {
             const void *value = NULL;
             CFSetGetValues(set, &value);
-            device = (IOHIDDeviceRef)(uintptr_t)value;
+            device = hid_ref(value);
             CFRetain(device);
         }
         if (set != NULL) {
@@ -266,7 +272,7 @@ static void *sensor_thread(void *arg) {
     return NULL;
 }
 
-kf_status kf_sensor_start(void) {
+kf_status kf_sensor_start_with_wake(kf_sensor_wake level) {
     if (atomic_load_explicit(&g_thread_running, memory_order_acquire)) {
         return KF_OK;
     }
@@ -275,8 +281,7 @@ kf_status kf_sensor_start(void) {
         return KF_ERR_NOT_FOUND;
     }
     kf_sensor_reset(); /* STOPPED: keys play at once until the first sample. */
-    const kf_status wake =
-        kf_sensor_driver_wake((kf_sensor_wake)KF_SENSOR_WAKE_LEVEL, KF_SENSOR_REPORT_INTERVAL_US);
+    const kf_status wake = kf_sensor_driver_wake(level, KF_SENSOR_REPORT_INTERVAL_US);
     if (wake != KF_OK) {
         kf_sensor_set_state(wake == KF_ERR_NO_PERMISSION ? KF_SENSOR_DENIED : KF_SENSOR_ABSENT);
         return wake;
@@ -312,6 +317,10 @@ kf_status kf_sensor_start(void) {
     return KF_OK;
 }
 
+kf_status kf_sensor_start(void) {
+    return kf_sensor_start_with_wake(KF_SENSOR_WAKE_NONE);
+}
+
 void kf_sensor_stop(void) {
     if (!atomic_load_explicit(&g_thread_running, memory_order_acquire)) {
         (void)kf_sensor_driver_restore();
@@ -341,9 +350,14 @@ bool kf_sensor_probe(void) {
     return false;
 }
 
-kf_status kf_sensor_start(void) {
+kf_status kf_sensor_start_with_wake(kf_sensor_wake level) {
+    (void)level;
     kf_sensor_set_state(KF_SENSOR_ABSENT);
     return KF_ERR_NOT_FOUND;
+}
+
+kf_status kf_sensor_start(void) {
+    return kf_sensor_start_with_wake(KF_SENSOR_WAKE_NONE);
 }
 
 void kf_sensor_stop(void) {

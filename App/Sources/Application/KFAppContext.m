@@ -42,7 +42,7 @@ static const NSUInteger kBadgeDays = 7;
 
 - (nullable NSString *)badgeLine {
     if (self.power.forceStatus == KFForceStatusUnavailable ||
-        self.telemetry.percentileTable == nil) {
+        self.power.forceStatus == KFForceStatusDisabled || self.telemetry.percentileTable == nil) {
         return nil; /* No force data, or no network: hide the line. */
     }
     double percentile = 0.0;

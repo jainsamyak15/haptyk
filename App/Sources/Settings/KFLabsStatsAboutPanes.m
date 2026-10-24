@@ -120,7 +120,8 @@ static const CGFloat kPaneWidth = 560.0;
     const KFShoutStatus status = self.context.power.shoutStatus;
     _shoutStatus.stringValue = [KFLabsPane textForShoutStatus:status];
     _openAccessibility.hidden = status != KFShoutStatusNeedsAccessibility;
-    _forceNote.stringValue = self.context.power.forceStatus == KFForceStatusUnavailable
+    _forceNote.stringValue = (self.context.power.forceStatus == KFForceStatusUnavailable ||
+                              self.context.power.forceStatus == KFForceStatusDisabled)
                                  ? @"Force detection is not available on this Mac, so these extras "
                                    @"have nothing to react to."
                                  : @"";

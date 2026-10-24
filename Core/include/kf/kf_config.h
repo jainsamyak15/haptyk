@@ -52,10 +52,9 @@
 #define KF_SENSOR_TRANSPORT    "SPU"
 #define KF_SENSOR_REPORT_BYTES 22u /**< From the report descriptor. */
 
-/* Switching the stream on (ADR-0011, amended 2026-10-24): while the sensor runs, Keyfeel writes
- * the accelerometer driver's reporting settings, and it writes them back when it stops. The
- * driver lists rates of 50 to 800 Hz ("sensor_rates"); intervals outside them are refused. */
-#define KF_SENSOR_WAKE_LEVEL         1u     /**< Mac17,3 M0: interval alone starts the stream. */
+/* Switching the stream on (ADR-0011): only after explicit force-sensing opt-in, Keyfeel writes
+ * the accelerometer driver's reporting settings and writes them back when it stops. The driver
+ * lists rates of 50 to 800 Hz ("sensor_rates"); intervals outside them are refused. */
 #define KF_SENSOR_REPORT_INTERVAL_US 2500u  /**< Mac17,3 M0: measured 399.0 Hz. */
 #define KF_SENSOR_MIN_INTERVAL_US    1250u  /**< 800 Hz, the driver's fastest listed rate. */
 #define KF_SENSOR_MAX_INTERVAL_US    20000u /**< 50 Hz, its slowest. */

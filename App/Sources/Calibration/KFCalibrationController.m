@@ -80,7 +80,8 @@ typedef NS_ENUM(NSInteger, KFCalibrationPhase) {
     _progress.doubleValue = 0;
     _progress.hidden = phase == KFCalibrationIntro || phase == KFCalibrationDone;
     _primary.hidden = !(phase == KFCalibrationIntro || phase == KFCalibrationDone);
-    const BOOL sensor = _context.power.forceStatus != KFForceStatusUnavailable;
+    const BOOL sensor = _context.power.forceStatus == KFForceStatusLive ||
+                        _context.power.forceStatus == KFForceStatusNeedsCalibration;
     switch (phase) {
     case KFCalibrationIntro:
         _instruction.stringValue = @"Tune force detection to your typing";
@@ -119,7 +120,9 @@ typedef NS_ENUM(NSInteger, KFCalibrationPhase) {
 
 - (void)primary:(id)sender {
     (void)sender;
-    if (_phase == KFCalibrationIntro && _context.power.forceStatus != KFForceStatusUnavailable) {
+    if (_phase == KFCalibrationIntro &&
+        (_context.power.forceStatus == KFForceStatusLive ||
+         _context.power.forceStatus == KFForceStatusNeedsCalibration)) {
         _context.power.peaksClaimed = YES;
         kf_sensor_peak drop;
         while (kf_sensor_pop_peak(&drop)) {

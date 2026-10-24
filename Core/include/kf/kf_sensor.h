@@ -8,9 +8,9 @@
  * The sensor thread owns the sample ring and the calibration. Keys arrive from the keytap
  * thread through a lock-free pending queue; once a key's window has closed the sensor thread
  * measures its force and queues its voices. The device is opened read-only, without seizing
- * it. The accelerometer sends nothing until its driver's reporting is switched on, so
- * kf_sensor_driver_wake() writes those settings while the sensor runs and
- * kf_sensor_driver_restore() writes them back (ADR-0011, amended 2026-10-24).
+ * it. The plain start function is read-only. Callers with explicit user consent can use
+ * kf_sensor_start_with_wake(), which enables reporting while the sensor runs and restores the
+ * driver's settings on stop (ADR-0011).
  *
  * Until the report layout is measured (KF_SENSOR_LAYOUT_MEASURED in kf_config.h) the probe
  * reports no sensor and every key plays at the default velocity.
@@ -107,6 +107,9 @@ typedef enum kf_sensor_wake {
     KF_SENSOR_WAKE_REPORTING, /**< ...and SensorPropertyReportingState = 1. */
     KF_SENSOR_WAKE_POWER,     /**< ...and SensorPropertyPowerState = 1. */
 } kf_sensor_wake;
+
+/** Opens the device and starts it with the requested driver wake level. Main thread. */
+kf_status kf_sensor_start_with_wake(kf_sensor_wake level);
 
 /** The driver's reporting settings as it shows them; -1 where it shows none. */
 typedef struct kf_sensor_driver_state {

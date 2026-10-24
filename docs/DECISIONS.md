@@ -127,12 +127,14 @@ decision; supersede it with a new one.
   before/after system snapshots were identical. No root or privileged helper is used.
 - **Update (2026-10-24):** A normal-user capture yielded 6,020 reports in 15.1 seconds
   (398.6/s). M0 measured `int32x3@6`, 2^-16 g per raw unit, a 399.0 Hz effective rate, and HID
-  timestamps as mach ticks on the core clock. The keyed timing and separation measurements remain
-  open.
-- **Consequences:** Mac17,3 has a live force path rather than fallback mode. The application
-  prompts for its existing per-user calibration before claiming calibrated force; it never guesses
-  model-wide soft and hard thresholds from an idle capture. The interval write remains scoped to
-  the time the sensor runs and is revalidated on future Mac models and macOS releases.
+  timestamps as mach ticks on the core clock. The first desk/lap keyed protocol measured timing and
+  separation, but the universal force-tier gate remains open because several rows did not separate.
+- **Consequences:** Mac17,3 has a live force path rather than fallback mode after explicit user
+  opt-in. Until that opt-in, the application's sensor start is read-only and cannot change a
+  customer's driver state. After opt-in, the interval write remains scoped to the time the sensor
+  runs and is restored on stop; it is revalidated on future Mac models and macOS releases. The
+  application still prompts for per-user calibration and never guesses model-wide soft and hard
+  thresholds from an idle capture.
 
 ## ADR-0012: Pack fallback rules are applied in the core
 

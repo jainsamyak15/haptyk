@@ -338,8 +338,12 @@ void test_sensor_wake_plan_orders_writes(void) {
 
 void test_sensor_wake_plan_rejects_bad_input(void) {
     kf_driver_write w[KF_DRIVER_MAX_WRITES];
+    const union {
+        kf_sensor_wake value;
+        unsigned int raw;
+    } invalid_wake = {.raw = 4u};
     KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_NONE, 2500u, w) == 0u);
-    KF_EXPECT(kf_sensor_wake_plan((kf_sensor_wake)4, 2500u, w) == 0u);
+    KF_EXPECT(kf_sensor_wake_plan(invalid_wake.value, 2500u, w) == 0u);
     KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, KF_SENSOR_MIN_INTERVAL_US - 1u, w) == 0u);
     KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, KF_SENSOR_MAX_INTERVAL_US + 1u, w) == 0u);
     KF_EXPECT(kf_sensor_wake_plan(KF_SENSOR_WAKE_POWER, 0u, w) == 0u);
@@ -371,10 +375,14 @@ void test_sensor_restore_plan_puts_back(void) {
 
 void test_sensor_driver_checks_before_touching_it(void) {
     /* Each of these returns before looking for the driver. */
+    const union {
+        kf_sensor_wake value;
+        unsigned int raw;
+    } invalid_wake = {.raw = 9u};
     KF_EXPECT(kf_sensor_driver_woken() == KF_SENSOR_WAKE_NONE);
     KF_EXPECT(kf_sensor_driver_wake(KF_SENSOR_WAKE_NONE, 0u) == KF_OK);
     KF_EXPECT(kf_sensor_driver_wake(KF_SENSOR_WAKE_POWER, 1u) == KF_ERR_INVALID_ARGUMENT);
-    KF_EXPECT(kf_sensor_driver_wake((kf_sensor_wake)9, 2500u) == KF_ERR_INVALID_ARGUMENT);
+    KF_EXPECT(kf_sensor_driver_wake(invalid_wake.value, 2500u) == KF_ERR_INVALID_ARGUMENT);
     KF_EXPECT(kf_sensor_driver_woken() == KF_SENSOR_WAKE_NONE);
     KF_EXPECT(kf_sensor_driver_restore() == KF_OK); /* Nothing was changed. */
     KF_EXPECT(kf_sensor_driver_read(NULL) == KF_ERR_INVALID_ARGUMENT);

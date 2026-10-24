@@ -425,7 +425,9 @@ int main(int argc, const char **argv) {
         };
         if (opt.calibrate) {
             const kf_status tap = kf_keytap_start(on_key, NULL, false);
-            const kf_status sensor = tap == KF_OK ? kf_sensor_start() : tap;
+            /* Calibration is an explicit operator action, so it may wake the accelerometer. */
+            const kf_status sensor =
+                tap == KF_OK ? kf_sensor_start_with_wake(KF_SENSOR_WAKE_INTERVAL) : tap;
             if (sensor != KF_OK) {
                 fprintf(stderr, "kf-cli: cannot calibrate: %s\n", kf_status_string(sensor));
                 kf_keytap_stop();

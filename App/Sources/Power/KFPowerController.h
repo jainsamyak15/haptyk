@@ -19,6 +19,7 @@ typedef NS_ENUM(NSInteger, KFForceStatus) {
     KFForceStatusLive = 0,
     KFForceStatusExternalKeyboard,
     KFForceStatusUnavailable,
+    KFForceStatusDisabled,
     KFForceStatusNeedsCalibration,
 };
 

@@ -282,6 +282,8 @@ static NSMenuItem *Info(NSString *title) {
         return @"Force: Off (external keyboard)";
     case KFForceStatusUnavailable:
         return @"Force: Not available on this Mac";
+    case KFForceStatusDisabled:
+        return @"Force: Enable in Settings";
     case KFForceStatusNeedsCalibration:
         return @"Force: Calibrate for best results";
     }

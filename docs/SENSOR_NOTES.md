@@ -5,11 +5,12 @@ section, then ask the owner for the go/no-go decision.
 
 Spec: docs/SPEC.md, "Milestone 0: sensor discovery (go/no-go gate)".
 
-**Status (2026-10-24): the stream, layout, scale and rate are measured on Mac17,3.** A normal-user
-write of the accelerometer driver's `ReportInterval` to 2500 microseconds starts reporting; its
-original zero value is restored when Keyfeel stops (ADR-0011). The idle capture measured the
-22-byte layout, `1 / 65,536 g` scale, a 399.0 Hz effective rate, and the report timestamp clock.
-Keyed captures are still needed to measure key-to-force timing and per-user soft/hard separation.
+**Status (2026-10-24): the stream, layout, scale, rate and a first keyed protocol are measured on
+Mac17,3.** A normal-user write of the accelerometer driver's `ReportInterval` to 2500 microseconds
+starts reporting; its original zero value is restored when Keyfeel stops (ADR-0011). The idle
+capture measured the 22-byte layout, `1 / 65,536 g` scale, a 399.0 Hz effective rate, and the
+report timestamp clock. Desk and lap keyed captures measured timing and row separation, but did
+not meet a universal force-tier quality gate.
 
 ## Test machines
 
@@ -125,8 +126,9 @@ Opening the device changed nothing: driver properties were identical before and 
 | Key-down event → response onset (ms) | -6.15 | 9.08 |
 | Resulting `KF_WINDOW_PRE_NS` / `KF_WINDOW_POST_NS` | 22 / 62 ms | |
 
-The recommended 62 ms post window exceeds the 10 ms product budget, so the shipping config
-remains at 5 / 8 ms until the timing source and long-tail response are understood.
+The recommended 62 ms post window exceeds the 10 ms product budget, so the shipping config remains
+at 5 / 8 ms as a deliberately conservative latency choice, not as a validated force window. The
+force-tier path must remain experimental until the long-tail response is understood.
 
 ## Separability
 
@@ -184,9 +186,10 @@ The force path (M2) is enabled on Mac17,3:
 1. `KF_SENSOR_LAYOUT_MEASURED` is 1 with the measured `int32x3@6`, `2^-16 g` scale and 400 Hz
    nominal rate. `Tests/Fixtures/sensor/Mac17,3_macos-27.0_accel-rest.csv` anchors the decoder to
    a real report.
-2. The app wakes only the accelerometer's report interval while its sensor is running and restores
-   the driver afterward. Report timestamps retain the actual 400 Hz cadence through callback
-   batching.
+2. Force sensing is opt-in in the app. Until the user enables it in Sound settings, the sensor
+   start is read-only and does not change the driver's settings. After opt-in, the app wakes only
+   the accelerometer's report interval while its sensor is running and restores the driver
+   afterward. Report timestamps retain the actual 400 Hz cadence through callback batching.
 3. The existing calibration wizard first measures rest, then asks for soft, hard and normal
    typing. Rest-floor measurement now uses the 95th percentile so one accidental bump cannot
    reject all soft taps.

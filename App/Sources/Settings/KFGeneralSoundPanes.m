@@ -5,6 +5,8 @@
 
 #import <ServiceManagement/ServiceManagement.h>
 
+#include <kf/kf_sensor.h>
+
 #import "Packs/KFPackLibrary.h"
 #import "Power/KFPowerController.h"
 #import "Preferences/KFPreferences.h"
@@ -188,6 +190,7 @@ static const CGFloat kPaneWidth = 560.0;
     NSSlider *_sensitivity;
     NSButton *_adapt;
     NSButton *_calibrate;
+    NSButton *_forceEnable;
     NSTextField *_force;
 }
 
@@ -200,6 +203,8 @@ static const CGFloat kPaneWidth = 560.0;
     _pack.accessibilityLabel = @"Sound pack";
     _sensitivity = KFSlider(-1.0, 1.0, 0.0, self, @selector(changeSetting:), @"Sensitivity");
     _adapt = KFCheckbox(@"Adapt to my typing over time", self, @selector(changeSetting:));
+    _forceEnable = KFCheckbox(@"Enable force sensing (changes the sensor while typing)", self,
+                              @selector(changeSetting:));
     _calibrate = KFPushButton(@"Run Calibration…", self, @selector(calibrate:));
     _force = KFSecondaryLabel(@"");
     self.view = KFPane(
@@ -213,7 +218,7 @@ static const CGFloat kPaneWidth = 560.0;
                                                              @"loud sounds. Right: lighter.")
                           ],
                           4.0)),
-            KFFormRow(@"Force:", KFVStack(@[ _force, _adapt, _calibrate ], 8.0)),
+            KFFormRow(@"Force:", KFVStack(@[ _force, _forceEnable, _adapt, _calibrate ], 8.0)),
         ],
         kPaneWidth);
 }
@@ -231,15 +236,26 @@ static const CGFloat kPaneWidth = 560.0;
         }
     }
     _pack.enabled = _pack.numberOfItems > 0;
-    const BOOL force = self.context.power.forceStatus != KFForceStatusUnavailable;
+    const BOOL sensor = kf_sensor_probe();
+    const KFForceStatus forceStatus = self.context.power.forceStatus;
+    const BOOL force =
+        sensor && prefs.forceSensingEnabled &&
+        (forceStatus == KFForceStatusLive || forceStatus == KFForceStatusNeedsCalibration);
     _sensitivity.doubleValue = prefs.sensitivity;
     _sensitivity.enabled = force;
+    _forceEnable.state = prefs.forceSensingEnabled;
+    _forceEnable.enabled = sensor;
     _adapt.state = prefs.autoAdapt;
     _adapt.enabled = force;
     _calibrate.enabled = force;
-    _force.stringValue = force ? @"Measured with the motion sensor."
-                               : @"Not available on this Mac: every key plays at the same "
-                                 @"strength.";
+    if (!sensor) {
+        _force.stringValue = @"Not available on this Mac: every key plays at the same strength.";
+    } else if (!prefs.forceSensingEnabled) {
+        _force.stringValue = @"Off until enabled; the driver is not changed.";
+    } else {
+        _force.stringValue = force ? @"Measured with the motion sensor."
+                                   : @"Enabled; run calibration for best results.";
+    }
 }
 
 - (void)changeSetting:(id)sender {
@@ -250,6 +266,8 @@ static const CGFloat kPaneWidth = 560.0;
         prefs.packId = _pack.selectedItem.representedObject;
     } else if (sender == _sensitivity) {
         prefs.sensitivity = (float)_sensitivity.doubleValue;
+    } else if (sender == _forceEnable) {
+        prefs.forceSensingEnabled = _forceEnable.state == NSControlStateValueOn;
     } else if (sender == _adapt) {
         prefs.autoAdapt = _adapt.state == NSControlStateValueOn;
     }

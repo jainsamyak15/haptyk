@@ -58,6 +58,7 @@ static void OnOutputChanged(void *ctx);
 @property (nonatomic, readwrite, copy, nullable) NSString *lastError;
 - (void)handle:(KFPowerEvent)event;
 - (void)shoutTripped;
+- (void)startSensor;
 @end
 
 static void WakeOnMain(void *ctx) {
@@ -322,9 +323,20 @@ static void OnOutputChanged(void *ctx) {
         os_log_error(KFLogPower(), "audio did not start: %{public}s", kf_status_string(audio));
     }
     atomic_store_explicit(&g_audio_active, audio == KF_OK, memory_order_relaxed);
-    if (kf_sensor_probe()) {
-        [self applyCalibration];
-        (void)kf_sensor_start();
+    [self startSensor];
+}
+
+- (void)startSensor {
+    if (!kf_sensor_probe() || !_preferences.forceSensingEnabled) {
+        return;
+    }
+    [self applyCalibration];
+    const kf_status sensor =
+        kf_sensor_start_with_wake(KF_SENSOR_WAKE_INTERVAL); /* Explicit user opt-in. */
+    if (sensor != KF_OK) {
+        self.lastError = @(kf_status_string(sensor));
+        os_log_error(KFLogPower(), "force sensor did not start: %{public}s",
+                     kf_status_string(sensor));
     }
 }
 
@@ -462,6 +474,12 @@ static void OnOutputChanged(void *ctx) {
         [self loadCurrentPack];
     } else if ([key isEqualToString:@"idleTimeoutS"] && self.state == KFPowerStateActive) {
         [self startTimers];
+    } else if ([key isEqualToString:@"forceSensingEnabled"]) {
+        if (self.state == KFPowerStateActive) {
+            kf_sensor_stop();
+            [self startSensor];
+        }
+        [self updateForceStatus];
     } else if ([key hasPrefix:@"calibration"] || [key isEqualToString:@"sensitivity"] ||
                [key isEqualToString:@"autoAdapt"]) {
         [self applyCalibration];
@@ -548,6 +566,8 @@ static NSString *HardwareModel(void) {
         status = KFForceStatusUnavailable;
     } else if (kf_keytap_external_keyboards() > 0) {
         status = KFForceStatusExternalKeyboard;
+    } else if (!_preferences.forceSensingEnabled) {
+        status = KFForceStatusDisabled;
     } else if (_preferences.calibration == nil) {
         status = KFForceStatusNeedsCalibration;
     }

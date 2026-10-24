@@ -176,6 +176,11 @@ static int parse_options(int argc, char **argv, options *out) {
         }
         const char *flag = argv[i];
         const char *value = i + 1 < argc ? argv[i + 1] : NULL;
+        const bool flag_takes_value = strcmp(flag, "--out") == 0 || strcmp(flag, "--label") == 0 ||
+                                      strcmp(flag, "--seconds") == 0 ||
+                                      strcmp(flag, "--stop-after-keys") == 0 ||
+                                      strcmp(flag, "--tap") == 0 || strcmp(flag, "--wake") == 0 ||
+                                      strcmp(flag, "--interval-us") == 0;
         if (strcmp(flag, "--help") == 0 || strcmp(flag, "-h") == 0) {
             fputs(k_usage, stdout);
             return EXIT_SUCCESS;
@@ -187,32 +192,31 @@ static int parse_options(int argc, char **argv, options *out) {
             no_keys = true;
         } else if (strcmp(flag, "--out") == 0 && value != NULL && value[0] != '\0') {
             out->out_path = value;
-            i++;
         } else if (strcmp(flag, "--label") == 0 && value != NULL && label_is_valid(value)) {
             out->label = value;
-            i++;
-        } else if (strcmp(flag, "--seconds") == 0 && value != NULL &&
-                   kf_tool_parse_u64(value, MAX_SECONDS, &out->seconds) && out->seconds > 0u) {
-            i++;
-        } else if (strcmp(flag, "--stop-after-keys") == 0 && value != NULL &&
-                   kf_tool_parse_u64(value, MAX_KEYS, &out->stop_after_keys) &&
-                   out->stop_after_keys > 0u) {
-            i++;
+        } else if ((strcmp(flag, "--seconds") == 0 && value != NULL &&
+                    kf_tool_parse_u64(value, MAX_SECONDS, &out->seconds) && out->seconds > 0u) ||
+                   (strcmp(flag, "--stop-after-keys") == 0 && value != NULL &&
+                    kf_tool_parse_u64(value, MAX_KEYS, &out->stop_after_keys) &&
+                    out->stop_after_keys > 0u) ||
+                   (strcmp(flag, "--wake") == 0 && value != NULL &&
+                    parse_wake(value, &out->wake))) {
+            ++i;
+            continue;
         } else if (strcmp(flag, "--tap") == 0 && value != NULL &&
                    (strcmp(value, "session") == 0 || strcmp(value, "hid") == 0)) {
             out->tap = strcmp(value, "hid") == 0 ? TAP_HID : TAP_SESSION;
-            i++;
-        } else if (strcmp(flag, "--wake") == 0 && value != NULL && parse_wake(value, &out->wake)) {
-            i++;
         } else if (strcmp(flag, "--interval-us") == 0 && value != NULL &&
                    kf_tool_parse_u64(value, KF_SENSOR_MAX_INTERVAL_US, &interval) &&
                    interval >= KF_SENSOR_MIN_INTERVAL_US) {
             out->interval_us = (uint32_t)interval;
             interval_given = true;
-            i++;
         } else {
             fprintf(stderr, "sensor-log: unknown option or bad value: %s\n\n%s", flag, k_usage);
             return EXIT_USAGE;
+        }
+        if (flag_takes_value) {
+            ++i;
         }
     }
     if (kf_tool_match_is_empty(&out->match)) {
@@ -472,7 +476,7 @@ static int select_device(IOHIDManagerRef manager, const kf_tool_match *match, kf
         fprintf(stderr, "sensor-log: %ld devices match; the flags must select exactly one\n",
                 (long)count);
         for (CFIndex i = 0; i < count; ++i) {
-            kf_hid_info_read((IOHIDDeviceRef)(uintptr_t)CFArrayGetValueAtIndex(devices, i), info);
+            kf_hid_info_read(kf_hid_ref(CFArrayGetValueAtIndex(devices, i)), info);
             fprintf(stderr, "  %s  usage %04llx:%04llx  transport %s  registry-id 0x%llx\n",
                     info->product, (unsigned long long)info->usage_page,
                     (unsigned long long)info->usage, info->transport,
@@ -483,7 +487,7 @@ static int select_device(IOHIDManagerRef manager, const kf_tool_match *match, kf
         }
         return EXIT_NO_DEVICE;
     }
-    *out = (IOHIDDeviceRef)(uintptr_t)CFArrayGetValueAtIndex(devices, 0);
+    *out = kf_hid_ref(CFArrayGetValueAtIndex(devices, 0));
     CFRetain(*out);
     CFRelease(devices);
     kf_hid_info_read(*out, info);
@@ -497,8 +501,11 @@ static FILE *open_output(const options *opt) {
     /* "x" (C11): fail instead of silently replacing an earlier measurement. */
     FILE *f = fopen(opt->out_path, opt->force ? "w" : "wx");
     if (f == NULL) {
-        fprintf(stderr, "sensor-log: cannot create %s: %s%s\n", opt->out_path, strerror(errno),
-                errno == EEXIST ? " (use --force to overwrite)" : "");
+        const int error = errno;
+        char error_text[256] = "unknown error";
+        (void)strerror_r(error, error_text, sizeof error_text);
+        fprintf(stderr, "sensor-log: cannot create %s: %s%s\n", opt->out_path, error_text,
+                error == EEXIST ? " (use --force to overwrite)" : "");
     }
     return f;
 }
@@ -676,7 +683,10 @@ static int run(const options *opt, IOHIDDeviceRef device, const kf_hid_info *inf
     }
     const bool write_failed = fflush(g_log.out) != 0 || ferror(g_log.out) != 0;
     if (g_log.out != stdout && fclose(g_log.out) != 0) {
-        fprintf(stderr, "sensor-log: closing %s failed: %s\n", opt->out_path, strerror(errno));
+        const int error = errno;
+        char error_text[256] = "unknown error";
+        (void)strerror_r(error, error_text, sizeof error_text);
+        fprintf(stderr, "sensor-log: closing %s failed: %s\n", opt->out_path, error_text);
         return EXIT_FAILURE;
     }
     if (write_failed) {

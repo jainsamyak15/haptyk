@@ -777,6 +777,8 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
         return @"Force: Off (external keyboard)";
     case KFForceStatusUnavailable:
         return @"Force: Not on this Mac";
+    case KFForceStatusDisabled:
+        return @"Force: Enable in Settings";
     case KFForceStatusNeedsCalibration:
         return @"Force: Calibrate";
     }
