@@ -59,7 +59,7 @@
 #define FORMAT_VERSION   1
 #define MAX_SECONDS      86400u
 #define MAX_REPORT_BYTES 65536u
-#define OUTPUT_BUFFER    (1u << 20)
+#define OUTPUT_BUFFER    (1u << 20u)
 #define NO_REPORT_HINT_S 3u
 #define NS_PER_S         1000000000ULL
 #define KEYS_TAIL_NS     500000000ULL /* Keep logging after the last key: its response. */

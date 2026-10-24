@@ -108,7 +108,8 @@ static void print_device(AudioObjectID device, bool first) {
     if (get(device, kAudioDevicePropertyTransportType, kAudioObjectPropertyScopeGlobal,
             kAudioObjectPropertyElementMain, &transport, sizeof transport)) {
         for (int i = 0; i < 4; ++i) {
-            const char c = (char)((transport >> (24 - 8 * i)) & 0xffu);
+            const unsigned shift = 24u - 8u * (unsigned)i;
+            const char c = (char)((transport >> shift) & 0xffu);
             fourcc[i] = (char)(c >= 0x20 && c < 0x7f ? c : '?');
         }
     }
