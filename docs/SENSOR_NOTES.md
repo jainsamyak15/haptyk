@@ -186,10 +186,11 @@ The force path (M2) is enabled on Mac17,3:
 1. `KF_SENSOR_LAYOUT_MEASURED` is 1 with the measured `int32x3@6`, `2^-16 g` scale and 400 Hz
    nominal rate. `Tests/Fixtures/sensor/Mac17,3_macos-27.0_accel-rest.csv` anchors the decoder to
    a real report.
-2. Force sensing is opt-in in the app. Until the user enables it in Sound settings, the sensor
-   start is read-only and does not change the driver's settings. After opt-in, the app wakes only
-   the accelerometer's report interval while its sensor is running and restores the driver
-   afterward. Report timestamps retain the actual 400 Hz cadence through callback batching.
+2. Force sensing is enabled by default in the app, with an off switch in Sound settings. When
+   disabled, sensor start is read-only and does not change the driver's settings. When enabled,
+   the app wakes only the accelerometer's report interval while its sensor is running and restores
+   the driver afterward. Report timestamps retain the actual 400 Hz cadence through callback
+   batching.
 3. The existing calibration wizard first measures rest, then asks for soft, hard and normal
    typing. Rest-floor measurement now uses the 95th percentile so one accidental bump cannot
    reject all soft taps.

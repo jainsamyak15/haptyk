@@ -30,8 +30,8 @@ extern NSString *const KFPreferencesKey;
 @property (nonatomic) NSInteger idleTimeoutS;           ///< 5..600. Default 30.
 @property (nonatomic) float sensitivity; ///< -1 .. +1, shifts soft_g and slam_g. Default 0.
 @property (nonatomic) BOOL autoAdapt;    ///< Default YES.
-/// Explicitly allows Keyfeel to enable the accelerometer driver's reporting while typing.
-/// Default NO: force sensing stays off until the user opts in.
+/// Allows Keyfeel to enable the accelerometer driver's reporting while typing. Default YES;
+/// users can turn force sensing off in Sound settings.
 @property (nonatomic) BOOL forceSensingEnabled;
 /// calibration.v1 as a dictionary: noise_floor_g, soft_g, slam_g, row_gain (6 numbers).
 @property (nonatomic, copy, nullable) NSDictionary<NSString *, id> *calibration;

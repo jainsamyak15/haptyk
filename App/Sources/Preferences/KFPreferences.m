@@ -63,7 +63,7 @@ static float Clamp(float value, float lo, float hi) {
             kIdleTimeout : @30,
             kSensitivity : @0.0f,
             kAutoAdapt : @YES,
-            kForceSensing : @NO,
+            kForceSensing : @YES,
             kBigEnter : @NO,
             kShoutMode : @NO,
             kForceMeter : @NO,
