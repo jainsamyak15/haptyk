@@ -17,6 +17,12 @@
 #import "Stats/KFStatsController.h"
 #import "Support/KFTheme.h"
 
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 260000
+#define KF_HAS_LIQUID_GLASS 1
+#else
+#define KF_HAS_LIQUID_GLASS 0
+#endif
+
 static const CGFloat kWidth = 344.0;
 static const CGFloat kPad = 16.0;
 static const CGFloat kCorner = 16.0;
@@ -374,7 +380,9 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
         glass.radius = radius;
         glass.backdrop = _backdropBlur;
         tile = glass;
-    } else if (@available(macOS 26.0, *)) {
+    }
+#if KF_HAS_LIQUID_GLASS
+    else if (@available(macOS 26.0, *)) {
         // The content goes inside the glass: only a glass view's content view is drawn above
         // it. A container lifts its glass above everything else, which it would blur.
         NSGlassEffectView *glass = [NSGlassEffectView new];
@@ -393,7 +401,9 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
                                  }];
         glass.contentView = inner;
         tile = glass;
-    } else {
+    }
+#endif
+    else {
         NSVisualEffectView *blur = [NSVisualEffectView new];
         blur.material = NSVisualEffectMaterialPopover;
         blur.blendingMode = NSVisualEffectBlendingModeBehindWindow;
@@ -613,6 +623,7 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
     NSView *holder = _stack;
     BOOL liveGlass = NO;
     if (glass && !_simulateGlass) {
+#if KF_HAS_LIQUID_GLASS
         if (@available(macOS 26.0, *)) {
             liveGlass = YES;
             // Renders the tiles' glass as one batch. Spacing 0: separate tiles, never merged.
@@ -637,6 +648,7 @@ static NSImageView *Icon(NSString *symbol, NSString *description) {
             group.translatesAutoresizingMaskIntoConstraints = NO;
             holder = group;
         }
+#endif
     }
     [background addSubview:holder];
     [NSLayoutConstraint activateConstraints:@[
@@ -960,6 +972,7 @@ static BOOL GlassHoldsContent(NSView *view, NSUInteger *count) {
     if (view.hidden) {
         return YES;
     }
+#if KF_HAS_LIQUID_GLASS
     if (@available(macOS 26.0, *)) {
         if ([view isKindOfClass:NSGlassEffectView.class]) {
             ++*count;
@@ -974,6 +987,7 @@ static BOOL GlassHoldsContent(NSView *view, NSUInteger *count) {
             }
         }
     }
+#endif
     for (NSView *sub in view.subviews) {
         if (!GlassHoldsContent(sub, count)) {
             return NO;
