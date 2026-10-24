@@ -90,6 +90,11 @@ All notable changes are recorded here. The format follows
   bundled pack, every licensed alternative and every unlicensed community pack considered, each
   with a demo rendered as the engine plays it (`Tools/py/render_demo.py`), its files and its
   source, plus a review sheet for the owner's verdicts.
+- A landing page in `frontend/` (Next.js 16, ADR-0026), with one design per appearance: dark in
+  the app's Graphite & Signal colours with pressable 3D keycaps, light in bright colours with
+  googly-eyed keycap characters, and a nav toggle that remembers the visitor's pick. Both have
+  a typing demo that plays real pack recordings in the browser, the four switch families,
+  measured performance numbers, an FAQ and DMG download buttons.
 
 ### Fixed
 - The diagnostics object no longer ends its MetricKit subscription from `dealloc`, where

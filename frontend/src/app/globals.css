@@ -1,0 +1,379 @@
+@import "tailwindcss";
+
+/* Two designs, one per appearance. Dark: "Graphite & Signal" from the app (warm graphite,
+ * cream keycaps, one signal orange; src/components). Light: warm paper and a box of bright
+ * keycaps with googly-eyed characters (src/components/light). The page holds both; the rules
+ * at the bottom show exactly one. */
+@theme {
+  /* Dark design (by role). `ink` and `page` also follow the appearance, see :root below. */
+  --color-page: #121211;
+  --color-surface: #1c1b19;
+  --color-raised: #272523;
+  --color-well: #0d0d0c;
+  --color-line: #34312d;
+  --color-grid: rgb(52 49 45 / 0.3);
+  --color-ink: #f2efe9;
+  --color-ink-dim: #b7b2a8;
+  --color-mute: #8c877e;
+
+  --color-signal: #ff6b1f;
+  --color-signal-deep: #b9440c;
+  --color-signal-ink: #1b0f05;
+
+  --color-cap: #ebe6dc;
+  --color-cap-side: #b4ad9f;
+  --color-cap-ink: #121211;
+  --color-mod: #4b4843;
+  --color-mod-side: #2a2825;
+  --color-mod-ink: #f2efe9;
+
+  --color-stem-linear: #e5483d;
+  --color-stem-tactile: #c98d52;
+  --color-stem-clicky: #5b84ff;
+  --color-stem-other: #a7b1bd;
+
+  /* Light design. */
+  --color-paper: #f6f4ef;
+  --color-paper-deep: #ece8df;
+  --color-stone: #e3dfd5;
+  --color-ink-soft: #4a4740;
+  --color-ink-mute: #77736a;
+  --color-sun: #f9dc5c;
+  --color-sun-soft: #f6ebb8;
+  --color-lilac: #bb8df0;
+  --color-tang: #ee6b47;
+  --color-olive: #a5ad3c;
+  --color-volt: #3c44ff;
+  --color-leaf: #4caf5a;
+  --color-cherry: #e5483d;
+  --color-maroon: #7c3131;
+
+  --font-display: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --animate-pop: pop 720ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  --animate-blink-caret: blink-caret 1s steps(1) infinite;
+  --animate-marquee: marquee 90s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-twinkle: twinkle 3.2s ease-in-out infinite;
+  --animate-tap: tap 1.8s cubic-bezier(0.3, 0, 0.2, 1) infinite;
+  --animate-blink: blink 5.5s ease-in-out infinite;
+
+  @keyframes pop {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 0) scale(0.6) rotate(var(--tilt, 0deg));
+    }
+    18% {
+      opacity: 1;
+      transform: translate(-50%, -18px) scale(1.08) rotate(var(--tilt, 0deg));
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -70px) scale(1) rotate(var(--tilt, 0deg));
+    }
+  }
+  @keyframes blink-caret {
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 -14px;
+    }
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      scale: 1;
+      rotate: 0deg;
+    }
+    50% {
+      scale: 0.78;
+      rotate: 25deg;
+    }
+  }
+  /* The light hero's keycap: rests, dips like a real press, springs back. In em, so it scales
+   * with the headline. */
+  @keyframes tap {
+    0%,
+    55%,
+    100% {
+      transform: translateY(0);
+      box-shadow: 0 0.2em 0 0 var(--color-ink);
+    }
+    62% {
+      transform: translateY(0.17em);
+      box-shadow: 0 0.03em 0 0 var(--color-ink);
+    }
+    72% {
+      transform: translateY(0);
+      box-shadow: 0 0.2em 0 0 var(--color-ink);
+    }
+  }
+  @keyframes blink {
+    0%,
+    92%,
+    100% {
+      transform: scaleY(1);
+    }
+    95% {
+      transform: scaleY(0.08);
+    }
+  }
+}
+
+@keyframes mark-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes hop {
+  0% {
+    scale: 1 1;
+  }
+  35% {
+    scale: 1.08 0.9;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  /* Light appearance: from the system, unless the visitor picked dark with the toggle... */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --color-page: #f6f4ef;
+      --color-ink: #0b0b0b;
+    }
+  }
+  /* ...or picked light with the toggle, whatever the system says. */
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --color-page: #f6f4ef;
+    --color-ink: #0b0b0b;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 92px;
+  }
+
+  body {
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: var(--color-signal-ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-signal);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
+}
+
+@layer components {
+  /* ---- Which design shows ---------------------------------------------------------- */
+  .design-light {
+    display: none;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .design-dark {
+      display: none;
+    }
+    :root:not([data-theme="dark"]) .design-light {
+      display: block;
+    }
+  }
+  :root[data-theme="light"] .design-dark {
+    display: none;
+  }
+  :root[data-theme="light"] .design-light {
+    display: block;
+  }
+  /* The light design's display face. */
+  .design-light {
+    --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /* ---- Dark design ------------------------------------------------------------------ */
+  .edge {
+    box-shadow: 0 0 0 1px var(--color-line);
+  }
+  .rule-t {
+    border-top: 1px solid var(--color-line);
+  }
+  .rule-b {
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* A 3D keycap: the outer box is the skirt (side colour), the inner .cap-top is the face.
+   * Pressing moves only the face down, so nothing around it shifts. Size the outer box. */
+  .cap {
+    --top: var(--color-cap);
+    --side: var(--color-cap-side);
+    --ink: var(--color-cap-ink);
+    --depth: 9px;
+    --r: 16px;
+    position: relative;
+    display: block;
+    border-radius: var(--r);
+    background: var(--side);
+    box-shadow:
+      0 2px 0 rgb(0 0 0 / 0.35),
+      0 18px 30px -12px rgb(0 0 0 / 0.7);
+  }
+  .cap-top {
+    position: absolute;
+    inset: 3px 5px var(--depth) 5px;
+    display: grid;
+    place-items: center;
+    border-radius: calc(var(--r) - 4px);
+    background: var(--top);
+    color: var(--ink);
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.35),
+      inset 0 -3px 0 rgb(0 0 0 / 0.08);
+    transition: transform 70ms ease-out;
+  }
+  .cap[data-down="true"] .cap-top {
+    transform: translateY(calc(var(--depth) - 3px));
+  }
+  .cap-signal {
+    --top: var(--color-signal);
+    --side: var(--color-signal-deep);
+    --ink: var(--color-signal-ink);
+  }
+  .cap-mod {
+    --top: var(--color-mod);
+    --side: var(--color-mod-side);
+    --ink: var(--color-mod-ink);
+  }
+
+  /* Dotted leader for the spec sheet. */
+  .leader {
+    flex: 1;
+    min-width: 24px;
+    margin: 0 10px 5px;
+    border-bottom: 2px dotted currentColor;
+    opacity: 0.35;
+  }
+
+  /* ---- Light design ----------------------------------------------------------------- */
+  /* A highlighted word: a flat block of colour that sweeps in under the text. */
+  .mark {
+    position: relative;
+    display: inline-block;
+    isolation: isolate;
+    padding: 0 0.16em 0.04em;
+  }
+  .mark::before {
+    content: "";
+    position: absolute;
+    inset: 0.06em 0 0;
+    z-index: -1;
+    background: var(--mark, var(--color-sun));
+    transform-origin: left center;
+    animation: mark-in 0.7s cubic-bezier(0.7, 0, 0.2, 1) 0.25s both;
+  }
+
+  /* A chunky keycap: thick ink outline with a solid "depth" shadow below. */
+  .keycap {
+    --depth: 5px;
+    border: 2.5px solid var(--color-ink);
+    border-radius: 12px;
+    box-shadow: 0 var(--depth) 0 0 var(--color-ink);
+    transition:
+      transform 70ms ease-out,
+      box-shadow 70ms ease-out,
+      background-color 120ms ease-out;
+  }
+  .keycap[data-down="true"] {
+    transform: translateY(calc(var(--depth) - 1px));
+    box-shadow: 0 1px 0 0 var(--color-ink);
+  }
+
+  /* Googly eyes blink on their own schedule. */
+  .eyelid {
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  /* Characters squash for a beat whenever someone types in the demo. */
+  .buddy-hop {
+    animation: hop 260ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+
+  /* ---- Shared ----------------------------------------------------------------------- */
+  /* FAQ: native <details>, styled (both designs). */
+  .faq summary {
+    list-style: none;
+  }
+  .faq summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq[open] .faq-q .cap-top {
+    background: var(--color-signal);
+    color: var(--color-signal-ink);
+  }
+  .faq[open] .faq-icon {
+    background: var(--color-sun);
+  }
+  .faq[open] .faq-plus-v {
+    transform: scaleY(0);
+  }
+
+  /* The demo's big tap pad, only on touch screens. */
+  .coarse-only {
+    display: none;
+  }
+  @media (pointer: coarse) {
+    .coarse-only {
+      display: grid;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .mark::before {
+    animation: none;
+  }
+}

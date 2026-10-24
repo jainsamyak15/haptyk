@@ -386,3 +386,27 @@ decision; supersede it with a new one.
 - **Consequences:** `make lint` and `make ci` run out of the box after `make bootstrap`, with no
   system install. The wheel is a dev-only dependency, never shipped. The first lint run cleared
   the backlog of findings it had never had the chance to report.
+
+## ADR-0026: A Next.js landing page in `frontend/`
+
+- **Status:** Accepted (owner's request, 2026-10-24)
+- **Context:** Keyfeel needs a page where people can hear it and download the DMG. The
+  owner asked for a Next.js site with a playful, funky feel. A first draft followed another
+  product's site too closely and was redone in Keyfeel's own look.
+- **Decision:** A separate Next.js 16 app (App Router, Turbopack, Tailwind CSS 4, TypeScript) in
+  `frontend/`, prerendered to static pages, with one design per appearance: dark in the app's
+  Graphite & Signal palette (ADR-0023) with pressable 3D keycaps as its motif, light in warm
+  paper and bright colours with googly-eyed keycap characters (the first draft, kept for light
+  mode at the owner's request). CSS shows the one matching the system appearance; a toggle in
+  the nav overrides it. It
+  has its own `package.json` and lockfile, is
+  outside `make ci`, and never ships inside the Mac app, whose rules (C11 and Objective-C only,
+  no web views) are unchanged. Its in-browser demo plays four MIT-licensed packs (Mechvibes,
+  kbsim) as WAV, with their licence texts and credits on the page. Download buttons point at
+  the newest GitHub release's `Keyfeel.dmg`, or at `NEXT_PUBLIC_DMG_URL` when it is set.
+- **Consequences:** The site's copy states measured numbers from `docs/PERFORMANCE.md` and the
+  app's defaults; both have to be kept in step. The light design stays close to the other
+  product's site that inspired it (its FAQ heading uses the same words); revisit before
+  launch. Both designs ship in the page, so changes to shared content belong in
+  `src/lib/` (FAQ answers, demo behaviour, facts) to stay in step. Packs licensed or permitted only for the app
+  stay out of the web demo.
