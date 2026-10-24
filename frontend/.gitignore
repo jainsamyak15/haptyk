@@ -40,5 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Local DMG builds, if you serve one from /downloads
-/public/downloads/
+# The site serves the released DMG from /downloads (docs/RELEASING.md); nothing else there is committed
+/public/downloads/*
+!/public/downloads/Keyfeel.dmg

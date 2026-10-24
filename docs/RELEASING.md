@@ -36,8 +36,13 @@ repository.
    staples that, runs `generate_appcast` over `build/releases/`, and fails if the DMG is larger
    than 30 MB. `scripts/release.sh --local` does the same with an ad-hoc signature and no
    notarization, to check contents and size without credentials.
-4. Upload the DMG and the appcast, then test the DMG on a clean Mac: install, onboarding,
-   typing, percentile and badge, and an update from the previous version.
+4. Publish the DMG on the website: copy it to `frontend/public/downloads/Keyfeel.dmg` (always
+   this name; the site links to `/downloads/Keyfeel.dmg`), set `version` and `dmgSize` in
+   `frontend/src/lib/site.ts`, and commit both. The site's host serves the file, and its
+   bandwidth limits cover every download. Each DMG stays in the git history for good (about
+   25 MB per release), so commit only the final build. Upload the appcast, then test the DMG
+   on a clean Mac: install, onboarding, typing, percentile and badge, and an update from the
+   previous version.
 5. Tag the release commit `vX.Y.Z`.
 
 ## Signing notes
