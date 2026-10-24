@@ -195,7 +195,7 @@ void test_pack_holds_the_boom(void) {
 
 static void put_le(FILE *f, uint32_t value, int bytes) {
     for (int i = 0; i < bytes; ++i) {
-        (void)fputc((int)((value >> (8 * i)) & 0xffu), f);
+        (void)fputc((int)((value >> (8u * (unsigned)i)) & 0xffu), f);
     }
 }
 

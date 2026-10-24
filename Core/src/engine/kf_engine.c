@@ -319,7 +319,8 @@ kf_status kf_engine_start(void) {
     const AudioStreamBasicDescription format = {
         .mSampleRate = rate,
         .mFormatID = kAudioFormatLinearPCM,
-        .mFormatFlags = kAudioFormatFlagsNativeFloatPacked | kAudioFormatFlagIsNonInterleaved,
+        .mFormatFlags =
+            (UInt32)kAudioFormatFlagsNativeFloatPacked | (UInt32)kAudioFormatFlagIsNonInterleaved,
         .mBytesPerPacket = sizeof(float),
         .mFramesPerPacket = 1u,
         .mBytesPerFrame = sizeof(float),

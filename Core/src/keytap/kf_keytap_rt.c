@@ -54,7 +54,7 @@ KF_RT_SAFE bool kf_keytap_modifier_change(uint16_t keycode, uint64_t prev_flags,
         mask = KF_FLAG_FUNCTION;
         break;
     case KF_VK_CAPS_LOCK:
-        if (((prev_flags ^ flags) & KF_FLAG_CAPS_LOCK) == 0u) {
+        if (((prev_flags ^ flags) & KF_FLAG_CAPS_LOCK) == UINT64_C(0)) {
             return false;
         }
         *is_down = true; /* Each toggle is one press. */
@@ -112,7 +112,7 @@ KF_RT_SAFE void kf_keytap_handle_key(kf_keytap_ctx *ctx, uint16_t keycode, bool 
 
 /* ------------------------------------------------------------------ Shout Mode */
 
-#define LETTER(vk) (1ULL << (vk))
+#define LETTER(vk) (UINT64_C(1) << (unsigned)(vk))
 static const uint64_t k_letter_keys =
     LETTER(KF_VK_A) | LETTER(KF_VK_B) | LETTER(KF_VK_C) | LETTER(KF_VK_D) | LETTER(KF_VK_E) |
     LETTER(KF_VK_F) | LETTER(KF_VK_G) | LETTER(KF_VK_H) | LETTER(KF_VK_I) | LETTER(KF_VK_J) |
@@ -124,7 +124,8 @@ static const uint64_t k_letter_keys =
 
 KF_RT_SAFE uint64_t kf_keytap_shout_flags(uint16_t keycode, uint64_t flags, float rolling_force) {
     const uint64_t shortcut = KF_FLAG_COMMAND | KF_FLAG_CONTROL | KF_FLAG_OPTION;
-    if (keycode >= 64u || ((k_letter_keys >> keycode) & 1u) == 0u || (flags & shortcut) != 0u ||
+    if (keycode >= 64u || ((k_letter_keys >> (unsigned)keycode) & UINT64_C(1)) == UINT64_C(0) ||
+        (flags & shortcut) != UINT64_C(0) ||
         !(rolling_force >= KF_SHOUT_FORCE)) { /* Also false for NaN and "no force yet" (-1). */
         return flags;
     }
@@ -174,8 +175,10 @@ KF_RT_SAFE bool kf_keytap_take_shout_tripped(void) {
 #include <IOKit/hid/IOHIDManager.h>
 
 /* Declared here, not in the header, so the header stays framework-free. */
-CGEventRef kf_keytap_on_event(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *ref);
-void kf_keytap_on_report(void *ref, IOReturn result, void *sender, IOHIDValueRef value);
+/* clang-format off */
+CGEventRef kf_keytap_on_event(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *ref); // NOLINT(misc-use-internal-linkage): registered by kf_keytap.c.
+void kf_keytap_on_report(void *ref, IOReturn result, void *sender, IOHIDValueRef value); // NOLINT(misc-use-internal-linkage): registered by kf_keytap.c.
+/* clang-format on */
 
 static KF_RT_SAFE void bump(_Atomic(uint64_t) *counter) {
     atomic_store_explicit(counter, atomic_load_explicit(counter, memory_order_relaxed) + 1u,

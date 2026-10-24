@@ -33,7 +33,7 @@ KF_RT_SAFE OSStatus kf_engine_output_callback(void *ctx, AudioUnitRenderActionFl
         channels[i] = (float *)io->mBuffers[i].mData;
     }
     if (kf_engine_render(channels, count, frames, start)) {
-        *flags |= kAudioUnitRenderAction_OutputIsSilence;
+        *flags |= (AudioUnitRenderActionFlags)kAudioUnitRenderAction_OutputIsSilence;
     }
     kf_engine_note_callback(start, kf_time_now_ns(), frames);
     return noErr;

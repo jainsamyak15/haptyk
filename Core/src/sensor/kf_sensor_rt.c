@@ -202,9 +202,10 @@ KF_RT_SAFE bool kf_sensor_decode_report(const uint8_t *report, size_t length, ui
 
 #include <IOKit/hid/IOHIDDevice.h>
 
-void kf_sensor_on_report(void *ref, IOReturn result, void *sender, IOHIDReportType type,
-                         uint32_t report_id, uint8_t *report, CFIndex length, uint64_t timestamp);
-void kf_sensor_on_timer(CFRunLoopTimerRef timer, void *info);
+/* clang-format off */
+void kf_sensor_on_report(void *ref, IOReturn result, void *sender, IOHIDReportType type, uint32_t report_id, uint8_t *report, CFIndex length, uint64_t timestamp); // NOLINT(misc-use-internal-linkage): registered by kf_sensor.c.
+void kf_sensor_on_timer(CFRunLoopTimerRef timer, void *info); // NOLINT(misc-use-internal-linkage): registered by kf_sensor.c.
+/* clang-format on */
 
 /* Sensor thread: one report -> one sample.  M0 measured the HID timestamp as mach ticks on the
  * core clock, so it keeps the 400 Hz sample cadence even when macOS batches callbacks. */

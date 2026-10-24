@@ -159,7 +159,7 @@ static bool read_first_fixture_report(uint8_t out[KF_SENSOR_REPORT_BYTES]) {
             if (hi < 0 || lo < 0) {
                 break;
             }
-            out[i] = (uint8_t)((hi << 4) | lo);
+            out[i] = (uint8_t)(((unsigned)hi << 4u) | (unsigned)lo);
             found = i + 1u == KF_SENSOR_REPORT_BYTES;
         }
         if (found) {

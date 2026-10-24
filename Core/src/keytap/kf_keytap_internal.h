@@ -18,22 +18,20 @@
 
 /* Event flag bits, mirrored so the modifier logic is host-testable. kf_keytap.c checks them
  * against the SDK (IOLLEvent.h, CGEventTypes.h) at compile time on macOS. */
-enum {
-    KF_FLAG_LEFT_CONTROL = 0x00000001,
-    KF_FLAG_LEFT_SHIFT = 0x00000002,
-    KF_FLAG_RIGHT_SHIFT = 0x00000004,
-    KF_FLAG_LEFT_COMMAND = 0x00000008,
-    KF_FLAG_RIGHT_COMMAND = 0x00000010,
-    KF_FLAG_LEFT_OPTION = 0x00000020,
-    KF_FLAG_RIGHT_OPTION = 0x00000040,
-    KF_FLAG_RIGHT_CONTROL = 0x00002000,
-    KF_FLAG_CAPS_LOCK = 0x00010000,
-    KF_FLAG_SHIFT = 0x00020000,   /* Device-independent: what Shout Mode adds... */
-    KF_FLAG_CONTROL = 0x00040000, /* ...and the three it never adds Shift under. */
-    KF_FLAG_OPTION = 0x00080000,
-    KF_FLAG_COMMAND = 0x00100000,
-    KF_FLAG_FUNCTION = 0x00800000,
-};
+#define KF_FLAG_LEFT_CONTROL  UINT64_C(0x00000001)
+#define KF_FLAG_LEFT_SHIFT    UINT64_C(0x00000002)
+#define KF_FLAG_RIGHT_SHIFT   UINT64_C(0x00000004)
+#define KF_FLAG_LEFT_COMMAND  UINT64_C(0x00000008)
+#define KF_FLAG_RIGHT_COMMAND UINT64_C(0x00000010)
+#define KF_FLAG_LEFT_OPTION   UINT64_C(0x00000020)
+#define KF_FLAG_RIGHT_OPTION  UINT64_C(0x00000040)
+#define KF_FLAG_RIGHT_CONTROL UINT64_C(0x00002000)
+#define KF_FLAG_CAPS_LOCK     UINT64_C(0x00010000)
+#define KF_FLAG_SHIFT         UINT64_C(0x00020000) /* Device-independent: what Shout Mode adds... */
+#define KF_FLAG_CONTROL       UINT64_C(0x00040000) /* ...and the three it never adds Shift under. */
+#define KF_FLAG_OPTION        UINT64_C(0x00080000)
+#define KF_FLAG_COMMAND       UINT64_C(0x00100000)
+#define KF_FLAG_FUNCTION      UINT64_C(0x00800000)
 
 #define KF_KEYTAP_MAX_KEYBOARDS 8u
 
