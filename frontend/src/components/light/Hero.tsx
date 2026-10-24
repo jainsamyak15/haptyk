@@ -1,3 +1,5 @@
+import { hero } from "@/lib/content";
+
 import { Buddy } from "./Buddy";
 import { DownloadButton, DownloadMeta, Mark, Sparkle } from "./Bits";
 
@@ -78,21 +80,19 @@ export function LightHero() {
       <div className="relative mx-auto flex min-h-[calc(100svh-84px)] max-w-[1160px] flex-col items-center justify-center px-5 py-28 text-center">
         <h1 className="font-display text-[clamp(44px,7.4vw,100px)] leading-[0.98] tracking-[-0.035em]">
           <span className="md:whitespace-nowrap">
-            <span className="font-extrabold">Your MacBook,</span> <span className="font-light">with a</span>
+            <span className="font-extrabold">{hero.lead}</span> <span className="font-light">{hero.soft}</span>
             {/* Phones: the tile rides along with "with a" instead of taking a line alone. */}
             <TapTile className="ml-[0.2em] inline-grid align-[-0.1em] sm:hidden" />
           </span>
           <span className="mt-[0.12em] flex flex-wrap items-center justify-center gap-x-[0.22em] gap-y-[0.1em]">
             <TapTile className="hidden sm:inline-grid" />
             <Mark>
-              <span className="font-extrabold">mechanical soul.</span>
+              <span className="font-extrabold">{hero.mark}</span>
             </Mark>
           </span>
         </h1>
         <p className="mt-9 max-w-[660px] text-[clamp(18px,1.6vw,21px)] leading-relaxed text-ink-soft">
-          Real recordings of real switches, played the moment you press a key. 25 packs, from Cherry
-          MX Blue to Topre, in a tiny menu bar app that does nothing at all while you&rsquo;re not
-          typing.
+          {hero.body}
         </p>
         <div className="mt-11 flex flex-col items-center gap-4">
           <DownloadButton />
@@ -101,7 +101,7 @@ export function LightHero() {
             href="#l-try"
             className="mt-1 text-[16px] font-semibold underline decoration-2 underline-offset-[6px] hover:decoration-signal"
           >
-            or hear it in your browser first
+            {hero.tryLink}
           </a>
         </div>
       </div>

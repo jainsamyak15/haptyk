@@ -1,5 +1,6 @@
 "use client";
 
+import { tryIt } from "@/lib/content";
 import { selectDemoPack } from "@/lib/demo-store";
 import { demoPacks } from "@/lib/packs";
 import { ROWS, TAP_PAD, useTypingDemo } from "@/lib/typing-demo";
@@ -29,22 +30,20 @@ export function TypeDemo() {
   } = useTypingDemo();
 
   return (
-    <section id="try" className="relative rule-t py-28 sm:py-32">
+    <section id="try" className="relative py-28 sm:py-32">
       <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
-        <Overline n="02">Try it</Overline>
+        <Overline>{tryIt.eyebrow}</Overline>
         <h2 className="mt-5 max-w-[820px] font-display text-[clamp(32px,4.6vw,60px)] leading-[1.05] font-bold tracking-[-0.03em]">
-          Type here. Hear it.
+          {tryIt.title.before}
+          <span className="text-signal">{tryIt.title.mark}</span>
         </h2>
-        <p className="mt-5 max-w-[620px] text-[18px] leading-relaxed text-ink-dim">
-          These are recordings straight from Keyfeel&rsquo;s packs. Pick a switch, click the
-          keyboard and type. Nothing you type leaves this page.
-        </p>
+        <p className="mt-5 max-w-[620px] text-[18px] leading-relaxed text-ink-dim">{tryIt.body}</p>
 
         {/* minmax(0, …): the one-line text box must not set the column's width. */}
         <div className="mt-14 grid grid-cols-1 items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
           <div
             role="radiogroup"
-            aria-label="Switch to play"
+            aria-label={tryIt.picker}
             className="flex gap-3 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0"
           >
             {demoPacks.map((p) => {
@@ -81,7 +80,7 @@ export function TypeDemo() {
             ref={pad}
             tabIndex={0}
             role="application"
-            aria-label={`Typing demo. Press keys to hear ${pack.name}.`}
+            aria-label={tryIt.pad(pack.name)}
             onFocus={() => {
               setFocused(true);
               start();
@@ -104,7 +103,7 @@ export function TypeDemo() {
                     {text ? (
                       text
                     ) : (
-                      <span className="text-mute">{listening ? "type anything…" : "nothing typed yet"}</span>
+                      <span className="text-mute">{listening ? tryIt.listening : tryIt.empty}</span>
                     )}
                     {listening && <span className="ml-0.5 inline-block w-[2px] animate-blink-caret bg-signal">&nbsp;</span>}
                   </bdi>
@@ -115,7 +114,7 @@ export function TypeDemo() {
                 onPointerDown={(e) => e.preventDefault()} // Keep focus, and typing, on the demo.
                 onClick={toggleMute}
                 aria-pressed={muted}
-                aria-label={muted ? "Unmute" : "Mute"}
+                aria-label={muted ? tryIt.unmute : tryIt.mute}
                 className="grid h-[62px] w-[62px] shrink-0 place-items-center rounded-[16px] bg-well edge transition-colors hover:bg-raised"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
@@ -193,7 +192,7 @@ export function TypeDemo() {
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal-ink opacity-50" />
                       <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-signal-ink" />
                     </span>
-                    Click here, then type
+                    {tryIt.start}
                   </span>
                 </button>
               )}
@@ -228,13 +227,9 @@ export function TypeDemo() {
               aria-live="polite"
             >
               <span className="text-ink-dim">
-                {loading
-                  ? `Loading ${pack.name}…`
-                  : listening
-                    ? `Playing ${pack.name}. Keys on the left sound on the left.`
-                    : `${pack.name} is ready to play.`}
+                {loading ? tryIt.loading(pack.name) : listening ? tryIt.playing(pack.name) : tryIt.ready(pack.name)}
               </span>
-              <span>medium-force takes · headphones recommended</span>
+              <span>{tryIt.note}</span>
             </p>
           </div>
         </div>

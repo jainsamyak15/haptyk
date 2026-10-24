@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
+import { download } from "@/lib/content";
 import { site } from "@/lib/site";
 import { type SwitchKind, stemColor } from "@/lib/packs";
 
@@ -62,11 +63,12 @@ export function Cap({
   );
 }
 
-/** "01 / Switches": the small numbered label above each section. */
-export function Overline({ n, children }: { n: string; children: ReactNode }) {
+/** The small label above a section heading, led by an orange tick. */
+export function Overline({ children }: { children: ReactNode }) {
   return (
-    <p className="font-mono text-[13px] font-medium tracking-[0.18em] text-mute uppercase">
-      <span className="text-signal">{n}</span> / {children}
+    <p className="flex items-center gap-3 font-mono text-[13px] font-medium tracking-[0.18em] text-mute uppercase">
+      <span className="h-2 w-2 rounded-[2px] bg-signal" aria-hidden="true" />
+      {children}
     </p>
   );
 }
@@ -105,7 +107,7 @@ function DownloadIcon({ size }: { size: number }) {
  * The DMG download, shaped like the orange Escape keycap: it presses down while held.
  * `size` picks the hero or the nav scale.
  */
-export function DownloadButton({ size = "lg", label = "Download for Mac" }: { size?: "sm" | "lg"; label?: string }) {
+export function DownloadButton({ size = "lg", label = download.label }: { size?: "sm" | "lg"; label?: string }) {
   const big = size === "lg";
   return (
     <a

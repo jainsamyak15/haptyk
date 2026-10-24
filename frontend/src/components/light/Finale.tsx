@@ -1,3 +1,6 @@
+import { cta, footer } from "@/lib/content";
+
+import { Credits } from "../Credits";
 import { Buddy } from "./Buddy";
 import { DownloadButton, DownloadMeta, Logo, Mark, Sparkle } from "./Bits";
 
@@ -32,9 +35,9 @@ export function LightFinalCta() {
           style={{ animationDelay: "1.4s" }}
         />
         <h2 className="relative mx-auto max-w-[900px] font-display text-[clamp(44px,6.4vw,92px)] leading-[1.02] font-extrabold tracking-[-0.035em]">
-          Ready to hear yourself{" "}
+          {cta.title.before}
           <Mark color="var(--color-ink)">
-            <span className="text-paper">type?</span>
+            <span className="text-paper">{cta.title.mark}</span>
           </Mark>
         </h2>
         <div className="relative mt-11 flex flex-col items-center gap-4">
@@ -52,37 +55,15 @@ export function LightFooter() {
       <div className="mx-auto flex max-w-[1320px] flex-col gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-start md:justify-between">
         <div>
           <Logo size={34} />
-          <p className="mt-3 text-[14px] text-ink-mute">© 2026 The Keyfeel Authors.</p>
+          <p className="mt-3 text-[14px] text-ink-mute">{footer.copyright}</p>
         </div>
-        <p className="max-w-[560px] text-[14px] leading-relaxed text-ink-mute">
-          Demo sounds on this page: NK Cream, Cherry MX Blue and Topre from{" "}
-          <a className="underline underline-offset-2" href="https://github.com/hainguyents13/mechvibes">
-            Mechvibes
-          </a>{" "}
-          (MIT, © 2021 Hai Nguyen,{" "}
-          <a className="underline underline-offset-2" href="/sounds/LICENSE-mechvibes.txt">
-            licence
-          </a>
-          ), and Holy Panda from{" "}
-          <a className="underline underline-offset-2" href="https://github.com/tplai/kbsim">
-            kbsim
-          </a>{" "}
-          (MIT, © Thomas Lai,{" "}
-          <a className="underline underline-offset-2" href="/sounds/LICENSE-kbsim.txt">
-            licence
-          </a>
-          ).
-        </p>
-        <nav aria-label="Footer" className="flex gap-6 text-[15px] font-semibold">
-          <a href="#l-try" className="hover:underline">
-            Try it
-          </a>
-          <a href="#l-switches" className="hover:underline">
-            Switches
-          </a>
-          <a href="#l-faq" className="hover:underline">
-            FAQ
-          </a>
+        <Credits className="text-ink-mute" />
+        <nav aria-label={footer.label} className="flex gap-6 text-[15px] font-semibold">
+          {footer.links.map((l) => (
+            <a key={l.to} href={`#l-${l.to}`} className="hover:underline">
+              {l.label}
+            </a>
+          ))}
         </nav>
       </div>
     </footer>

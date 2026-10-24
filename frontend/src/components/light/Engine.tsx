@@ -1,17 +1,20 @@
+import { engine } from "@/lib/content";
+
 import { DownloadButton } from "./Bits";
 import { Card, IdleGraph, PanelPair, PanStrip, Row } from "./EngineParts";
 
-/* Numbers here are measured (docs/PERFORMANCE.md) or are the app's defaults. */
 export function Engine() {
+  const { speed, privacy, idle, panning, panel, calls } = engine;
   return (
     <section id="l-engine" className="bg-[#0b0b0b] py-28 text-paper sm:py-32">
       <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
         <div className="mx-auto max-w-[900px] text-center">
           <h2 className="font-display text-[clamp(44px,6.6vw,92px)] leading-[1] font-extrabold tracking-[-0.035em]">
-            The tiny engine behind every <span className="text-sun">clack.</span>
+            {engine.title.before}
+            <span className="text-sun">{engine.title.mark}</span>
           </h2>
           <p className="mx-auto mt-6 max-w-[640px] text-[clamp(17px,1.5vw,20px)] leading-relaxed text-paper/70">
-            Written in C from the audio thread up, and measured at every milestone, not just promised.
+            {engine.body}
           </p>
           <div className="mt-10 flex justify-center">
             <DownloadButton tone="sun" />
@@ -19,16 +22,11 @@ export function Engine() {
         </div>
 
         <div className="mt-16 grid gap-5 lg:grid-cols-12">
-          <Card
-            n="01"
-            title="Faster than your finger"
-            color="var(--color-sun-soft)"
-            className="lg:col-span-7"
-            body="Sound starts within a single 128-frame audio buffer. Getting from your key to a queued sound takes under a microsecond."
-          >
+          <Card n={speed.n} title={speed.title} color="var(--color-sun-soft)" className="lg:col-span-7" body={speed.body}>
             <div className="w-full">
               <p className="font-display text-[clamp(72px,9vw,124px)] leading-none font-extrabold tracking-[-0.05em]">
-                2.7<span className="text-[0.4em] tracking-normal"> ms</span>
+                {speed.value}
+                <span className="text-[0.4em] tracking-normal"> {speed.unit}</span>
               </p>
               <div className="mt-5 flex items-center gap-3">
                 <span className="keycap grid h-11 w-11 shrink-0 place-items-center bg-white font-display font-bold [--depth:3px]">K</span>
@@ -42,62 +40,38 @@ export function Engine() {
                   </svg>
                 </span>
               </div>
-              <p className="mt-3 font-mono text-[12px] opacity-60">one buffer at 48 kHz · key to sound queued: under 1 µs (p99, measured)</p>
+              <p className="mt-3 font-mono text-[12px] opacity-60">{speed.note}</p>
             </div>
           </Card>
 
-          <Card
-            n="02"
-            title="Remembers nothing you type"
-            color="var(--color-tang)"
-            className="lg:col-span-5"
-            body="A key press picks a sound, and that is all it is used for."
-          >
+          <Card n={privacy.n} title={privacy.title} color="var(--color-tang)" className="lg:col-span-5" body={privacy.body}>
             <ul className="w-full rounded-[20px] border-2 border-ink bg-white px-5 py-2">
-              <Row yes>Which sound to play</Row>
-              <Row>The text you type</Row>
-              <Row>Key codes, once the sound is picked</Row>
-              <Row>App names, window titles, URLs</Row>
+              <Row yes>{privacy.used}</Row>
+              {privacy.never.map((item) => (
+                <Row key={item}>{item}</Row>
+              ))}
             </ul>
           </Card>
 
-          <Card
-            n="03"
-            title="Asleep until you type"
-            color="var(--color-lilac)"
-            className="lg:col-span-6 xl:col-span-3"
-            body="No timers, no polling. Thirty seconds after your last key, audio stops."
-          >
+          <Card n={idle.n} title={idle.title} color="var(--color-lilac)" className="lg:col-span-6 xl:col-span-3" body={idle.body}>
             <IdleGraph />
           </Card>
 
           <Card
-            n="04"
-            title="Keys sound where they are"
+            n={panning.n}
+            title={panning.title}
             color="var(--color-olive)"
             className="lg:col-span-6 xl:col-span-3"
-            body="Each key is panned to its place on the keyboard, so Q comes from the left and P from the right."
+            body={panning.body}
           >
             <PanStrip />
           </Card>
 
-          <Card
-            n="05"
-            title="Graphite or Glass"
-            color="var(--color-paper)"
-            className="lg:col-span-6 xl:col-span-3"
-            body="A menu bar panel with your packs, volume and stats, in warm Graphite or Apple-style Glass."
-          >
+          <Card n={panel.n} title={panel.title} color="var(--color-paper)" className="lg:col-span-6 xl:col-span-3" body={panel.body}>
             <PanelPair />
           </Card>
 
-          <Card
-            n="06"
-            title="Quiet on calls"
-            color="var(--color-sun)"
-            className="lg:col-span-6 xl:col-span-3"
-            body="When an app starts using your microphone, Keyfeel goes quiet on its own. Nobody on the call hears you clacking."
-          >
+          <Card n={calls.n} title={calls.title} color="var(--color-sun)" className="lg:col-span-6 xl:col-span-3" body={calls.body}>
             <div className="flex w-full items-center gap-4 rounded-[20px] border-2 border-ink bg-white p-4">
               <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-ink">
                 <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
@@ -107,8 +81,8 @@ export function Engine() {
                 </svg>
               </span>
               <span className="text-[16px] leading-snug font-semibold">
-                Mic in use, sounds paused
-                <span className="block text-[14px] font-normal text-ink-soft">On by default</span>
+                {calls.status}
+                <span className="block text-[14px] font-normal text-ink-soft">{calls.note}</span>
               </span>
             </div>
           </Card>

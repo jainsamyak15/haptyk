@@ -1,14 +1,15 @@
+import { faq } from "@/lib/content";
 import { FAQ } from "@/lib/faq";
 
-import { Cap, Overline } from "./Bits";
+import { Cap } from "./Bits";
 
 export function Faq() {
   return (
     <section id="faq" className="rule-t py-28 sm:py-32">
       <div className="mx-auto max-w-[920px] px-5 sm:px-8">
-        <Overline n="05">FAQ</Overline>
-        <h2 className="mt-5 font-display text-[clamp(32px,4.6vw,60px)] leading-[1.05] font-bold tracking-[-0.03em]">
-          Before you ask.
+        <h2 className="font-display text-[clamp(32px,4.6vw,60px)] leading-[1.05] font-bold tracking-[-0.03em]">
+          {faq.title.before}
+          <span className="text-signal">{faq.title.mark}</span>
         </h2>
         <div className="mt-12 space-y-3">
           {FAQ.map((item, i) => (

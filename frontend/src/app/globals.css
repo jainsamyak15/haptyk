@@ -280,15 +280,6 @@
     --ink: var(--color-mod-ink);
   }
 
-  /* Dotted leader for the spec sheet. */
-  .leader {
-    flex: 1;
-    min-width: 24px;
-    margin: 0 10px 5px;
-    border-bottom: 2px dotted currentColor;
-    opacity: 0.35;
-  }
-
   /* ---- Light design ----------------------------------------------------------------- */
   /* A highlighted word: a flat block of colour that sweeps in under the text. */
   .mark {

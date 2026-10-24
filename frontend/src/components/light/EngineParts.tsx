@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { engine } from "@/lib/content";
+
 /* The pieces of the light design's "under the hood" cards. */
 
 const mono = { fontFamily: "var(--font-mono)" };
@@ -47,7 +49,7 @@ export function Row({ yes, children }: { yes?: boolean; children: ReactNode }) {
         )}
       </span>
       <span className={yes ? "" : "line-through decoration-2 opacity-70"}>{children}</span>
-      <span className="sr-only">{yes ? "(used)" : "(never kept)"}</span>
+      <span className="sr-only">{yes ? engine.privacy.usedLabel : engine.privacy.neverLabel}</span>
     </li>
   );
 }
@@ -63,26 +65,27 @@ export function IdleGraph() {
           <rect key={i} x={96 + i * 9} y={80 - h * 2} width="6" height={h * 2} rx="3" fill="var(--color-ink)" />
         ))}
         <text x="4" y="72" fontSize="11" fill="var(--color-ink)" opacity="0.6" style={mono}>
-          idle
+          {engine.idle.idle}
         </text>
         <text x="110" y="12" fontSize="11" fill="var(--color-ink)" opacity="0.6" style={mono}>
-          typing
+          {engine.idle.typing}
         </text>
         <text x="250" y="72" fontSize="11" fill="var(--color-ink)" opacity="0.6" style={mono}>
-          idle
+          {engine.idle.idle}
         </text>
       </svg>
-      <p className="mt-1 font-display text-[32px] leading-none font-extrabold tracking-tight">0.0%</p>
-      <p className="mt-1 text-[14px] font-semibold text-ink-soft">CPU when idle</p>
+      <p className="mt-1 font-display text-[32px] leading-none font-extrabold tracking-tight">{engine.idle.value}</p>
+      <p className="mt-1 text-[14px] font-semibold text-ink-soft">{engine.idle.caption}</p>
     </div>
   );
 }
 
 export function PanStrip() {
+  /* Four cards to a row (xl) leave about 225px: smaller caps keep all six inside. */
   const cap = (k: string, color: string) => (
     <span
       key={k}
-      className="keycap grid h-10 w-10 place-items-center rounded-[10px] font-display text-[16px] font-bold [--depth:4px]"
+      className="keycap grid h-10 w-10 place-items-center rounded-[10px] font-display text-[16px] font-bold [--depth:4px] xl:h-[30px] xl:w-[30px] xl:rounded-[8px] xl:text-[12px] xl:[--depth:3px]"
       style={{ background: color }}
     >
       {k}
@@ -91,13 +94,13 @@ export function PanStrip() {
   return (
     <div className="w-full">
       <div className="flex items-center gap-2">
-        <div className="flex gap-1.5">{[..."QWE"].map((k) => cap(k, "var(--color-sun)"))}</div>
+        <div className="flex gap-1.5 xl:gap-1">{[...engine.panning.leftKeys].map((k) => cap(k, "var(--color-sun)"))}</div>
         <span className="h-0 flex-1 border-t-2 border-dashed border-ink" />
-        <div className="flex gap-1.5">{[..."IOP"].map((k) => cap(k, "var(--color-tang)"))}</div>
+        <div className="flex gap-1.5 xl:gap-1">{[...engine.panning.rightKeys].map((k) => cap(k, "var(--color-tang)"))}</div>
       </div>
       <div className="mt-3 flex justify-between font-mono text-[13px] font-bold">
-        <span>← left ear</span>
-        <span>right ear →</span>
+        <span>{engine.panning.left}</span>
+        <span>{engine.panning.right}</span>
       </div>
     </div>
   );
@@ -106,13 +109,13 @@ export function PanStrip() {
 export function PanelPair() {
   return (
     <div className="grid w-full grid-cols-2 gap-3" aria-hidden="true">
-      <div className="rounded-[18px] border-2 border-ink bg-[#121211] p-3.5 text-[#f2efe9]">
-        <div className="flex items-center justify-between">
-          <span className="font-display text-[15px] font-bold">
+      <div className="rounded-[18px] border-2 border-ink bg-[#121211] p-3.5 text-[#f2efe9] xl:p-3">
+        <div className="flex items-center justify-between gap-1">
+          <span className="min-w-0 truncate font-display text-[15px] font-bold xl:text-[12px]">
             Keyfeel<span className="text-signal">.</span>
           </span>
-          <span className="h-4 w-7 rounded-full bg-signal p-0.5">
-            <span className="ml-auto block h-3 w-3 rounded-full bg-[#1b0f05]" />
+          <span className="h-4 w-7 shrink-0 rounded-full bg-signal p-0.5 xl:h-3.5 xl:w-6">
+            <span className="ml-auto block h-3 w-3 rounded-full bg-[#1b0f05] xl:h-2.5 xl:w-2.5" />
           </span>
         </div>
         <div className="mt-3 h-1.5 rounded-full bg-[#302e2b]">
@@ -123,7 +126,7 @@ export function PanelPair() {
             <div key={i} className="h-2 rounded-full bg-[#2e2c29]" style={{ width: `${w}%` }} />
           ))}
         </div>
-        <p className="mt-3 font-mono text-[11px] opacity-60">Graphite</p>
+        <p className="mt-3 font-mono text-[11px] opacity-60">{engine.panel.graphite}</p>
       </div>
       <div className="relative overflow-hidden rounded-[18px] border-2 border-ink">
         <div className="absolute inset-0 bg-[#4b8fd9]" />
@@ -136,7 +139,7 @@ export function PanelPair() {
             </div>
           ))}
         </div>
-        <p className="relative mx-3.5 mb-3 font-mono text-[11px] text-white">Glass</p>
+        <p className="relative mx-3.5 mb-3 font-mono text-[11px] text-white">{engine.panel.glass}</p>
       </div>
     </div>
   );

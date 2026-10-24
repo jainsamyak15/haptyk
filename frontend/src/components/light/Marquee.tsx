@@ -1,3 +1,4 @@
+import { packBand } from "@/lib/content";
 import { packs } from "@/lib/packs";
 
 import { Sparkle, Stem } from "./Bits";
@@ -5,7 +6,7 @@ import { Sparkle, Stem } from "./Bits";
 /** Every bundled pack, scrolling past on a yellow band. Pauses on hover; still under Reduced Motion. */
 export function Marquee() {
   return (
-    <section aria-label="Bundled sound packs" className="overflow-hidden border-y-2 border-ink bg-sun">
+    <section aria-label={packBand.label} className="overflow-hidden border-y-2 border-ink bg-sun">
       <ul className="sr-only">
         {packs.map((p) => (
           <li key={p.name}>{p.name}</li>

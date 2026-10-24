@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
+import { download } from "@/lib/content";
 import { site } from "@/lib/site";
 import type { SwitchKind } from "@/lib/packs";
 
@@ -110,7 +111,7 @@ function DownloadIcon({ size }: { size: number }) {
 export function DownloadButton({
   tone = "ink",
   size = "lg",
-  label = "Download for Mac",
+  label = download.label,
 }: {
   tone?: "ink" | "sun";
   size?: "sm" | "lg";

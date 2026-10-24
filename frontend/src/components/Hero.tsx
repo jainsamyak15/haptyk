@@ -1,3 +1,5 @@
+import { hero } from "@/lib/content";
+
 import { DownloadButton, DownloadMeta } from "./Bits";
 import { ClackKeys } from "./ClackKeys";
 
@@ -11,18 +13,21 @@ export function Hero() {
       />
       <div className="relative mx-auto flex min-h-[calc(100svh-76px)] max-w-[1280px] flex-col items-center justify-center px-5 pt-20 pb-24 text-center sm:px-8">
         <ClackKeys />
-        <p className="mt-10 font-mono text-[13px] text-mute">↑ go on, press them</p>
 
-        <h1 className="mt-14 max-w-[1000px] font-display text-[clamp(34px,5.6vw,76px)] leading-[1.04] font-bold tracking-[-0.03em]">
-          The keyboard sound your MacBook <span className="text-signal">forgot.</span>
+        <h1 className="mt-16 max-w-[1000px] font-display text-[clamp(34px,5.6vw,76px)] leading-[1.04] font-bold tracking-[-0.03em]">
+          {hero.lead} <span className="font-normal text-ink-dim">{hero.soft}</span>{" "}
+          <span className="text-signal">{hero.mark}</span>
         </h1>
-        <p className="mt-7 max-w-[640px] text-[clamp(17px,1.5vw,20px)] leading-relaxed text-ink-dim">
-          Keyfeel plays real recordings of mechanical switches the moment you press a key. 25
-          packs, a tiny menu bar app, and nothing running while you&rsquo;re not typing.
-        </p>
+        <p className="mt-7 max-w-[660px] text-[clamp(17px,1.5vw,20px)] leading-relaxed text-ink-dim">{hero.body}</p>
         <div className="mt-11 flex flex-col items-center gap-4">
           <DownloadButton />
           <DownloadMeta />
+          <a
+            href="#try"
+            className="mt-1 text-[16px] font-semibold text-ink-dim underline decoration-line decoration-2 underline-offset-[6px] transition-colors hover:text-ink hover:decoration-signal"
+          >
+            {hero.tryLink}
+          </a>
         </div>
       </div>
     </section>

@@ -1,4 +1,7 @@
+import { cta, footer } from "@/lib/content";
+
 import { Cap, DownloadButton, DownloadMeta, Logo } from "./Bits";
+import { Credits } from "./Credits";
 
 export function FinalCta() {
   return (
@@ -17,11 +20,9 @@ export function FinalCta() {
         <Cap className="absolute right-[14%] bottom-10 hidden h-14 w-[120px] rotate-[-6deg] lg:block" />
 
         <h2 className="relative mx-auto max-w-[820px] font-display text-[clamp(34px,5.4vw,72px)] leading-[1.04] font-bold tracking-[-0.03em]">
-          Go make some <span className="text-signal">noise.</span>
+          {cta.title.before}
+          <span className="text-signal">{cta.title.mark}</span>
         </h2>
-        <p className="relative mx-auto mt-6 max-w-[520px] text-[18px] leading-relaxed text-ink-dim">
-          Download Keyfeel, pick a switch, and hear yourself type.
-        </p>
         <div className="relative mt-11 flex flex-col items-center gap-4">
           <DownloadButton />
           <DownloadMeta />
@@ -37,37 +38,15 @@ export function Footer() {
       <div className="mx-auto flex max-w-[1280px] flex-col gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-start md:justify-between">
         <div>
           <Logo size={32} />
-          <p className="mt-3 text-[14px] text-mute">© 2026 The Keyfeel Authors.</p>
+          <p className="mt-3 text-[14px] text-mute">{footer.copyright}</p>
         </div>
-        <p className="max-w-[560px] text-[14px] leading-relaxed text-mute">
-          Demo sounds on this page: NK Cream, Cherry MX Blue and Topre from{" "}
-          <a className="underline underline-offset-2 hover:text-ink" href="https://github.com/hainguyents13/mechvibes">
-            Mechvibes
-          </a>{" "}
-          (MIT, © 2021 Hai Nguyen,{" "}
-          <a className="underline underline-offset-2 hover:text-ink" href="/sounds/LICENSE-mechvibes.txt">
-            licence
-          </a>
-          ), and Holy Panda from{" "}
-          <a className="underline underline-offset-2 hover:text-ink" href="https://github.com/tplai/kbsim">
-            kbsim
-          </a>{" "}
-          (MIT, © Thomas Lai,{" "}
-          <a className="underline underline-offset-2 hover:text-ink" href="/sounds/LICENSE-kbsim.txt">
-            licence
-          </a>
-          ).
-        </p>
-        <nav aria-label="Footer" className="flex gap-6 text-[14px] font-semibold text-ink-dim">
-          <a href="#switches" className="hover:text-ink">
-            Switches
-          </a>
-          <a href="#try" className="hover:text-ink">
-            Try it
-          </a>
-          <a href="#faq" className="hover:text-ink">
-            FAQ
-          </a>
+        <Credits className="text-mute" linkClass="hover:text-ink" />
+        <nav aria-label={footer.label} className="flex gap-6 text-[14px] font-semibold text-ink-dim">
+          {footer.links.map((l) => (
+            <a key={l.to} href={`#${l.to}`} className="hover:text-ink">
+              {l.label}
+            </a>
+          ))}
         </nav>
       </div>
     </footer>

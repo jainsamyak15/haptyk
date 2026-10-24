@@ -1,3 +1,4 @@
+import { faq } from "@/lib/content";
 import { FAQ } from "@/lib/faq";
 
 import { Mark } from "./Bits";
@@ -7,9 +8,9 @@ export function LightFaq() {
     <section id="l-faq" className="border-t-2 border-ink py-28 sm:py-32">
       <div className="mx-auto grid max-w-[1320px] gap-12 px-5 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,8fr)] lg:gap-20">
         <h2 className="font-display text-[clamp(46px,6vw,84px)] leading-[1] font-extrabold tracking-[-0.035em] lg:sticky lg:top-32 lg:self-start">
-          Questions,
+          {faq.title.before}
           <br />
-          <Mark color="var(--color-lilac)">answered.</Mark>
+          <Mark color="var(--color-lilac)">{faq.title.mark}</Mark>
         </h2>
         <div className="border-t-2 border-ink">
           {FAQ.map((item, i) => (

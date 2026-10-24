@@ -1,5 +1,6 @@
 "use client";
 
+import { tryIt } from "@/lib/content";
 import { selectDemoPack } from "@/lib/demo-store";
 import { demoPacks } from "@/lib/packs";
 import { ROWS, TAP_PAD, useTypingDemo } from "@/lib/typing-demo";
@@ -35,21 +36,19 @@ export function LightTypeDemo() {
     <section id="l-try" className="relative py-28 sm:py-32">
       <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
         <div className="mx-auto max-w-[820px] text-center">
-          <Eyebrow color="var(--color-lilac)">Try it right here</Eyebrow>
+          <Eyebrow color="var(--color-lilac)">{tryIt.eyebrow}</Eyebrow>
           <h2 className="mt-6 font-display text-[clamp(42px,6.2vw,84px)] leading-[1] font-extrabold tracking-[-0.035em]">
-            Go on, <Mark color="var(--color-sun)">press something.</Mark>
+            {tryIt.title.before}
+            <Mark color="var(--color-sun)">{tryIt.title.mark}</Mark>
           </h2>
-          <p className="mt-6 text-[clamp(17px,1.5vw,20px)] leading-relaxed text-ink-soft">
-            These are recordings straight from Keyfeel&rsquo;s packs. Pick a switch, click the keyboard
-            and type. Nothing you type leaves this page.
-          </p>
+          <p className="mt-6 text-[clamp(17px,1.5vw,20px)] leading-relaxed text-ink-soft">{tryIt.body}</p>
         </div>
 
         {/* minmax(0, …): the one-line text box must not set the column's width. */}
         <div className="mt-14 grid grid-cols-1 items-start gap-6 lg:grid-cols-[290px_minmax(0,1fr)]">
           <div
             role="radiogroup"
-            aria-label="Switch to play"
+            aria-label={tryIt.picker}
             className="flex gap-3 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0"
           >
             {demoPacks.map((p) => {
@@ -84,7 +83,7 @@ export function LightTypeDemo() {
             ref={pad}
             tabIndex={0}
             role="application"
-            aria-label={`Typing demo. Press keys to hear ${pack.name}.`}
+            aria-label={tryIt.pad(pack.name)}
             onFocus={() => {
               setFocused(true);
               start();
@@ -107,7 +106,7 @@ export function LightTypeDemo() {
                     {text ? (
                       text
                     ) : (
-                      <span className="text-ink-mute">{listening ? "Type anything…" : "Nothing typed yet"}</span>
+                      <span className="text-ink-mute">{listening ? tryIt.listening : tryIt.empty}</span>
                     )}
                     {listening && <span className="ml-0.5 inline-block w-[3px] animate-pulse bg-ink">&nbsp;</span>}
                   </bdi>
@@ -118,7 +117,7 @@ export function LightTypeDemo() {
                 onPointerDown={(e) => e.preventDefault()} // Keep focus, and typing, on the demo.
                 onClick={toggleMute}
                 aria-pressed={muted}
-                aria-label={muted ? "Unmute" : "Mute"}
+                aria-label={muted ? tryIt.unmute : tryIt.mute}
                 className="grid h-[64px] w-[64px] shrink-0 place-items-center rounded-[18px] border-2 border-ink bg-white transition-colors hover:bg-sun"
               >
                 <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
@@ -195,7 +194,7 @@ export function LightTypeDemo() {
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sun opacity-75" />
                       <span className="relative inline-flex h-3 w-3 rounded-full bg-sun" />
                     </span>
-                    Click here, then type
+                    {tryIt.start}
                   </span>
                 </button>
               )}
@@ -227,13 +226,9 @@ export function LightTypeDemo() {
 
             <p className="mt-5 flex flex-wrap items-center justify-between gap-2 text-[14px] text-ink-soft" aria-live="polite">
               <span>
-                {loading
-                  ? `Loading ${pack.name}…`
-                  : listening
-                    ? `Playing ${pack.name}. Keys on the left sound on the left.`
-                    : `${pack.name} is ready to play.`}
+                {loading ? tryIt.loading(pack.name) : listening ? tryIt.playing(pack.name) : tryIt.ready(pack.name)}
               </span>
-              <span className="text-ink-mute">Medium-force takes · headphones recommended</span>
+              <span className="text-ink-mute">{tryIt.note}</span>
             </p>
           </div>
         </div>

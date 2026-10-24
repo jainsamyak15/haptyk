@@ -42,13 +42,6 @@ export const stemColor: Record<SwitchKind, string> = {
   other: "var(--color-stem-other)",
 };
 
-export const kindLabel: Record<SwitchKind, string> = {
-  linear: "Linear",
-  tactile: "Tactile",
-  clicky: "Clicky",
-  other: "Topre & spring",
-};
-
 /** Packs the demo plays: real medium-force recordings, all MIT licensed (public/sounds). */
 export type DemoPack = {
   id: string;
