@@ -32,6 +32,21 @@ SOURCES_OK = """# Sources: Test
 """
 
 
+def afconvert_supports_alac() -> bool:
+    """Return whether this runner's afconvert can encode Apple Lossless."""
+    if not Path(bp.AFCONVERT).exists():
+        return False
+    try:
+        result = subprocess.run([bp.AFCONVERT, "-hf"], capture_output=True, text=True,
+                                check=False)
+    except OSError:
+        return False
+    return "alac" in result.stdout.lower() or "apple lossless" in result.stdout.lower()
+
+
+ALAC_AVAILABLE = afconvert_supports_alac()
+
+
 def click(rate: int, amplitude: float, freq: float, length_s: float = 0.06) -> np.ndarray:
     t = np.arange(int(rate * length_s)) / rate
     return amplitude * np.sin(2 * np.pi * freq * t) * np.exp(-t / 0.01)
@@ -158,7 +173,8 @@ class BuildPackTests(unittest.TestCase):
         self.assertIsNone(bp.classify(Path("misc/take.wav")))
         self.assertIsNone(bp.classify(Path("alpha/loud/1.wav")))
 
-    @unittest.skipUnless(Path(bp.AFCONVERT).exists() and KF_CLI.exists(), "macOS with make tools")
+    @unittest.skipUnless(ALAC_AVAILABLE and KF_CLI.exists(),
+                         "macOS with afconvert ALAC support and make tools")
     def test_caf_alac_pack_loads_in_the_app(self) -> None:
         code, err = self.run_build("--derive-tiers")  # The default: CAF/ALAC via afconvert.
         self.assertEqual(code, 0, err)

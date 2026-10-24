@@ -190,6 +190,7 @@ void test_pack_holds_the_boom(void) {
 
 /* ------------------------------------------------------------------ decoding (macOS) */
 
+#if defined(__APPLE__)
 #define TMP_DIR "build/test-tmp"
 
 static void put_le(FILE *f, uint32_t value, int bytes) {
@@ -228,6 +229,7 @@ static const char *write_wav(const char *name, uint32_t rate, uint16_t bits, uin
     (void)fclose(f);
     return path;
 }
+#endif
 
 void test_pack_decodes_files(void) {
 #if defined(__APPLE__)
