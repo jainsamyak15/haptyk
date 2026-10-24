@@ -103,6 +103,10 @@ All notable changes are recorded here. The format follows
 - Glass panel on macOS 26: every tile showed only blurred glass, because the glass was drawn
   over its controls, and a dark outline traced the tiles. The controls now sit inside each
   glass tile, tiles no longer merge, and the window shadow is off in Glass.
+- "Muted while the microphone is in use" showed when no microphone was in use: any app
+  recording audio input counted, including screen recorders, system-audio capture and virtual
+  or loopback devices. Only input from a real microphone (a physical device, or an aggregate
+  built on one) mutes Keyfeel now, on macOS 14 and later.
 
 ### Changed
 - Bundled packs are listed by name, which is the spec's order and also covers renamed packs.

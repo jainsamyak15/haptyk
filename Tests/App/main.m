@@ -35,6 +35,7 @@ int main(void) {
             const char *name;
             void (*run)(void);
         } tests[] = {
+            {"mic_counts_only_real_microphones", TestMicCountsOnlyRealMicrophones},
             {"power_state_machine", TestPowerStateMachine},
             {"pack_manifest_valid", TestPackManifestValid},
             {"pack_manifest_rejects_bad_input", TestPackManifestRejectsBadInput},

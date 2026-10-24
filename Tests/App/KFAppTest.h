@@ -18,6 +18,7 @@ void KFTestFail(const char *file, int line, const char *expression);
 /// A fresh, empty temporary folder inside build/, removed when the process exits.
 NSURL *KFTestTemporaryFolder(void);
 
+void TestMicCountsOnlyRealMicrophones(void);
 void TestPowerStateMachine(void);
 void TestPackManifestValid(void);
 void TestPackManifestRejectsBadInput(void);

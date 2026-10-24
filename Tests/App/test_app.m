@@ -3,6 +3,7 @@
 
 #import "KFAppTest.h"
 
+#import <CoreAudio/CoreAudio.h>
 #include <math.h>
 
 #include <kf/kf_config.h>
@@ -16,12 +17,36 @@
 #import "Menu/KFPanelControls.h"
 #import "Packs/KFPackLibrary.h"
 #import "Packs/KFPackManifest.h"
+#import "Power/KFMicMonitor.h"
 #import "Power/KFPowerStateMachine.h"
 #import "Preferences/KFPreferences.h"
 #import "Stats/KFStatsController.h"
 #import "Support/KFTheme.h"
 
 #pragma mark - Power
+
+void TestMicCountsOnlyRealMicrophones(void) {
+    /* Physical transports can be microphones: the built-in mic, USB and Bluetooth headsets,
+     * an iPhone through Continuity, and kinds CoreAudio adds later. */
+    KFExpect(KFMicTransportIsPhysical(kAudioDeviceTransportTypeBuiltIn));
+    KFExpect(KFMicTransportIsPhysical(kAudioDeviceTransportTypeUSB));
+    KFExpect(KFMicTransportIsPhysical(kAudioDeviceTransportTypeBluetooth));
+    KFExpect(KFMicTransportIsPhysical(kAudioDeviceTransportTypeBluetoothLE));
+    KFExpect(KFMicTransportIsPhysical(kAudioDeviceTransportTypeThunderbolt));
+    KFExpect(KFMicTransportIsPhysical(kAudioDeviceTransportTypeContinuityCaptureWireless));
+    KFExpect(KFMicTransportIsPhysical('newt'));
+    /* Virtual devices and aggregates on their own are not: system-audio capture, screen
+     * recorders and loopback drivers record through them. */
+    KFExpect(!KFMicTransportIsPhysical(kAudioDeviceTransportTypeUnknown));
+    KFExpect(!KFMicTransportIsPhysical(kAudioDeviceTransportTypeVirtual));
+    KFExpect(!KFMicTransportIsPhysical(kAudioDeviceTransportTypeAggregate));
+    KFExpect(!KFMicTransportIsPhysical(kAudioDeviceTransportTypeAutoAggregate));
+    /* Starting and stopping only reads CoreAudio; stopped, it reports no microphone. */
+    KFMicMonitor *monitor = [KFMicMonitor new];
+    [monitor start];
+    [monitor stop];
+    KFExpect(!monitor.microphoneInUse);
+}
 
 void TestPowerStateMachine(void) {
     KFPowerAction a = KFPowerActionNone;
