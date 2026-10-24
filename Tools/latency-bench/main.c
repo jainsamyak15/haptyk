@@ -76,8 +76,13 @@ static int bench_render(void) {
         take[i] = (int16_t)((int32_t)((i * 37u) % 2000u) - 1000);
     }
     kf_pack_pcm sounds[KF_TIER_COUNT];
-    for (uint8_t t = 0u; t < KF_TIER_COUNT; ++t) {
-        sounds[t] = (kf_pack_pcm){KF_GROUP_ALPHA, 0u, t, false, take, 48000u};
+    for (uint8_t t = 0u; t < (uint8_t)KF_TIER_COUNT; ++t) {
+        sounds[t] = (kf_pack_pcm){.samples = take,
+                                  .frames = 48000u,
+                                  .group = KF_GROUP_ALPHA,
+                                  .is_up = 0u,
+                                  .tier = t,
+                                  .derived = false};
     }
     kf_pack *pack = kf_pack_from_pcm(sounds, KF_TIER_COUNT, KF_BENCH_RATE, NULL, 0u);
     if (pack == NULL) {

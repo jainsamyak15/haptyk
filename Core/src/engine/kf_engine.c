@@ -258,9 +258,9 @@ void kf_engine_output_device_name(char *buf, size_t len) {
     const AudioObjectPropertyAddress name = {
         kAudioObjectPropertyName, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain};
     CFStringRef text = NULL;
-    UInt32 size = sizeof text;
+    UInt32 size = sizeof(CFStringRef);
     if (device != kAudioObjectUnknown &&
-        AudioObjectGetPropertyData(device, &name, 0u, NULL, &size, &text) == noErr &&
+        AudioObjectGetPropertyData(device, &name, 0u, NULL, &size, (void *)&text) == noErr &&
         text != NULL) {
         (void)CFStringGetCString(text, buf, (CFIndex)len, kCFStringEncodingUTF8);
         CFRelease(text);

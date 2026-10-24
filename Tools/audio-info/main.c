@@ -54,7 +54,7 @@ static void print_string_property(AudioObjectID object, AudioObjectPropertySelec
     CFStringRef text = NULL;
     char buf[256] = "";
     if (get(object, selector, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain,
-            &text, sizeof text) &&
+            (void *)&text, sizeof(CFStringRef)) &&
         text != NULL) {
         (void)CFStringGetCString(text, buf, sizeof buf, kCFStringEncodingUTF8);
         CFRelease(text);
@@ -109,7 +109,7 @@ static void print_device(AudioObjectID device, bool first) {
             kAudioObjectPropertyElementMain, &transport, sizeof transport)) {
         for (int i = 0; i < 4; ++i) {
             const char c = (char)((transport >> (24 - 8 * i)) & 0xffu);
-            fourcc[i] = c >= 0x20 && c < 0x7f ? c : '?';
+            fourcc[i] = (char)(c >= 0x20 && c < 0x7f ? c : '?');
         }
     }
     printf(",\n      \"transport\": \"%s\"", fourcc);

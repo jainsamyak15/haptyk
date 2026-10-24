@@ -39,14 +39,15 @@ typedef struct kf_pack_file {
     const char *path; /**< Absolute path. */
 } kf_pack_file;
 
-/** One decoded sound, already in memory: for packs built from generated audio and tests. */
+/** One decoded sound, already in memory: for packs built from generated audio and tests.
+ * Fields are ordered widest first, so the struct has no internal padding. */
 typedef struct kf_pack_pcm {
+    const int16_t *samples; /**< Mono, at the pack's rate. Copied by kf_pack_from_pcm(). */
+    uint32_t frames;
     uint8_t group;
     uint8_t is_up;
     uint8_t tier;
     bool derived;
-    const int16_t *samples; /**< Mono, at the pack's rate. Copied by kf_pack_from_pcm(). */
-    uint32_t frames;
 } kf_pack_pcm;
 
 /** One playable take: 16-bit mono at the pack's sample rate. */

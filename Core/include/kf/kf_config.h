@@ -11,6 +11,8 @@
 #ifndef KF_CONFIG_H
 #define KF_CONFIG_H
 
+#include <stddef.h> /* size_t, for byte-size limits below. */
+
 /* Audio ------------------------------------------------------------------ */
 #define KF_SAMPLE_RATE_HZ         48000u        /**< Preferred output rate. */
 #define KF_IO_BUFFER_FRAMES       128u          /**< Requested buffer: 2.7 ms at 48 kHz. */
@@ -84,7 +86,7 @@
 
 /* Packs ------------------------------------------------------------------ */
 #define KF_PACK_MAX_FILES         400u
-#define KF_PACK_MAX_DECODED_BYTES (8u * 1024u * 1024u)
+#define KF_PACK_MAX_DECODED_BYTES ((size_t)8 * 1024 * 1024)
 #define KF_PACK_MAX_FILE_MS       1500u
 
 /* Power ------------------------------------------------------------------ */

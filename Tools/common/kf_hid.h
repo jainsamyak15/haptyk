@@ -19,6 +19,15 @@
 #include "kf_tool.h"
 
 /**
+ * An IOHIDDeviceRef from a value a CF collection handed out as `const void *`. CF gives these as
+ * const, but the HID API takes a non-const ref; the uintptr_t round-trip drops the qualifier
+ * without tripping `-Wcast-qual`. One documented place, so call sites stay plain.
+ */
+static inline IOHIDDeviceRef kf_hid_ref(const void *value) {
+    return (IOHIDDeviceRef)(uintptr_t)value; // NOLINT(performance-no-int-to-ptr): see above.
+}
+
+/**
  * Adds `match` to `dict` as top-level HID matching keys, which both IOHIDManager and
  * IOHIDDevice::matchPropertyTable understand. Usage page and usage match any
  * DeviceUsagePairs entry. False when allocation fails.

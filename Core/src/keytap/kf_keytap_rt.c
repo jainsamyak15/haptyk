@@ -232,7 +232,7 @@ KF_RT_SAFE void kf_keytap_on_report(void *ref, IOReturn result, void *sender, IO
     (void)sender;
     const uint64_t now = kf_time_now_ns();
     kf_keytap_ctx *ctx = ref;
-    const IOHIDDeviceRef device = IOHIDElementGetDevice(IOHIDValueGetElement(value));
+    IOHIDDeviceRef device = IOHIDElementGetDevice(IOHIDValueGetElement(value));
     for (uint32_t i = 0u; i < ctx->device_count; ++i) {
         if (ctx->devices[i] == (void *)device) {
             if (ctx->device_builtin[i]) {

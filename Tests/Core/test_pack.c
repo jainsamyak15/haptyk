@@ -18,7 +18,12 @@
 static int16_t g_tone[4800];
 
 static kf_pack_pcm sound(uint8_t group, bool is_up, uint8_t tier, uint32_t frames) {
-    const kf_pack_pcm s = {group, is_up ? 1u : 0u, tier, false, g_tone, frames};
+    const kf_pack_pcm s = {.group = group,
+                           .is_up = is_up ? 1u : 0u,
+                           .tier = tier,
+                           .derived = false,
+                           .samples = g_tone,
+                           .frames = frames};
     return s;
 }
 
@@ -54,7 +59,7 @@ void test_pack_fallback_rules(void) {
     KF_EXPECT(kf_pack_sounds(p, KF_GROUP_ALPHA, false, KF_TIER_SLAM, &takes) == 1u &&
               takes[0].frames == 300u);
     /* Space has only slam: every tier uses it, and it has no release sound of its own. */
-    for (uint8_t t = 0u; t < KF_TIER_COUNT; ++t) {
+    for (uint8_t t = 0u; t < (uint8_t)KF_TIER_COUNT; ++t) {
         KF_EXPECT(kf_pack_sounds(p, KF_GROUP_SPACE, false, t, &takes) == 1u &&
                   takes[0].frames == 400u);
     }
@@ -73,7 +78,7 @@ void test_pack_fallback_rules(void) {
     uint32_t b = 0u;
     KF_EXPECT(first_sample(p, KF_GROUP_ENTER, false, KF_TIER_HARD, &a) ==
               first_sample(p, KF_GROUP_ALPHA, false, KF_TIER_HARD, &b));
-    KF_EXPECT(kf_pack_decoded_bytes(p) == (100u + 300u + 50u + 400u + 60u + 101u) * 2u);
+    KF_EXPECT(kf_pack_decoded_bytes(p) == (size_t)(100 + 300 + 50 + 400 + 60 + 101) * 2);
     KF_EXPECT(kf_pack_sample_rate(p) == RATE);
     /* Out-of-range lookups play nothing. */
     KF_EXPECT(kf_pack_sounds(p, KF_GROUP_COUNT, false, 0u, &takes) == 0u);
@@ -162,7 +167,7 @@ void test_pack_holds_the_boom(void) {
     KF_EXPECT(kf_pack_sounds(p, KF_SOUND_BOOM, false, 2u, &takes) == 0u);  /* One tier. */
     KF_EXPECT(kf_pack_sounds(p, KF_SOUND_SLOTS, false, 0u, &takes) == 0u); /* Out of range. */
     /* Keys never fall back to the boom: Enter without sounds of its own plays alpha's. */
-    for (uint8_t t = 0u; t < KF_TIER_COUNT; ++t) {
+    for (uint8_t t = 0u; t < (uint8_t)KF_TIER_COUNT; ++t) {
         KF_EXPECT(kf_pack_sounds(p, KF_GROUP_ENTER, false, t, &takes) == 1u &&
                   takes[0].frames == 100u);
     }

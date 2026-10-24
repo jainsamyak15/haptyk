@@ -262,9 +262,10 @@ static int run_probe(const kf_tool_match *match, uint64_t expected_id) {
         printf(" registry-id 0x%llx (%s IOHIDManager)", (unsigned long long)found_id,
                found_id == expected_id ? "same as" : "DIFFERS from");
     }
-    printf("\n  time         p50 %.1f us  p99 %.1f us  max %.1f us\n",
-           (double)samples[PROBE_RUNS / 2u] / 1e3, (double)samples[(PROBE_RUNS * 99u) / 100u] / 1e3,
-           (double)samples[PROBE_RUNS - 1u] / 1e3);
+    const size_t p50 = PROBE_RUNS / 2u;
+    const size_t p99 = (PROBE_RUNS * 99u) / 100u;
+    printf("\n  time         p50 %.1f us  p99 %.1f us  max %.1f us\n", (double)samples[p50] / 1e3,
+           (double)samples[p99] / 1e3, (double)samples[PROBE_RUNS - 1u] / 1e3);
     if (found_id == 0u) {
         return EXIT_NO_MATCH;
     }
@@ -295,7 +296,7 @@ int main(int argc, char **argv) {
         fputs("[\n", stdout);
     }
     for (CFIndex i = 0; i < count; ++i) {
-        const IOHIDDeviceRef device = (IOHIDDeviceRef)(uintptr_t)CFArrayGetValueAtIndex(devices, i);
+        IOHIDDeviceRef device = kf_hid_ref(CFArrayGetValueAtIndex(devices, i));
         kf_hid_info_read(device, &info);
         if (i == 0) {
             first_id = info.registry_id;

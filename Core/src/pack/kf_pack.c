@@ -147,7 +147,7 @@ kf_pack *kf_pack_build(int16_t *block, size_t total_frames, kf_pack_entry *entri
         return kf_pack_fail(err, errlen, "a pack needs at least one alpha key-down sound");
     }
     fill_missing_tiers(p, KF_GROUP_ALPHA);
-    for (uint8_t g = 0u; g < KF_GROUP_COUNT; ++g) {
+    for (uint8_t g = 0u; g < (uint8_t)KF_GROUP_COUNT; ++g) {
         if (g == KF_GROUP_ALPHA) {
             continue;
         }

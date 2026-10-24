@@ -41,7 +41,7 @@ typedef struct voice {
 
 typedef struct mixer {
     voice voices[VOICE_POOL];
-    const kf_pack *pack;
+    kf_pack *pack;     /* The engine owns it; the mixer only reads it, then hands it back. */
     kf_pack *retiring; /* The previous pack while its voices fade out. */
     uint64_t retiring_swap;
     uint64_t next_order;
@@ -262,7 +262,7 @@ static KF_RT_SAFE void swap_pack_if_published(mixer *m, kf_engine_shared *s) {
     if (next == NULL) {
         return;
     }
-    kf_pack *old = (kf_pack *)(uintptr_t)m->pack; /* Owned by the engine; never written. */
+    kf_pack *old = m->pack; /* Owned by the engine; handed back for freeing after it fades out. */
     m->pack = next == KF_PACK_NONE ? NULL : next;
     memset(m->last_take, 0xff, sizeof m->last_take);
     const uint64_t swap = atomic_fetch_add_explicit(&s->swaps, 1u, memory_order_acq_rel) + 1u;

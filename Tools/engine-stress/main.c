@@ -11,6 +11,7 @@
  * Exit status 1 on any overrun, dropped request, or more than 1 MB of memory growth.
  */
 
+#include <errno.h>
 #include <math.h>
 #include <pthread.h>
 #include <signal.h>
@@ -54,8 +55,8 @@ static kf_pack *make_pack(double rate, uint32_t seed) {
     static int16_t storage[KF_GROUP_COUNT][KF_TIER_COUNT + 1][TAKES][48000 * TAKE_MS / 1000 + 64];
     kf_pack_pcm sounds[KF_GROUP_COUNT * (KF_TIER_COUNT + 1) * TAKES];
     size_t n = 0u;
-    for (uint8_t g = 0u; g < KF_GROUP_COUNT; ++g) {
-        for (uint8_t t = 0u; t <= KF_TIER_COUNT; ++t) {
+    for (uint8_t g = 0u; g < (uint8_t)KF_GROUP_COUNT; ++g) {
+        for (uint8_t t = 0u; t <= (uint8_t)KF_TIER_COUNT; ++t) {
             for (int k = 0; k < TAKES; ++k) {
                 int16_t *buf = storage[g][t][k];
                 const double freq = 600.0 + 200.0 * g + 50.0 * k + (double)(seed % 7u) * 10.0;
@@ -63,9 +64,12 @@ static kf_pack *make_pack(double rate, uint32_t seed) {
                     const double env = exp(-(double)i / (rate * 0.01));
                     buf[i] = (int16_t)(20000.0 * env * sin(2.0 * 3.14159265 * freq * i / rate));
                 }
-                sounds[n++] = (kf_pack_pcm){
-                    g,     t == KF_TIER_COUNT ? 1u : 0u, t == KF_TIER_COUNT ? 0u : t, false, buf,
-                    frames};
+                sounds[n++] = (kf_pack_pcm){.samples = buf,
+                                            .frames = frames,
+                                            .group = g,
+                                            .is_up = t == KF_TIER_COUNT ? 1u : 0u,
+                                            .tier = t == KF_TIER_COUNT ? 0u : t,
+                                            .derived = false};
             }
         }
     }
@@ -103,20 +107,35 @@ static void on_signal(int signo) {
     atomic_store(&g_stop, true);
 }
 
+/* strtod with full checking: the whole string must be one finite number (cert-err34-c). */
+static bool parse_double(const char *s, double *out) {
+    char *end = NULL;
+    errno = 0;
+    const double value = strtod(s, &end);
+    if (end == s || *end != '\0' || errno != 0) {
+        return false;
+    }
+    *out = value;
+    return true;
+}
+
 int main(int argc, char **argv) {
     double minutes = DEFAULT_MINUTES;
     producer_args args = {DEFAULT_RATE};
     float volume = DEFAULT_VOLUME;
     for (int i = 1; i < argc; ++i) {
         const char *value = i + 1 < argc ? argv[i + 1] : "";
-        if (strcmp(argv[i], "--minutes") == 0 && atof(value) > 0.0) {
-            minutes = atof(value);
+        double number = 0.0;
+        if (strcmp(argv[i], "--minutes") == 0 && parse_double(value, &number) && number > 0.0) {
+            minutes = number;
             i++;
-        } else if (strcmp(argv[i], "--voices-per-second") == 0 && atof(value) > 0.0) {
-            args.per_second = atof(value);
+        } else if (strcmp(argv[i], "--voices-per-second") == 0 && parse_double(value, &number) &&
+                   number > 0.0) {
+            args.per_second = number;
             i++;
-        } else if (strcmp(argv[i], "--volume") == 0 && atof(value) >= 0.0 && atof(value) <= 1.0) {
-            volume = (float)atof(value);
+        } else if (strcmp(argv[i], "--volume") == 0 && parse_double(value, &number) &&
+                   number >= 0.0 && number <= 1.0) {
+            volume = (float)number;
             i++;
         } else {
             fputs(k_usage, strcmp(argv[i], "--help") == 0 ? stdout : stderr);

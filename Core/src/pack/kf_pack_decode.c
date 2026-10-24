@@ -43,11 +43,11 @@ static uint32_t probe(ExtAudioFileRef file, const char *path, double device_rate
                       size_t errlen) {
     const char *name = base_name(path);
     AudioFileID audio_file = NULL;
-    UInt32 size = sizeof audio_file;
+    UInt32 size = sizeof(AudioFileID);
     UInt32 type = 0u;
     UInt32 type_size = sizeof type;
-    if (ExtAudioFileGetProperty(file, kExtAudioFileProperty_AudioFile, &size, &audio_file) !=
-            noErr ||
+    if (ExtAudioFileGetProperty(file, kExtAudioFileProperty_AudioFile, &size,
+                                (void *)&audio_file) != noErr ||
         AudioFileGetProperty(audio_file, kAudioFilePropertyFileFormat, &type_size, &type) !=
             noErr ||
         (type != kAudioFileWAVEType && type != kAudioFileCAFType)) {
@@ -115,16 +115,16 @@ static uint32_t decode(ExtAudioFileRef file, double device_rate, int16_t *dst, u
         return 0u;
     }
     AudioConverterRef converter = NULL;
-    UInt32 size = sizeof converter;
-    if (ExtAudioFileGetProperty(file, kExtAudioFileProperty_AudioConverter, &size, &converter) ==
-            noErr &&
+    UInt32 size = sizeof(AudioConverterRef);
+    if (ExtAudioFileGetProperty(file, kExtAudioFileProperty_AudioConverter, &size,
+                                (void *)&converter) == noErr &&
         converter != NULL) {
         const UInt32 quality = kAudioConverterQuality_Max;
         if (AudioConverterSetProperty(converter, kAudioConverterSampleRateConverterQuality,
                                       sizeof quality, &quality) == noErr) {
             CFArrayRef config = NULL; /* Tells ExtAudioFile the converter changed. */
             (void)ExtAudioFileSetProperty(file, kExtAudioFileProperty_ConverterConfig,
-                                          sizeof config, &config);
+                                          sizeof(CFArrayRef), (const void *)&config);
         }
     }
     uint32_t done = 0u;

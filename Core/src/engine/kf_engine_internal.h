@@ -30,7 +30,7 @@ KF_SPSC_DEFINE(kf_pack_queue, kf_pack_ptr, KF_RELEASE_QUEUE_CAPACITY)
 
 /** Published in `pending` to unload: distinct from NULL, which means "nothing pending". */
 extern char kf_engine_no_pack_tag;
-#define KF_PACK_NONE ((kf_pack *)(void *)&kf_engine_no_pack_tag)
+#define KF_PACK_NONE ((kf_pack *)&kf_engine_no_pack_tag)
 
 typedef struct kf_engine_shared {
     kf_voice_queue queues[KF_QUEUE_COUNT]; /* One producer each; the audio thread consumes. */

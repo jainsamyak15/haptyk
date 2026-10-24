@@ -178,8 +178,7 @@ void kf_hid_info_read(IOHIDDeviceRef device, kf_hid_info *out) {
 
 static uint64_t registry_id_of(const void *device) {
     uint64_t id = 0u;
-    /* CF collections hand out const void *; IOHIDDeviceRef is non-const by declaration only. */
-    const io_service_t service = IOHIDDeviceGetService((IOHIDDeviceRef)(uintptr_t)device);
+    const io_service_t service = IOHIDDeviceGetService(kf_hid_ref(device));
     if (service != MACH_PORT_NULL) {
         (void)IORegistryEntryGetRegistryEntryID(service, &id);
     }
@@ -220,7 +219,7 @@ CFArrayRef kf_hid_copy_matching_devices(IOHIDManagerRef manager, const kf_tool_m
     if (count > 0 && values != NULL && info != NULL && array != NULL) {
         CFSetGetValues(set, values);
         for (CFIndex i = 0; i < count; ++i) {
-            kf_hid_info_read((IOHIDDeviceRef)(uintptr_t)values[i], info);
+            kf_hid_info_read(kf_hid_ref(values[i]), info);
             if (kf_tool_match_info(match, info)) {
                 CFArrayAppendValue(array, values[i]);
             }

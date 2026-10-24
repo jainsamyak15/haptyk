@@ -161,8 +161,12 @@ static kf_pack *dc_pack(int16_t level, uint32_t frames) {
         g_dc[i] = level;
     }
     const kf_pack_pcm sounds[] = {
-        {KF_GROUP_ALPHA, 0u, KF_TIER_SOFT, false, g_dc, frames},
-        {KF_GROUP_ALPHA, 1u, 0u, false, g_dc, frames},
+        {.group = KF_GROUP_ALPHA,
+         .is_up = 0u,
+         .tier = KF_TIER_SOFT,
+         .samples = g_dc,
+         .frames = frames},
+        {.group = KF_GROUP_ALPHA, .is_up = 1u, .tier = 0u, .samples = g_dc, .frames = frames},
     };
     return kf_pack_from_pcm(sounds, 2u, 48000.0, NULL, 0u);
 }
@@ -224,8 +228,12 @@ void test_mixer_plays_the_boom(void) {
         boom[i] = 4096; /* Boom: 0.125. */
     }
     const kf_pack_pcm sounds[] = {
-        {KF_GROUP_ALPHA, 0u, KF_TIER_SLAM, false, g_dc, 4800u},
-        {KF_SOUND_BOOM, 0u, 0u, false, boom, 4800u},
+        {.group = KF_GROUP_ALPHA,
+         .is_up = 0u,
+         .tier = KF_TIER_SLAM,
+         .samples = g_dc,
+         .frames = 4800u},
+        {.group = KF_SOUND_BOOM, .is_up = 0u, .tier = 0u, .samples = boom, .frames = 4800u},
     };
     fresh_engine(kf_pack_from_pcm(sounds, 2u, 48000.0, NULL, 0u));
     kf_engine_set_big_enter(true);
