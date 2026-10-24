@@ -50,9 +50,9 @@ endif
 
 PYTHON := $(if $(wildcard Tools/py/.venv/bin/python),Tools/py/.venv/bin/python,python3)
 
-# Lint tools: PATH first, then the Xcode toolchain, then Homebrew LLVM. Expanded lazily, so
-# only `make format`/`lint` pay for the lookup.
-find_tool = $(firstword $(shell command -v $(1) 2>/dev/null) \
+# Lint tools: the version pinned in Tools/py/.venv first (`make bootstrap`), then PATH, the Xcode
+# toolchain and Homebrew LLVM. Expanded lazily, so only `make format`/`lint` pay for the lookup.
+find_tool = $(firstword $(wildcard Tools/py/.venv/bin/$(1)) $(shell command -v $(1) 2>/dev/null) \
               $(shell xcrun --find $(1) 2>/dev/null) \
               $(wildcard /opt/homebrew/opt/llvm/bin/$(1) /usr/local/opt/llvm/bin/$(1)))
 CLANG_FORMAT = $(call find_tool,clang-format)
@@ -207,7 +207,7 @@ analyze: ## Clang Static Analyzer over the core, the tools and the app
 
 lint: ## clang-tidy over the core, tests and tools
 	@tidy='$(CLANG_TIDY)'; [[ -n "$$tidy" ]] || \
-	  { echo "clang-tidy not found: install LLVM (Homebrew: llvm) or put it on PATH"; exit 1; }; \
+	  { echo "clang-tidy not found: run \`make bootstrap\` (installs it in Tools/py/.venv)"; exit 1; }; \
 	  "$$tidy" --quiet $(CORE_SRCS) $(TEST_SRCS) $(TOOL_SRCS) $(TOOL_COMMON_SRCS) -- \
 	  $(CSTD) $(PLATFORM) $(LINT_SYSROOT) $(INCLUDES) $(TOOL_INCLUDES)
 	@echo "lint: clean"

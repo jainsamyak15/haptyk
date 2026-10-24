@@ -3,3 +3,6 @@ numpy>=1.26,<3
 scipy>=1.11,<2
 soundfile>=0.12,<1
 matplotlib>=3.8,<4
+# `make lint` only. Pinned to the major version of Apple's clang-format (21), so both parse the
+# code the same way (ADR-0025).
+clang-tidy==21.1.6

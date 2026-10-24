@@ -368,3 +368,19 @@ decision; supersede it with a new one.
   draw the glass from a blurred copy of the desktop picture, since an offscreen drawing cannot
   see behind a window; the same run builds the live glass offscreen and checks every tile's size
   and that every glass tile holds its content.
+
+## ADR-0025: clang-tidy ships as a pinned wheel in the repo venv
+
+- **Status:** Accepted (2026-10-24)
+- **Context:** `make lint` needs clang-tidy, but it was on no one's PATH, so `make ci` failed at
+  the lint step. A full Homebrew LLVM is about 2 GB and system-wide, which the safety rules keep
+  off the machine without asking. The dev tools already live in a repo-local Python environment
+  (`Tools/py/.venv`, `make bootstrap`).
+- **Decision:** Pin `clang-tidy` in `Tools/py/requirements.txt` (the PyPI wheel that bundles the
+  binary) so `make bootstrap` installs it into `Tools/py/.venv`, changing nothing outside the
+  repo. `find_tool` looks there first, then PATH, the Xcode toolchain and Homebrew LLVM, so a
+  system install still wins if someone has one. The version tracks the major version of Apple's
+  clang-format (21), so both parse the code the same way.
+- **Consequences:** `make lint` and `make ci` run out of the box after `make bootstrap`, with no
+  system install. The wheel is a dev-only dependency, never shipped. The first lint run cleared
+  the backlog of findings it had never had the chance to report.

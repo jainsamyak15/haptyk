@@ -32,14 +32,6 @@ else
     warn "$(uname -s): only the portable core and its tests build here"
 fi
 
-for tool in clang-format clang-tidy; do
-    if command -v "$tool" >/dev/null; then
-        ok "$tool"
-    else
-        warn "$tool not found: make format / make lint need it"
-    fi
-done
-
 python=""
 for candidate in python3.14 python3.13 python3.12 python3.11 python3.10 python3; do
     if command -v "$candidate" >/dev/null &&
@@ -57,5 +49,16 @@ fi
 Tools/py/.venv/bin/python -m pip install --quiet --upgrade pip
 Tools/py/.venv/bin/python -m pip install --quiet -r Tools/py/requirements.txt
 ok "Python packages installed in Tools/py/.venv"
+
+# After the install: clang-tidy comes pinned in Tools/py/.venv (ADR-0025).
+for tool in clang-format clang-tidy; do
+    if [[ -x "Tools/py/.venv/bin/$tool" ]]; then
+        ok "$tool $("Tools/py/.venv/bin/$tool" --version | sed -n 's/.*version \([0-9.]*\).*/\1/p' | head -1) (Tools/py/.venv)"
+    elif command -v "$tool" >/dev/null || xcrun --find "$tool" >/dev/null 2>&1; then
+        ok "$tool"
+    else
+        warn "$tool not found: make format / make lint need it"
+    fi
+done
 
 echo "Next: make test"
