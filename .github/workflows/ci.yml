@@ -18,7 +18,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install lint tools (CI runner only)
         run: |
           brew install clang-format llvm
@@ -40,6 +40,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: make test CC=gcc
       - run: make test-tsan CC=clang
