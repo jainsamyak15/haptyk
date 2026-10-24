@@ -3,7 +3,6 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const links = [
   { href: "#switches", label: "Switches" },
-  { href: "#try", label: "Try it" },
   { href: "#specs", label: "Specs" },
   { href: "#faq", label: "FAQ" },
 ];
@@ -28,6 +27,12 @@ export function Nav() {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle className="text-ink-dim edge hover:bg-raised hover:text-ink" />
+          <a
+            href="#try"
+            className="hidden h-11 items-center rounded-full bg-raised px-5 text-[15px] font-bold text-ink edge transition-colors hover:bg-mod sm:inline-flex"
+          >
+            Try it
+          </a>
           <DownloadButton size="sm" label="Download" />
         </div>
       </nav>
