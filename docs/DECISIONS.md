@@ -409,3 +409,23 @@ decision; supersede it with a new one.
   launch. Both designs ship in the page, so changes to shared content belong in
   `src/lib/` (FAQ answers, demo behaviour, facts) to stay in step. Packs licensed or permitted only for the app
   stay out of the web demo.
+
+## ADR-0027: Vercel Web Analytics counts the site's visitors and downloads
+
+- **Status:** Accepted (owner's request, 2026-10-25)
+- **Context:** The owner wants to know how many people visit the site and how many download
+  the DMG. The site is on Vercel, in the same account as the owner's portfolio. The rules ask
+  for no new dependency without approval and a record; the site's own privacy stance is that
+  visitors' browsers never call third parties (fonts are self-hosted).
+- **Decision:** Vercel Web Analytics through `@vercel/analytics` 2.0.1, pinned, with its
+  `<Analytics />` component in the root layout. It is cookieless and sends page views to this
+  site's own `/_vercel/insights` routes, not to a third-party domain. Downloads are counted as
+  page views of `/download`: every Download button leads there and that page starts the DMG.
+  No custom events, which need Vercel's Pro plan.
+- **Consequences:** Analytics must be switched on once in the Vercel dashboard (Project →
+  Analytics → Enable); until then the component sends nothing. On the Hobby plan the 50,000
+  events a month are shared with the portfolio, collection pauses after that, and data is kept
+  for one month, so long-term totals need noting down. Direct links to
+  `/downloads/Keyfeel.dmg` and the "Try again" link are not counted separately. The public
+  privacy policy (the owner's) should mention cookieless site analytics. The Mac app is
+  unchanged: it sends nothing of this kind (`docs/PRIVACY.md`).

@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono, Unbounded } from "next/font/google";
 
@@ -46,7 +47,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: applySavedTheme }} />
       </head>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        {/* Vercel Web Analytics (ADR-0027): cookieless page views, served from this site. Every
+            Download button leads to /download, so its page views count the downloads. */}
+        <Analytics />
+      </body>
     </html>
   );
 }
